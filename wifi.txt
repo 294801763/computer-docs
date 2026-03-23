@@ -1,0 +1,142 @@
+1.图形界面WIFI管理工具:
+  eg.>apt-get install dhcpcd firmware-iwlwifi firmware-linux-nonfree firmware-libertas firmware-linux libertas-firmware firmware-xx
+
+2.终端界面WIFI管理工具:
+  检查那个接口支持无线连接:
+  >iwconfig
+  注意:一般来说无线接口都叫做wlan0，当然也有例外.
+  
+  确认无线接口服务是启动着的:
+  >sudo ip link set wlan0 up
+  
+  确认无线接口的工作状态后,使用如下命令来扫描附近的无线网络:
+  >sudo iw dev wlan0 scan | less 
+  
+  连接的网络没有加密,使用下面命令可以直接连接:
+  >sudo iw dev wlan0 connect [网络 SSID]
+  
+  如果网络是用WEP加密,使用下面命令进行连接:
+  >sudo iw dev wlan0 connect [网络 SSID] key 0:[WEP 密钥]
+  
+  如果网络使用的是WPA或WPA2协议,需要修改"/etc/wpa_supplicant/wpa_supplicant.conf"增加如下内容:
+  network={
+    ssid="[网络 ssid]"
+    psk="[密码]"
+    priority=1
+  }
+  配置文件修改完成后,需要在后台启用:
+  >sudo wpa_supplicant -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
+  
+  获取IP地址:
+  >sudo dhcpcd wlan0
+  
+  最后检查:
+  >iwconfig
+  
+3.WIFI热点：
+  eg.>apt-get install hostapd dnsmasq
+
+4.HELP
+$man wpa_supplicant.conf
+
+网络排查工具
+----------------
+$>lspci -k                        #检查pci设备驱动是否已经加载.
+$>lsusb -v                        #检查usb设备驱动是否已经加载.
+$>ip link                         #查看网络接口.
+$>ip link set $interface down/up  #interface为"ip link"命令执行后取接口名,关闭/开启接口通过"ip addr"可以查看到效果.
+$>ip addr                         #查看"ip link set $interface down/up"执行后的效果.
+or
+$>ifconfig                        #查看"ip link set $interface down/up"执行后的效果.
+$>ls -al /sys/class/net/          #查看当前系统的网络设备.
+
+网络静态配置文件示例(网卡)
+----------------
+$>vi /etc/network/interfaces
+---------
+auto $interface
+allow-hotplug $interface
+iface $interface inet static
+address $address
+netmask $mask
+gateway $gateway
+dns-nameservers $serv_ip1 $serv_ip2
+
+网络静态配置文件示例(无线网卡)
+----------------
+$>vi /etc/network/interfaces
+-----------
+auto $wlan_interface
+allow-hotplug $wlan_interface
+iface $wlan_interface inet dhcp
+wpa-ssid $wpa_ssid
+wpa-psk $passwd
+
+注意:这种方式只适用于WEP加密的方式.
+
+$>man wpa_supplicant.conf         #获取无线配置帮助文档.
+$>iwconfig                        #检测网卡.
+$>ifconfig $WIFI_interface up     #激活网卡.
+$>iwlist $WIFI_interface scan     #扫描网络.
+$>wpa_supplicant -B -i $WIFI_interface -c /etc/xxx_wpa_supplicant.conf -B Background       #以daemon运行"$WIFI_interface"接口的"/etc/xxx_wpa_supplicant.conf"配置文件.
+$>ifconfig $WIFI_interface $HOST_IPADDR
+$>route add default gw $GW_IPADDR dev $WIFI_interface
+
+$>wpa_cli status                  #连接状态.
+$>wpa_cli terminate               #关闭连接.
+$>wpa_cli list                    #列出所有备选网络.
+
+$>wpa_supplicant -i $WIFI_interface -Dnl80211,wext -s -B -P /var/run/wpa_supplicant.$WIFI_interface.pid -c /etc/xxx_wpa_supplicant.conf
+注意:-i指定设备名 -D指定认证协议 -s -B指定后台运行,并且将调试信息输出到syslog中 -C指定"ctrl_interface"的位置.
+or
+$>wpa_supplicant -i $WIFI_interface -s -B -P /var/run/wpa_supplicant.$WIFI_interface.pid -c /etc/xxx_wpa_supplicant.conf
+
+$>wpa_supplicant -i $WIFI_interface -dd -P /var/run/wpa_supplicant.$WIFI_interface.pid -c /etc/xxx_wpa_supplicant.conf 
+注意:-dd输出更详细的调试信息,此条命令为前台运行的方式.
+
+$>wpa_passphrase $ssid_name "$wifi_password" > /etc/xxx_wpa_supplicant.conf      #生成WPA密码.
+
+vi /etc/xxx_wpa_supplicant.conf
+----------------
+ctrl_interface=/var/run/wpa_supplicant_$WIFI_interface
+update_config=1
+
+network={
+...
+}
+
+网络静态配置文件示例(无线网卡)
+----------------
+$>vi /etc/network/interfaces
+---------
+auto $wlan_interface
+allow-hotplug $wlan_interface
+iface $wlan_interface inet dhcp
+wpa-conf /etc/xxx_wpa_supplicant.conf
+
+注意:这种方式只适用于WPA/WPA2加密的方式.
+
+获取ip地址
+----------------
+$>dhcpd $interface
+$>dhclient $interface
+
+获取ip地址
+----------------
+$>udhcpc -i $interface     #实测非常好.
+
+注意:这种方式只适用于动态获取ip的方式.
+例如:
+$>vi /etc/network/interfaces
+----------------
+auto $interface
+allow-hotplug $interface
+iface $interface inet dhcp
+
+查看网络接口的详细信息
+----------------
+$nm-tool
+
+查看"nm-connection-editor"配置信息
+----------------
+$>cd /etc/NetworkManager/system-connections         #参考无线配置创建"xxx_wpa_supplicant.conf".

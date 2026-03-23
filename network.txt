@@ -1,0 +1,345 @@
+开启系统IPv4转发功能
+-------------------
+$>sysctl -f
+$>echo "1">/proc/sys/net/ipv4/ip_forward
+or
+$>vi /etc/sysctl.conf
+----------
+net.ipv4.ip_forward=1
+
+$>sysctl -p
+
+临时设置IP地址[IPAddress]
+-------------------
+$>ip addr add [IPAddress/mask] dev [ethx]
+$>ip link set [ethx] up
+$>ip addr show
+
+多个静态ip情况下之动态ip获取方法
+-------------------
+$>apt-get install net-tools dhcp-client
+$>vi /etc/network/interfaces
+--------
+auto ethx
+iface ethx inet static 
+address a.b.c.d
+netmask 255.255.255.0 
+
+$>ifconfig ethx:y up
+$>dhclient -q ethx:y
+
+Linux在interface中配置dns
+-------------------
+$>vi /etc/network/interfaces
+--------
+auto [ethx]
+iface [ethx] inet static 
+address [a.b.c.d]
+netmask [255.255.255.0]
+dns-nameservers [a.b.c.d]             #eg.dns-nameservers 8.8.8.8 或 dns-nameservers 192.168.1.1 - (让路由器自动选择dns).
+
+注意:这样做的好处是"如果通过ifconfig配置的ip与路由器网段相同则无需再次配置dns即可访问网页资源".
+
+系统'ip addr'包
+-------------------
+$>ip addr
+$>ip link set dev ethx up
+$>ip address add [IP Address] dev ethx label ethx:y scope global metric 0 
+$>ip address add [IP Address] dev ethx label ethx:y scope link metric 0 
+$>ip neigh                                                        #查看地址解析协议(ARP),将IP地址转成物理地址的方法简称MAC地址.
+$>ip monitor all                                                  #监控netlink消息.
+$>iproute2                                                        #软件包.
+$>ipaddr_list_flush_or_save                                       #[$>ip addr]入口函数.
+$>iplink_modify                                                   #[ip link set dev ethx up]入口函数.
+$>ipaddr_modify                                                   #[ip address add [IP Address] dev ethx label ethx:y scope global]入口函数.  
+
+Linux路由以及网关设置
+-------------------
+多网口同时拥有多个default网关时,需要默认内网的metric属性;例如:
+$>ip route
+-------
+default via 192.168.17.1 dev [y]                                #能够上网的外网网关.
+default via 10.180.4.1 dev [x] metric 25                        #内网网关[10.180.4.1].
+10.0.0.0/8 via 10.180.4.1 dev [x]                               #[10.b.c.d]段的全部走内网网关[10.180.4.1].
+10.19.8.10 via 10.180.4.1 dev [x]                               #内网[DNS:10.19.8.10]走内网网关[10.180.4.1].
+
+$>ip route del default via [10.180.4.1] dev [xx]                #删除默认网关[a.b.c.1].
+$>ip route add default via [10.180.4.1] dev [xx] metric 25      #添加默认网关[a.b.c.1],并把metric设置成25.
+$>ip route del 10.0.0.0/8                                       #删除[10.0.0.0/8]路由.
+$>ip route add 10.0.0.0/8 via 10.180.4.1 dev [xx]               #给[10.0.0.0/8]添加路由.
+
+注意:以上内容适应于vlanid,物理端口.为了能同时访问内网和外网;上面仅仅设置了[10.180.4.1]网关的metric属性和所有内网[10.0.0.0/8]走[10.180.4.1]这个网关.
+
+arp
+-------------------
+>arp -a                           #打印ARP表 
+>arp -s ip.addr mac.addr          #添加一条记录到表中
+>arp -a -d                        #删除ARP表中的所有记录 
+
+网络工具
+-------------------
+>ifconfig <interface> <address> [up]                    #启动接口
+>ifconfig <interface> [down|delete]                     #停止接口
+>tcpdump -i -vvv                                        #抓取和分析包的工具
+>netstat -w [seconds] -I [interface]                    #显示网络设置和统计信息
+>accept                                                 #接受进来的连接
+>read <byte #>                                          #从套接字中读取n字节
+>write
+eg.>write xxx                                           #向套接字写入"xxx"
+   >write #10                                           #向套接字写入10个字节
+>vi /etc/hosts                                          #域名到IP地址的映射
+>vi /etc/networks                                       #网络名称到IP地址的映射
+>vi /etc/protocols                                      #协议名称到协议编号的映射
+>vi /etc/services                                       #TCP/UDP服务名称到端口号的映射
+
+临时设置IP地址[IPAddress]
+-------------------
+$>ip addr add [IPAddress/mask] dev [ethx]
+$>ip link set [ethx] up
+$>ip addr show
+
+配置/etc/network/interfaces
+-------------------
+$>vi /etc/network/interfaces
+---------
+auto lo
+iface lo inet loopback
+
+allow-hotplug enp1s0
+auto enp1s0
+iface enp1s0 inet static
+address 192.168.1.252
+netmask 255.255.255.0
+gateway 192.168.1.1 
+dns-nameservers 192.168.1.1
+dns-nameservers 1.2.4.8
+
+Linux系统的网络配置建议(拔插网线需等待一会)
+-------------------
+$>man 5 interfaces  
+$>vi /etc/network/interfaces
+
+eg.
+allow-hotplug eth0
+auto eth0
+iface eth0 inet static
+address a.b.c.d
+netmask 255.255.255.0
+gateway a.b.c.1
+dns-nameservers ax.bx.cx.dx
+
+auto eth0:x
+iface eth0:x inet static
+address a.b.c.d
+netmask 255.255.255.0
+
+...
+
+注意:单网口多ip,eth0配置主要的网络包含网关,dns等信息;其他eth0:x只需配置ip即可.但网口做不到多网关,所以多网关就使用多个"/etc/network/interfaces"文件,然后使用"ln -sf /path/xxx_interfaces /etc/network/interfaces". 
+
+Linux系统网络
+-------------------
+$>vi /etc/network/interfaces
+----------
+allow-hotplug eth0:0
+auto eth0:0
+iface eth0:0 inet static
+address 192.168.10.2/24
+netmask 255.255.255.0
+dns-nameservers 192.168.10.1
+pre-up echo "1">/proc/sys/net/ipv4/ip_forward
+pre-up ip link set eth0:0 promisc on
+pre-up ethtool -s eth0:0 speed 1000 duplex full autoneg on 
+up route add -net 192.168.10.0/24 gw 192.168.10.1 metric 30
+down route del -net 192.168.10.0/24 gw 192.168.10.1 metric 30
+
+allow-hotplug eth0:1
+auto eth0:1
+iface eth0:1 inet dhcp
+
+allow-hotplug eth0
+auto eth0
+mtu 9000
+iface eth0 inet static
+hwaddress aa:aa:aa:aa:aa:aa
+address 10.0.0.1/24
+
+注意:内网DNS与互联网的DNS顺序与配置顺序有关系,以上配置能很好解决内网DNS与互联网DNS问题. 
+
+多个静态ip情况下之动态ip获取方法
+-------------------
+$>apt-get install net-tools dhcp-client
+$>vi /etc/network/interfaces
+--------
+auto ethx
+iface ethx inet static 
+address a.b.c.d
+netmask 255.255.255.0 
+
+$>ifconfig ethx:y up
+$>dhclient -q ethx:y
+
+注意:以上内容是在不改变ethx现有的ip情况下,新增一个ethx:1并使用该端口配置一个动态ip的方法.
+
+Linux在interface中配置dns
+-------------------
+$>vi /etc/network/interfaces
+--------
+auto [ethx]
+iface [ethx] inet static 
+address [a.b.c.d]
+netmask [255.255.255.0]
+dns-nameservers [a.b.c.d]             #eg.dns-nameservers 8.8.8.8 或 dns-nameservers 192.168.1.1 - (让路由器自动选择dns).
+
+注意:这样做的好处是"如果通过ifconfig配置的ip与路由器网段相同则无需再次配置dns即可访问网页资源".
+
+eth0单网口多ip配置
+-------------------
+allow-hotplug eth0
+auto eth0
+iface eth0 inet static
+address 192.168.10.88
+netmask 255.255.255.0
+gateway 192.168.10.1
+
+auto eth0:1
+iface eth0:1 inet static
+address 10.10.10.100
+netmask 255.255.255.0 
+
+单网卡多ip和多网关(gateway)解决办法
+-------------------
+eg.
+$>vi /etc/network/interfaces
+-------------
+allow-hotplug eth1 
+iface eth1 inet static
+address 192.168.10.88
+netmask 255.255.255.0
+gateway 192.168.10.1
+
+allow-hotplug eth1:0
+auto eth1:0
+iface eth1:0 inet static 
+address 10.190.14.200 
+netmask 255.255.255.0 
+gateway 10.190.14.1 
+
+allow-hotplug eth1:1
+auto eth1:1
+iface eth1:1 inet static 
+address 10.190.17.200 
+netmask 255.255.255.0 
+gateway 10.190.17.1 
+
+$>ifdown --exclude=lo -a && ifup --exclude=lo -a                           #重启网卡.
+
+Linux配置网桥
+-------------------
+1.ip列出物理口
+------------
+$>ip -f inet a s
+
+2.更新"/etc/network/interface"文件
+------------
+$>vi /etc/network/interface
+----------
+source /etc/network/interface.d/*
+
+3.配置网桥(br0)
+------------
+$>vi /etc/network/interface.d/br0
+---------
+auto br0
+iface br0 inet static
+address 192.168.10.88               #根据具体情况进行修改.
+broadcast 192.168.10.255            #根据具体情况进行修改.
+netmask 255.255.255.0              
+gateway 192.168.10.254              #根据具体情况进行修改.
+
+dns-nameservers 192.168.10.254      #根据具体情况进行修改.
+bridge_ports eth0 eth1              #根据具体情况进行修改.
+bridge_stp off
+bridge_waitport 0 
+bridge_fd 0
+
+注意:这里的配置经过测试是OK的;修改完后eth0的ip为:192.168.10.88,其他服务正常通过这个ip来使用.
+
+4.重启并测试
+------------
+$>ip a s
+$>ip r 
+$>sudo brctl show
+$>ping -c 2 $serv_ip 
+
+桥接:
+-------------------
+1.1 brctl
+-------------------
+>brctl show                   #显示所有桥接信息
+>brctl show brxx              #显示brxx信息
+>brctl showmacs brxx          #显示brxx所有的mac信息
+>brctl stp brxx on/off        #开/关stp
+>brctl showstp brxx           #显示brxx的stp信息
+>brctl delbr brxx             #删除brxx
+>brctl addif brxx ethx        #添加ethx到brxx
+>brctl delif brxx ethx        #从brxx中删除ethx
+>brctl setageing brxx time    #设置老化时间,即生存周期
+>brctl addbr brxx             #建立逻辑网段brxx
+>brctl addif brxx ethx        #让ethx称为brxx的一个端口
+>brctl setbridgeprio brxx priority  #设置brxx的优先级
+>brctl setpathcost brxx port cost   #设置路径的权值
+>brctl setfd brxx time        #设置brxx转发延时时间
+>brctl sethello brxx time     #设置hello时间
+>brctl maxage brxx time       #设置消息的最大生命周期
+    eg.
+    >ifconfig eth0 0.0.0.0
+    >ifconfig eth1 0.0.0.0
+    >brctl addbr brxx 
+    >brctl addif brxx eth0
+    >brctl addif brxx eth1 
+    >ifconfig brxx up
+    >ifconfig brxx 192.168.10.1 netmask 255.255.255.0 up
+    >brctl setfd brxx 0
+    >brctl addif brxx ethx
+    >dhclient ethx
+    or
+    >ifconfig eth0 down
+    >ifconfig eth1 down
+    >ifconfig eth0 0.0.0.0 up
+    >ifconfig eth1 0.0.0.0 up
+
+    >ifconfig brxx up
+    >ifconfig brxx ip.addr
+    or
+    >ifconfig brxx ip.addr up
+
+    >brctl addbr brxx                #增加网桥
+    >ifconfig eth0 0.0.0.0 promisc
+    >ifconfig eth1 0.0.0.0 promisc 
+    >brctl addif brxx eth0 eth1
+    >brctl show                          #查看已有网桥
+    >ifconfig brxx ip.addr netmask 255.255.255.0 up    #为brxx设置ip.addr.
+    >brctl delif brxx eth0 eth1         #删除网桥brxx中的eth0和eth1
+    >brctl delbr brxx                   #删除网桥brxx 
+    >brctl stp brxx off                 #关闭生成树
+
+    >echo "modprobe bridge">>/etc/rc.local      #配置网桥为开机激活.
+    or
+    >echo "bridge">>/etc/modules
+
+    >vi /etc/network/interfaces    #配置eth0,eth1,brxx开机启动;eth0,eth1未设置IP信息,在启动brxx网卡时开启了eth0,eth1的混杂模式,并桥接了他们.
+    ---------------------------
+    auto lo eth0 eth1 brxx
+    iface lo inet loopback
+
+    iface br0 inet static
+    address ip.addr
+    netmask 255.255.255.0
+    gateway ip.addr
+    pre-up ip link set eth0 promisc on
+    pre-up ip link set eth1 promisc on
+    pre-up echo "1">/proc/sys/net/ipv4/ip_forward
+    bridge_ports eth0 eth1 
+
+注意:网桥的每个物理网卡作为一个端口,运行于混杂模式;而且是链路层工作,所以就不需要设置ethx的IP地址了.然后给brxx的虚拟网卡配置IP,那样就能远程管理网桥. 

@@ -1,0 +1,121 @@
+安装
+-------------------
+$>apt-get install vim exuberant-ctags
+
+VIM进入目录
+-------------------
+:e <dir>
+
+CTAGS用法
+-------------------
+$>cd /opt/shared/linux-4.19.325
+$>ctags --exclude=*.o --exclude=*.a --fields=+l --c-kinds=+p --c++-kinds=+p -R
+$>vi init/main.c 
+
+跳转到定义
+--
+CTRL + ]
+
+会到原来的位置
+--
+CTRL + t
+
+多个标签跳转
+--
+:tnext               #跳转到下一个匹配的标签
+:tprev               #跳转到上一个匹配的标签
+:tn                  #跳转到第n个匹配的标签
+
+搜索符号
+--
+:ts symbol
+:tag symbol
+
+VIM复制
+-------------------
+yy                    #复制当前行
+Nyy                   #复制多行,eg.2yy
+yG                    #复制从当前行到文件末尾的所有行
+ygg                   #复制从当前行到文件开头的所有行
+yw                    #复制一个单词
+y$                    #复制到行尾
+y0 or y^              #复制从行首到光标位置,y0(复制从行首到光标位置的内容),y^(复制从行首的第一个非空白字符到光标位置的内容)
+
+VIM可视化复制
+-------------------
+v                    #字符模式
+V                    #行模式
+CTRL + v             #列模式
+
+完成选择后,按下y进行复制.
+
+配置
+-------------------
+$>nano ~/.vimrc
+--
+"打开外部编辑器SE
+function! OpenInSE()
+  let l:file = expand("%:p")                             "获取当前文件的完整路径
+  let l:line = line(".")                                 "获取当前光标所在的行号
+  let l:cmd = "vs -q -new " . l:file . ' "-#' . l:line . '"' . " >/dev/null 2>&1&"
+  call system(l:cmd)
+endfunction
+
+function! OpenLineNo()
+  let l:file = expand("%:p")                             "获取当前文件的完整路径
+  let l:line = line(".")                                 "获取当前光标所在的行号
+  let l:cmd = "vs -q -new " . '"-#view_line_numbers_toggle"' . " >/dev/null 2>&1&"
+  call system(l:cmd)
+endfunction
+
+command! OpenCurrentSE call OpenInSE()
+command! OpenCurrentSELineNo call OpenLineNo()
+
+colorscheme desert
+syntax on
+set syntax=diff
+set autoread
+"set autochdir
+set number
+set cursorline
+set cursorcolumn
+set tabstop=2
+set shiftwidth=2
+set expandtab
+set autoindent
+set smartindent
+set hlsearch
+set ignorecase
+set smartcase
+set mouse=a
+set ruler
+
+"手动指定CTAGS - 目录
+"set tags=/<...>/tags1,/<...>/tags2        
+
+"CTAGS - 导航快捷键
+nmap s :w<CR>
+
+"ctags 
+nmap n :tnext<CR>
+
+"ctags                                                                                 
+nmap m :tprev<CR>
+
+"ctags                                                                                  
+nmap f :tag
+
+"ctags                                                                                       
+nmap t :ts
+
+"快捷键
+"ctags
+nnoremap c :!ctags --exclude=*.o --exclude=*.a --fields=+l --c-kinds=+p --c++-kinds=+p -R<CR>     
+
+"se
+nnoremap l :OpenCurrentSELineNo<CR>                                         
+nnoremap e :OpenCurrentSE<CR>
+
+"在普通模式和插入模式下,当鼠标停止移动时检测文件是否被修改
+"当VIM窗口重新获得焦点时检测文件是否被修改
+autocmd FocusGained,BufWritePre,BufEnter,CursorHold,CursorHoldI * checktime

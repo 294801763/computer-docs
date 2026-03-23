@@ -1,0 +1,16 @@
+libuv 
+-------------------
+$>apt-get install python3-pip
+$>python3 -m pip --version
+$>cd Python-3.9.19
+$>mkdir build && cd build
+$>../configure --prefix=/opt/py-3.9.19 --enable-optimizations --enable-ipv6 --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+$>make && make install
+$>export PATH=/opt/py-3.9.19/bin:$PATH
+$>python3 -m pip install --default-timeout=216000 --root-user-action=ignore pip==23.0.1
+$>python3 -m pip install --default-timeout=216000 --root-user-action=ignore --upgrade pip
+$>python3 -m pip download -d /home/nginx-1.22.1/download -r /home/github/libuv/docs/requirements.txt
+$>python3 -m pip install --no-index --find-links=/home/nginx-1.22.1/download -r /home/github/libuv/docs/requirements.txt
+$>python3 -m pip freeze > /home/nginx-1.22.1/download/requirements.txt
+$>python3 -m pip download -d /home/nginx-1.22.1/download -r /home/nginx-1.22.1/download/requirements.txt
+$>python3 -m pip install --no-index --find-links=/home/nginx-1.22.1/download -r /home/nginx-1.22.1/download/requirements.txt

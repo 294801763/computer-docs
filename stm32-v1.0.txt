@@ -1,0 +1,502 @@
+stm32 - install 
+--------------
+$>apt-get install ttyrec cscope indent astyle dos2unix unzip git texinfo automake autoconf libtool gdbserver gdb-multiarch pkg-config libhidapi-dev libusb-1.0-0-dev libusb-1.0-0 libftdi-dev libgpiod-dev
+
+stm32 - gcc 
+--------------
+$>nano /etc/profile
+-
+#STM32
+export ARM_NONE_EABI_ROOT=/opt/gcc-arm-none-eabi-10.3-2021.10
+export PATH=/opt/gcc-arm-none-eabi-10.3-2021.10/bin:$PATH
+
+gdb - 以16进制模式打印所有值
+--------------
+set output-radix 16                   #十六进制
+set output-radix 10                   #十进制 
+
+拷贝文件
+--------------
+step.1 
+-
+unzip stm32cube_fw_f4_v1260.zip
+unzip stm32cube_fw_f4_v1261.zip
+unzip stm32cube_fw_f4_v1262.zip
+
+step.2
+-
+mkdir -pv LD/
+mkdir -pv ASM/
+mkdir -pv Main/Inc
+mkdir -pv Main/Src/
+mkdir -pv STM32F4xx_HAL_Driver/Inc
+mkdir -pv STM32F4xx_HAL_Driver/Inc/Legacy
+mkdir -pv STM32F4xx_HAL_Driver/Src/
+mkdir -pv CMSIS/Include
+mkdir -pv CMSIS/Device/ST/STM32F4xx/Include
+mkdir -pv Middlewares/FreeRTOS/Source/include
+mkdir -pv Middlewares/FreeRTOS/Source/
+mkdir -pv Middlewares/FreeRTOS/Source/CMSIS_RTOS_V2
+mkdir -pv Middlewares/FreeRTOS/Source/portable/MemMang
+mkdir -pv Middlewares/FreeRTOS/Source/portable/GCC/ARM_CM4F
+
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s ASM
+
+cp -afv ../Example/main.c                                                                                          Main/Src/
+cp -afv ../Example/delay.c                                                                                         Main/Src/
+cp -afv ../Example/stm32f4xx_it.c                                                                                  Main/Src/
+#	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Projects/STM32F4-Discovery/Templates/Src/stm32f4xx_it.c                      Main/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c        Main/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Projects/STM32F4-Discovery/Templates/Src/stm32f4xx_hal_msp.c                 Main/Src/
+
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c                         STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c                      STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c                       STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c                    STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c               STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c                        STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c                         STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c                      STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c                         STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c                      STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c                      STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c                             STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c                        STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c                         STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c                      STM32F4xx_HAL_Driver/Src/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c            Middlewares/FreeRTOS/Source/CMSIS_RTOS_V2/
+
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/croutine.c                                                     Middlewares/FreeRTOS/Source/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/event_groups.c                                                 Middlewares/FreeRTOS/Source/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/list.c                                                         Middlewares/FreeRTOS/Source/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/queue.c                                                        Middlewares/FreeRTOS/Source/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/stream_buffer.c                                                Middlewares/FreeRTOS/Source/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/tasks.c                                                        Middlewares/FreeRTOS/Source/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/timers.c                                                       Middlewares/FreeRTOS/Source/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/MemMang/heap_4.c                                      Middlewares/FreeRTOS/Source/portable/MemMang/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c                                   Middlewares/FreeRTOS/Source/portable/GCC/ARM_CM4F/
+
+cp -afv ../Example/FreeRTOSConfig.h                                                                                Main/Inc/
+cp -afv ../Example/main.h                                                                                          Main/Inc/
+cp -afv ../Example/types.h                                                                                         Main/Inc/
+cp -afv ../Example/delay.h                                                                                         Main/Inc/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Projects/STM32F4-Discovery/Templates/Inc/stm32f4xx_it.h                      Main/Inc/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_conf_template.h               Main/Inc/stm32f4xx_hal_conf.h
+
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/CMSIS/Include/*                                                      CMSIS/Include/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/CMSIS/Device/ST/STM32F4xx/Include/*                                  CMSIS/Device/ST/STM32F4xx/Include/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Inc/*                                           STM32F4xx_HAL_Driver/Inc/
+ 
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/*  Middlewares/FreeRTOS/Source/include/
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/*.h Middlewares/FreeRTOS/Source/CMSIS_RTOS_V2/
+cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/*.h Middlewares/FreeRTOS/Source/portable/GCC/ARM_CM4F/
+
+cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Projects/STM32F4-Discovery/Templates/SW4STM32/STM32F4-Discovery/STM32F407VGTx_FLASH.ld LD/STM32F407VGTx_FLASH.ld
+
+连接设备
+--------------
+step.1 
+-
+接上电源,JTAG口连接JLink v8仿真器
+
+step.2 
+-
+dmesg - 查看USB口信息,识别后的信息如下
+-
+...
+
+openocd - 脚本
+--------------
+$>ls /usr/share/openocd/scripts/
+
+更新openocd
+--------------
+$>apt-get purge openocd
+$>git clone git://git.code.sf.net/p/openocd/code openocd
+$>git pull
+$>git submodule init 
+$>git submodule update
+$>cd openocd/src/jtag/drivers/libjaylink
+$>./autogen.sh
+$>./configure --prefix=/usr
+$>make && make install 
+
+$>cd openocd
+$>./bootstrap
+$>./configure --prefix=/usr --enable-stlink --enable-jlink --enable-cmsis-dap
+or 
+$>./configure --prefix=/usr --enable-ft232r --enable-ulink --enable-imx_gpio --enable-openjtag --enable-usb-blaster --enable-usb-blaster-2 --enable-dummy --enable-vdebug --enable-jtag_dpi --enable-stlink --enable-jlink --enable-cmsis-dap --enable-cmsis-dap-v2 --enable-remote-bitbang --enable-jtag_vpi --enable-internal-libjaylink --enable-remote-bitbang
+$>make && make install 
+$>openocd -d -f interface/jlink.cfg -c "debug_level 4"
+$>openocd -d -f interface/jlink.cfg
+$>openocd -f interface/jlink.cfg
+
+openocd - jlink v8
+--------------
+step.1 - 创建OPENOCD脚本
+--
+mkdir -pv scripts/
+$>nano scripts/stm32f429igt6.cfg 
+-
+source [find interface/jlink.cfg]
+transport select jtag
+source [find target/stm32f4x.cfg]
+adapter speed 500000
+
+$>nano scripts/load
+-
+reset halt 
+sleep 1000
+flash write_image erase unlock Build/STM32F429IGT6.hex
+flash verify_image Build/STM32F429IGT6.hex
+#sleep 1000
+reset run
+
+step.2 - 调试或者运行OPENOCD
+--
+$>openocd -d -f scripts/stm32f429igt6.cfg -c "debug_level 4"          #如果出现问题,需要用此条命令调试openocd输出
+$>openocd -d -f scripts/stm32f429igt6.cfg -c "bindto 0.0.0.0" -c "gdb_port 3333" -c "telnet_port 4444" -c "tcl_port 5555" -c init -c 'reset halt'
+$>openocd -f scripts/stm32f429igt6.cfg -c "bindto 0.0.0.0" -c "gdb_port 3333" -c "telnet_port 4444" -c "tcl_port 5555" -c init -c 'reset halt' -c "add_script_search_dir scripts/"
+-
+Open On-Chip Debugger 0.12.0+dev-00606-ge4c090473 (2024-06-11-03:45)
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+Info : Listening on port 6666 for tcl connections
+Info : Listening on port 4444 for telnet connections
+Info : J-Link ARM V8 compiled Nov 28 2014 13:44:46
+Info : Hardware version: 8.00
+Info : VTarget = 3.313 V
+Info : clock speed 2000 kHz
+Info : JTAG tap: stm32f4x.cpu tap/device found: 0x4ba00477 (mfg: 0x23b (ARM Ltd), part: 0xba00, ver: 0x4)
+Info : JTAG tap: stm32f4x.bs tap/device found: 0x06419041 (mfg: 0x020 (STMicroelectronics), part: 0x6419, ver: 0x0)
+Info : [stm32f4x.cpu] Cortex-M4 r0p1 processor detected
+Info : [stm32f4x.cpu] target has 6 breakpoints, 4 watchpoints
+Info : [stm32f4x.cpu] Examination succeed
+Info : starting gdb server for stm32f4x.cpu on 3333
+Info : Listening on port 3333 for gdb connections
+
+step.3 - 开启一个新的终端控制CPU或者烧写FLASH
+--
+$>telnet localhost 4444
+-
+Trying ::1...
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Open On-Chip Debugger
+>halt
+>reg
+>jlink hwstatus
+>resume
+>pwd                                        #查看路径
+>flash list
+>flash info 0 
+>flash info 1
+>reset halt 
+>flash write_image erase unlock Build/STM32F429IGT6.hex
+>flash verify_image Build/STM32F429IGT6.hex
+>reset run
+or 
+>script load
+
+step.4 - 开始调试
+--
+$>cd /usr/lib/x86_64-linux-gnu
+$>ln -s libncurses.so.6.1 libncurses.so.5
+$>ln -s libtinfo.so.6.1 libtinfo.so.5
+$>arm-none-eabi-gdb <path/name.elf>
+ >target remote localhost:3333
+
+openocd
+--------------
+openocd -f scripts/stm32f429igt6.cfg -c "set V8_SMP_DEBUG 1" -c "bindto 0.0.0.0" -c "gdb_port 3333" -c "telnet_port 4444" -c "tcl_port 5555" -c init -c 'reset halt' -c "add_script_search_dir scripts/"
+or 
+openocd -f scripts/stm32f429igt6.cfg -c "set V8_SMP_DEBUG 1" -c "bindto 0.0.0.0" -c "gdb_port 3333" -c "telnet_port 4444" -c "tcl_port 5555" -c init -c 'reset halt' -c "add_script_search_dir scripts/" -c "<TARGET_NAME>.cpu configure -rtos auto"    #<TARGET_NAME>.cpu获取方法是,在上面那条指令执行后,telnet到JLINK终端,执行target names获取
+
+生成Linux的Makefile工程
+--------------
+step.1 打开STM32CubeMX
+step.2 加载 STM32F429IGT6.ioc 或者 CLOCK_STM32F429IGT6.ioc
+step.3 生成Makefile工程
+
+注意:在Linux开发过程一般会开启四个终端,GDB-终端(用来调试代码),TELNET-终端(用来控制OPENOCD的执行),OPENOCD-终端(用来控制设备CPU),编译-终端.
+
+完整的Makefile
+--------------
+TARGET = STM32F429IGT6
+CROSS_COMPILE_ROOT	= $(ARM_NONE_EABI_ROOT)
+ROOTDIR 			= .
+BUILD_DIR			= $(ROOTDIR)/Build
+OBJECT_DIR			= $(BUILD_DIR)/Objects
+OPT					= -O0
+DEBUG				= 1
+
+PREFIX = arm-none-eabi-
+ifdef GCC_PATH
+CC = $(GCC_PATH)/$(PREFIX)gcc
+AS = $(GCC_PATH)/$(PREFIX)gcc -x assembler-with-cpp
+CP = $(GCC_PATH)/$(PREFIX)objcopy
+SZ = $(GCC_PATH)/$(PREFIX)size
+else
+CC = $(PREFIX)gcc
+AS = $(PREFIX)gcc -x assembler-with-cpp
+CP = $(PREFIX)objcopy
+SZ = $(PREFIX)size
+endif
+
+HEX					= $(CP) -O ihex
+BIN					= $(CP) -O binary -S
+
+CPU					= -mcpu=cortex-m4
+FPU                 = -mfpu=fpv4-sp-d16
+FLOAT-ABI           = -mfloat-abi=hard
+MCU                 = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
+
+# macros for gcc
+# AS defines
+AS_DEFS = 
+
+# AS includes
+AS_INCLUDES =  \
+-I ASM\Inc
+
+# ASM sources
+ASM_SOURCES =  \
+ASM/startup_stm32f429xx.s
+
+# C_DEFS
+C_DEFS = \
+-D USE_HAL_DRIVER \
+-D STM32F429xx
+
+# C includes
+C_INCLUDES =  \
+-I Main/Inc \
+-I CMSIS/Include \
+-I STM32F4xx_HAL_Driver/Inc \
+-I STM32F4xx_HAL_Driver/Inc/Legacy \
+-I CMSIS/Device/ST/STM32F4xx/Include \
+-I Middlewares/FreeRTOS/Source/include \
+-I Middlewares/FreeRTOS/Source/CMSIS_RTOS_V2 \
+-I Middlewares/FreeRTOS/Source/portable/GCC/ARM_CM4F
+
+# C sources
+C_SOURCES =  \
+Main/Src/main.c \
+Main/Src/stm32f4xx_it.c \
+Main/Src/system_stm32f4xx.c \
+Main/Src/stm32f4xx_hal_msp.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
+STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
+Middlewares/FreeRTOS/Source/croutine.c \
+Middlewares/FreeRTOS/Source/event_groups.c \
+Middlewares/FreeRTOS/Source/list.c \
+Middlewares/FreeRTOS/Source/queue.c \
+Middlewares/FreeRTOS/Source/stream_buffer.c \
+Middlewares/FreeRTOS/Source/tasks.c \
+Middlewares/FreeRTOS/Source/timers.c \
+Middlewares/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c \
+Middlewares/FreeRTOS/Source/portable/MemMang/heap_4.c \
+Middlewares/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
+
+# compile gcc flags
+ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+
+CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+
+# Generate dependency information
+CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
+
+ifeq ($(DEBUG), 1)
+CFLAGS += -g -gdwarf-2
+endif
+
+#######################################
+# LDFLAGS
+#######################################
+# link script
+LDSCRIPT = LD/STM32F407VGTx_FLASH.ld
+
+# libraries
+LIBS = -lc -lm -lnosys 
+LIBDIR = 
+LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+
+# default action: build all
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+
+#######################################
+# build the application
+#######################################
+# list of objects
+OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
+vpath %.c $(sort $(dir $(C_SOURCES)))
+# list of ASM program objects
+OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
+vpath %.s $(sort $(dir $(ASM_SOURCES)))
+
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	$(AS) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	$(SZ) $@
+
+$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	$(HEX) $< $@
+	
+$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	$(BIN) $< $@	
+	
+$(BUILD_DIR):
+	mkdir $@
+	@ln -s scripts/load ll
+
+#######################################
+# clean up
+#######################################
+clean:
+	-rm -fR $(BUILD_DIR) x ll
+
+#######################################
+# dependencies
+#######################################
+-include $(wildcard $(BUILD_DIR)/*.d)
+
+.PHONY:indent
+indent:
+	@find $(SRC_PATH) -name "*."$(SRC_EXT) -exec indent `cat ./script/format.cfg` {} \;
+
+.PHONY:astyle
+astyle: 
+	@find $(SRC_PATH) -name "*."$(SRC_EXT) -exec astyle --style=ansi --indent=spaces=2 --mode=c {} \;
+
+.PHONY:xdebug
+xdebug:
+#	@./debug/scripts
+	@echo $(BUILD_DIR)/$(TARGET).elf > x
+#	@ln -s scripts/load ll
+	@./debug/g $(BUILD_DIR)/$(TARGET).elf
+#	@gdb -x ./debug/debug.cfg ./$(BIN_NAME)
+
+.PHONY:ocd
+ocd:
+	openocd -f scripts/stm32f429igt6.cfg -c "bindto 0.0.0.0" -c "gdb_port 3333" -c "telnet_port 4444" -c "tcl_port 5555" -c init -c 'reset halt' -c "add_script_search_dir scripts/"
+
+.PHONY:tel
+tel:
+	telnet 127.0.0.1 4444
+	
+.PHONY:version
+version:
+	@./script/version
+
+.PHONY:vs
+vs:
+	@cp -afv vscode .vscode
+
+.PHONY:cs
+cs:
+	@cscope -bRq
+
+.PHONY:rm 
+rm:
+	@find $(SRC_PATH) -name "*."$(SRC_EXT).orig -exec rm -rf {} \;
+	@find $(SRC_PATH) -name "*."$(SRC_EXT).~ -exec rm -rf {} \;
+
+.PHONY:dos
+dos:
+	@find . -name "*."$(SRC_EXT)  -exec dos2unix {} \;
+	@find . -name "*.h"  -exec dos2unix {} \;
+
+.PHONY:ins
+ins:
+	apt-get update
+	apt-get install ttyrec cscope indent astyle dos2unix unzip git texinfo automake autoconf libtool gdbserver gdb-multiarch pkg-config libhidapi-dev libusb-1.0-0-dev libusb-1.0-0 libftdi-dev libgpiod-dev -y
+	
+.PHONY:cp 
+cp:
+	mkdir -pv LD/
+	mkdir -pv ASM/
+	mkdir -pv Main/Inc
+	mkdir -pv Main/Src/
+	mkdir -pv STM32F4xx_HAL_Driver/Inc
+	mkdir -pv STM32F4xx_HAL_Driver/Inc/Legacy
+	mkdir -pv STM32F4xx_HAL_Driver/Src/
+	mkdir -pv CMSIS/Include
+	mkdir -pv CMSIS/Device/ST/STM32F4xx/Include
+	mkdir -pv Middlewares/FreeRTOS/Source/include
+	mkdir -pv Middlewares/FreeRTOS/Source/
+	mkdir -pv Middlewares/FreeRTOS/Source/CMSIS_RTOS_V2
+	mkdir -pv Middlewares/FreeRTOS/Source/portable/MemMang
+	mkdir -pv Middlewares/FreeRTOS/Source/portable/GCC/ARM_CM4F
+	
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s ASM
+	
+	cp -afv ../Example/main.c                                                                                          Main/Src/
+	cp -afv ../Example/delay.c                                                                                         Main/Src/
+	cp -afv ../Example/stm32f4xx_it.c                                                                                  Main/Src/
+#	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Projects/STM32F4-Discovery/Templates/Src/stm32f4xx_it.c                      Main/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c        Main/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Projects/STM32F4-Discovery/Templates/Src/stm32f4xx_hal_msp.c                 Main/Src/
+	
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c                         STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c                      STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c                       STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c                    STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c               STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c                        STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c                         STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c                      STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c                         STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c                      STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c                      STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c                             STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c                        STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c                         STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c                      STM32F4xx_HAL_Driver/Src/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c            Middlewares/FreeRTOS/Source/CMSIS_RTOS_V2/
+	
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/croutine.c                                                     Middlewares/FreeRTOS/Source/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/event_groups.c                                                 Middlewares/FreeRTOS/Source/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/list.c                                                         Middlewares/FreeRTOS/Source/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/queue.c                                                        Middlewares/FreeRTOS/Source/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/stream_buffer.c                                                Middlewares/FreeRTOS/Source/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/tasks.c                                                        Middlewares/FreeRTOS/Source/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/timers.c                                                       Middlewares/FreeRTOS/Source/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/MemMang/heap_4.c                                      Middlewares/FreeRTOS/Source/portable/MemMang/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c                                   Middlewares/FreeRTOS/Source/portable/GCC/ARM_CM4F/
+	
+	cp -afv ../Example/FreeRTOSConfig.h                                                                                Main/Inc/
+	cp -afv ../Example/main.h                                                                                          Main/Inc/
+	cp -afv ../Example/types.h                                                                                         Main/Inc/
+	cp -afv ../Example/delay.h                                                                                         Main/Inc/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Projects/STM32F4-Discovery/Templates/Inc/stm32f4xx_it.h                      Main/Inc/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_conf_template.h               Main/Inc/stm32f4xx_hal_conf.h
+
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/CMSIS/Include/*                                                      CMSIS/Include/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/CMSIS/Device/ST/STM32F4xx/Include/*                                  CMSIS/Device/ST/STM32F4xx/Include/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Drivers/STM32F4xx_HAL_Driver/Inc/*                                           STM32F4xx_HAL_Driver/Inc/
+	 
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/*  Middlewares/FreeRTOS/Source/include/
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/*.h Middlewares/FreeRTOS/Source/CMSIS_RTOS_V2/
+	cp -afv ../OS/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/*.h Middlewares/FreeRTOS/Source/portable/GCC/ARM_CM4F/
+	
+	cp -afv ../FW/STM32Cube_FW_F4_V1.26.0/Projects/STM32F4-Discovery/Templates/SW4STM32/STM32F4-Discovery/STM32F407VGTx_FLASH.ld LD/STM32F407VGTx_FLASH.ld

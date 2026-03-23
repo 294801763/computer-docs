@@ -1,0 +1,197 @@
+rdesktop - <使用外部vncview>
+--------------
+step.1 将VNC-Viewer-6.22.826-Windows-64bit.exe改为vncviewer.exe
+step.2 配置rdesktop
+显示            : 外部 默认 当前桌面
+通用-VNC应用程序: RealVNC
+通用-参数       : UserName=root FullScreen=1 ToolbarIconSize=16
+
+更改虚拟分辨率
+--------------
+$>xrandr --fb 1920x1080
+
+GNOME锁屏设置
+--------------
+step.1 检查
+--------
+$>gsettings get org.gnome.desktop.session idle-delay
+$>gsettings get org.gnome.desktop.screensaver lock-enabled
+$>gsettings get org.gnome.desktop.screensaver lock-delay
+
+step.2 禁止锁屏
+--------
+$>gsettings set org.gnome.desktop.screensaver lock-enabled false             #禁止锁屏
+
+step.3 禁止息屏 
+--------
+$>gsettings set org.gnome.desktop.session idle-delay 0
+$>gsettings set org.gnome.desktop.screensaver lock-delay 0
+
+禁止休眠
+--------------
+$>systemctl mask sleep.target suspend.target  hibernate.target hybrid-sleep.target
+or 
+$>vi /etc/default/grub
+--------
+...
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 console=ttyS0,115200 net.ifnames=0 biosdevname=0 acpi=off apm=off text"
+...
+
+$>export PATH=$PATH:/usr/sbin/:/sbin:/usr/local/sbin
+$>/sbin/update-grub
+
+VNC
+--------------
+step.1 GNOME
+--------
+$>tasksel --list-tasks
+$>tasksel install gnome-desktop --new-install
+
+step.2 DRV
+--------
+$>apt-get install git make autogen automake autoconf build-essential net-tools xorg-dev xserver-xorg-dev xutils-dev x11proto-randr-dev x11proto-render-dev libssl-dev xserver-xorg-video-dummy
+$>git clone https://github.com/RealVNC/xf86-video-vnc.git
+$>cd xf86-video-vnc
+$>./buildAndInstall && ./autogen.sh --disable-static && make 
+$>cp src/.libs/vnc_drv.so /usr/lib/xorg/modules/drivers/
+$>cp vncserver-virtual.conf /etc/X11/
+
+step.3 SRV
+--------
+$>vi /etc/gdm3/daemon.conf
+------
+...
+[daemon]
+WaylandEnable=false
+DefaultSession=gnome-xorg.desktop
+...
+
+$>loginctl
+$>loginctl show-session <SESSION-ID> -p Type
+
+$>export PATH=/usr/sbin:/sbin:$PATH
+$>mkdir -pv /usr/X11R6/lib/X11 && ln -sf /usr/share/fonts/X11 /usr/X11R6/lib/X11/fonts
+$>dpkg -i VNC-Server-6.11.0-Linux-x64.deb
+$>vnclicense -add 77NVU-D9G5T-79ESS-V9Y6X-JMVGA
+$>vncinitconfig -enable-system-xorg
+$>systemctl enable vncserver-virtuald.service
+$>systemctl enable vncserver-x11-serviced.service
+$>systemctl daemon-reload
+$>su - hy -s /bin/bash -c '/usr/bin/vncserver-virtual -DisableTrayIcon=1 -DisableOptions=1 -DisableAddNewClient=1 -ShareFiles=0 -EnableManualUpdateChecks=0 -EnableScreenRecording=0 -EnableChat=0 -EnableRemotePrinting=0 -IpListenProtocols=TCP -JpegQuality=100 -depth 24 -geometry 1366x768 >/dev/null 2>&1&'
+
+step.4 修改配置
+--------
+$>nano /usr/lib/systemd/system/vncserver-virtuald.service
+------
+...
+[Service]
+ExecStart=/usr/bin/vncserver-virtuald 
+...
+
+$>nano /usr/lib/systemd/system/vncserver-x11-serviced.service
+------
+...
+[Service]
+ExecStart=/usr/bin/vncserver-x11-serviced 
+...
+
+注意:以上内容已在v1.4.iso试验成功.
+
+step.5 增加分辨率
+--------
+$>gtf 1920 1080 120
+------
+# 1920x1080 @ 120.00 Hz (GTF) hsync: 138.84 kHz; pclk: 368.76 MHz
+Modeline "1920x1080_120.00"  368.76  1920 2072 2288 2656  1080 1081 1084 1157  -HSync +Vsync
+
+$>nano /etc/X11/vncserver-virtual-dummy.conf
+------
+...
+Section "Monitor"
+...
+ Modeline "1920x1080_120.00"  368.76  1920 2072 2288 2656  1080 1081 1084 1157  -HSync +Vsync
+EndSection
+...
+
+step.6 查看端口
+--------
+$>netstat -anltup
+
+step.7 dummy-video
+--------
+$>git git://anongit.freedesktop.org/xorg/driver/xf86-video-dummy
+$>git checkout xf86-video-dummy-0.4.0 -fb v0.4
+$>./autogen.sh && make 
+$>cp src/.libs/dummy_drv.so /usr/lib/xorg/modules/drivers/
+$>nano /usr/share/X11/xorg.conf.d/10-dummy.conf
+--------------
+Section "Device"
+    Identifier  "Configured Video Device"
+    Driver      "dummy"
+EndSection
+ 
+Section "Monitor"
+    Identifier  "Configured Monitor"
+    HorizSync 31.5-48.5
+    VertRefresh 50-70
+EndSection
+ 
+Section "Screen"
+    Identifier  "Default Screen"
+    Monitor     "Configured Monitor"
+    Device      "Configured Video Device"
+    DefaultDepth 24
+    SubSection "Display"
+    Depth 24
+    Modes "1360x768"
+    EndSubSection
+EndSection
+
+or 
+$>nano /usr/share/X11/xorg.conf.d/10-dummy.conf
+--------------
+Section "Device"
+    Identifier  "Configured Video Device"
+    Driver      "dummy"
+    VideoRam 256000
+EndSection
+ 
+Section "Monitor"
+    Identifier  "Configured Monitor"
+    HorizSync 31.5-48.5
+    VertRefresh 50-70
+    # 1360x768 @ 60.00 Hz (GTF) hsync: 47.70 kHz; pclk: 84.72 MHz
+    Modeline "1360x768_60.00"  84.72  1360 1424 1568 1776  768 769 772 795  -HSync +Vsync
+EndSection
+ 
+Section "Screen"
+    Identifier  "Default Screen"
+    Monitor     "Configured Monitor"
+    Device      "Configured Video Device"
+    DefaultDepth 24
+    SubSection "Display"
+    Depth 24
+    Modes "1360x768_60.00"
+    EndSubSection
+EndSection
+
+注意:无显示器下的VNC桌面显示,试验成功.
+
+查看屏幕分辨率
+--------------
+$>xauth list |grep `uname -n`
+$>chmod +rw ~/.Xauthority 
+$>DISPLAY=:0 xrandr
+
+Kernel Mode Setting(KMS)
+--------------
+$>echo options radeon modeset=1 > /etc/modprobe.d/radeon-kms.conf                    #ATI
+$>echo options i915 modeset=1 > /etc/modprobe.d/i915-kms.conf                        #INTEL
+
+step.8 fbdev-video
+--------
+$>git git://anongit.freedesktop.org/xorg/driver/xf86-video-fbdev
+$>git checkout xf86-video-fbdev-0.5.0 -fb v0.5
+$>./autogen.sh && make 
+$>cp src/.libs/fbdev_drv.so /usr/lib/xorg/modules/drivers/
+

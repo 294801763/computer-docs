@@ -1,0 +1,15 @@
+设置 loop 设备并扫描分区
+-------------------
+losetup --find --show --partscan chr-7.21.3-legacy-bios.img
+
+查看分区
+-------------------
+lsblk /dev/loop0
+
+删除 loop 设备
+-------------------
+losetup -d /dev/loop0
+
+查看分区表获取 offset
+-------------------
+fdisk -lu chr-7.21.3-legacy-bios.img

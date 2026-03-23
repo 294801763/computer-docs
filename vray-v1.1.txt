@@ -1,0 +1,193 @@
+工具
+----
+/usr/bin/v2ray/v2ray：V2Ray 程序；
+/usr/bin/v2ray/v2ctl：V2Ray 工具；
+/etc/v2ray/config.json：配置文件；
+/usr/bin/v2ray/geoip.dat：IP 数据文件
+/usr/bin/v2ray/geosite.dat：域名数据文件
+
+注意:下载地址"https://github.com/v2fly/v2ray-core/releases"
+
+将BAT/EXE封装成服务
+----
+$>cd nssm-2.24\win64
+$>nssm install
+ >Application->Path: C:\v2ray-windows-64(v5.12.1)\v2ray.exe
+              >Startup directory: C:\v2ray-windows-64(v5.12.1)
+			  >Arguments: run --config=C:\v2ray-windows-64(v5.12.1)\config.json
+$>nssm start v2ray
+$>nssm restart v2ray
+$>nssm pause v2ray
+$>nssm stop v2ray
+$>nssm remove v2ray
+$>sc delete v2ray
+
+注意:用到工具nssm-2.24.zip
+
+v2ray(v4.31.0)
+----
+$>mkdir -pv /etc/ray
+$>nano /etc/ray/config.json 
+or
+$>wget -t 2 --no-check-certificate https://www.gitlabip.xyz/Alvin9999/pac2/master/xray/1/config.json     #下载配置文件
+$>./v2ray --config=/etc/ray/config.json                                     #启动命令
+$>netstat -anlutp | grep v2ray
+$>curl -x socks5://127.0.0.1:1080  www.github.com                           #测试命令
+$>git --config "http.proxy=socks5://127.0.0.1:1080" clone <地址>            #测试OK了
+$>git config --global http.proxy socks5://127.0.0.1:1080
+$>git config --get http.proxy
+$>git config --global --unset http.proxy
+
+注意:默认v2ray里面的config文件无法访问Google和Github.
+
+v2ray(v5.12.1)
+----
+$>mkdir -pv /etc/ray
+$>nano /etc/ray/config.json 
+or
+$>wget -t 2 --no-check-certificate https://www.gitlabip.xyz/Alvin9999/pac2/master/xray/1/config.json     #下载配置文件
+$>./v2ray run --config=/etc/ray/config.json                                 #启动命令
+$>./v2ray test --config=/etc/ray/config.json                                #验证配置
+$>netstat -anlutp | grep v2ray
+$>curl -x socks5://127.0.0.1:1080  www.github.com                           #测试命令
+$>git --config "http.proxy=socks5://127.0.0.1:1080" clone <地址>            #测试OK了
+$>git config --global http.proxy socks5://127.0.0.1:1080
+$>git config --get http.proxy
+$>git config --global --unset http.proxy
+
+注意:默认v2ray里面的config文件无法访问Google和Github.
+
+systemd目录
+----
+$>cd /etc/systemd/system
+$>cd /etc/systemd/user
+$>cd /usr/lib/systemd/system
+$>cd /usr/lib/systemd/user
+
+配置systemd服务(v4.31.0)
+----
+$>systemd-path search-binaries
+$>nano /usr/lib/systemd/system/ray.service
+--
+[Unit]
+Description=Graphic
+After=<...>.service             #在<...>服务之前启动.
+Before=network.target           #在<...>服务之后启动.
+
+[Service]
+Type=idle
+Environment=<key>=<value>
+ExecStart=/.../...
+
+[Install]
+WantedBy=multi-user.target
+
+$>nano /usr/lib/systemd/system/ray.service
+--
+[Unit]
+Description=ray
+Before=network.target
+
+[Service]
+Type=idle
+WorkingDirectory=<v2ray程序目录,eg./opt/v2ray/>
+ExecStart=taskset -c 0-7 ./v2ray --config=/etc/ray/config.json
+
+[Install]
+WantedBy=multi-user.target
+
+$>systemctl daemon-reload 
+$>systemctl enable ray.service
+$>reboot 
+
+配置systemd服务(v5.12.1)
+----
+$>nano /usr/lib/systemd/system/ray.service
+--
+[Unit]
+Description=ray
+Before=network.target
+
+[Service]
+Type=idle
+WorkingDirectory=<v2ray程序目录,eg./opt/v2ray/>
+ExecStart=taskset -c 0-7 ./v2ray run --config=/etc/ray/config.json
+
+[Install]
+WantedBy=multi-user.target
+
+$>systemctl daemon-reload 
+$>systemctl enable ray.service
+$>reboot 
+
+自建(生成公共UUID)
+----
+$>./v2ray uuid
+
+自建(客户端)
+----
+$>nano /etc/ray/config.json
+--
+{
+  "inbounds": [{
+    "port": 1080,            //SOCKS代理端口,在浏览器中需配置代理并指向这个端口
+    "listen": "127.0.0.1",
+    "protocol": "socks",
+    "settings": {
+      "udp": true
+    }
+  }],
+  "outbounds": [{
+    "protocol": "vmess",
+    "settings": {
+      "vnext": [{
+        "address": "server", //服务器地址,请修改为你自己的服务器ip或域名
+        "port": 10086,       //服务器端口
+        "users": [{ "id": "b831381d-6324-4d53-ad4f-8cda48b30811" }]
+      }]
+    }
+  },{
+    "protocol": "freedom",
+    "tag": "direct",
+    "settings": {}
+  }],
+  "routing": {
+    "domainStrategy": "IPOnDemand",
+    "rules": [{
+      "type": "field",
+      "ip": [
+	     "geoip:private",
+		 "geoip:cn",
+		 "geoip:us",
+		 "geoip:gb"
+	  ],
+      "outboundTag": "direct"
+    }]
+  }
+}
+
+自建(服务端)
+----
+$>nano /etc/ray/config.json
+--
+{
+  "inbounds": [{
+    "port": 10086,       //服务器监听端口,必须和上面的一样
+    "protocol": "vmess",
+    "settings": {
+      "clients": [{ "id": "b831381d-6324-4d53-ad4f-8cda48b30811" }]
+    }
+  }],
+  "outbounds": [{
+    "protocol": "freedom",
+    "settings": {}
+  }]
+}
+
+注意:官方文档地址"https://www.v2ray.com/"
+
+Foxmail
+----
+设置...->系统设置->网络->自定义代理设置->邮件代理服务器->类型: SOCKS5
+                                                       ->服务器: 127.0.0.1
+													   ->端口: 1080

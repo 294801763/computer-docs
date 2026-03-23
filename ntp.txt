@@ -1,0 +1,305 @@
+设置互联网时间同步服务器
+----
+$>w32tm /query /status
+$>w32tm /config /manualpeerlist:"time.windows.com" /syncfromflags:manual /reliable:YES /update
+$>w32tm /resync
+or
+$>w32tm /config /manualpeerlist:"0.pool.ntp.org 1.pool.ntp.org" /syncfromflags:manual /reliable:YES /update
+$>w32tm /resync
+
+检查硬件时钟
+----
+$>hwclock --show
+$>hwclock --set --date="20241201 12:00:00"
+$>hwclock -w
+$>reboot
+
+windows配置ntp
+----
+$>w32tm /query /source
+$>w32tm /config /manualpeerlist:"192.168.10.22,192.168.0.1" /syncfromflags:manual /reliable:YES /update
+$>net stop w32time
+$>net start w32time
+$>w32tm /query /source               -- 检查时间同步 
+$>w32tm /query /status
+$>w32tm /query /peers                -- 列出NTP服务器列表
+$>w32tm /resync /rediscover          --  强制同步
+
+NTP客户端
+----
+$>apt-get install ntp
+$>nano /etc/ntp.conf         --  客户端
+--
+server 192.168.10.22
+
+$>systemctl restart ntp.service
+$>systemctl status ntp.service
+
+NTP服务端
+----
+$>apt-get install ntp
+$>nano /etc/ntp.conf         --  服务端
+--
+restrict -4 default kod notrap nomodify nopeer noquery limited
+restrict -6 default kod notrap nomodify nopeer noquery limited
+restrict source notrap nomodify noquery
+
+restrict 192.168.1.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.2.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.3.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.4.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.5.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.6.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.7.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.8.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.9.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.10.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.11.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.12.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.13.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.14.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.15.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.16.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.17.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.18.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.19.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.20.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.21.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.22.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.23.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.24.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.25.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.26.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.27.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.28.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.29.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.30.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.31.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.32.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.33.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.34.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.35.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.36.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.37.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.38.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.39.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.40.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.41.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.42.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.43.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.44.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.45.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.46.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.47.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.48.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.49.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.50.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.51.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.52.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.53.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.54.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.55.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.56.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.57.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.58.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.59.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.60.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.61.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.62.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.63.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.64.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.65.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.66.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.67.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.68.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.69.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.70.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.71.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.72.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.73.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.74.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.75.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.76.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.77.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.78.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.79.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.80.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.81.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.82.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.83.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.84.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.85.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.86.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.87.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.88.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.89.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.90.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.91.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.92.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.93.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.94.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.95.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.96.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.97.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.98.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.99.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.100.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.101.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.102.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.103.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.104.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.105.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.106.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.107.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.108.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.109.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.110.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.111.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.112.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.113.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.114.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.115.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.116.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.117.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.118.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.119.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.120.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.121.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.122.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.123.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.124.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.125.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.126.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.127.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.128.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.129.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.130.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.131.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.132.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.133.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.134.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.135.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.136.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.137.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.138.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.139.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.110.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.141.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.142.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.143.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.144.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.145.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.146.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.147.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.148.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.149.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.150.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.151.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.152.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.153.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.154.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.155.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.156.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.157.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.158.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.159.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.160.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.161.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.162.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.163.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.164.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.165.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.166.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.167.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.168.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.169.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.170.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.171.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.172.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.173.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.174.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.175.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.176.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.177.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.178.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.179.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.180.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.181.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.182.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.183.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.184.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.185.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.186.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.187.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.188.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.189.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.190.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.191.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.192.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.193.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.194.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.195.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.196.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.197.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.198.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.199.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.200.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.201.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.202.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.203.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.204.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.205.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.206.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.207.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.208.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.209.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.210.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.211.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.212.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.213.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.214.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.215.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.216.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.217.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.218.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.219.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.220.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.221.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.222.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.223.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.224.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.225.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.226.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.227.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.228.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.229.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.230.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.231.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.232.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.233.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.234.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.235.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.236.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.237.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.238.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.239.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.240.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.241.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.242.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.243.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.244.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.245.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.246.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.247.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.248.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.249.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.250.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.251.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.252.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.253.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.254.0 mask 255.255.255.0 nomodify notrap
+restrict 192.168.255.0 mask 255.255.255.0 nomodify notrap
+
+$>systemctl restart ntp.service
+$>systemctl status ntp.service
+

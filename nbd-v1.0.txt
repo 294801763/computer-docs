@@ -1,0 +1,54 @@
+使用只读模式连接
+-------------------
+qemu-nbd -c /dev/nbd0 /mnt/shared/v20240214/DEBIAN_WHEEZY_GNOME_AMD64.vmdk
+or
+qemu-nbd -c /dev/nbd0 -r /mnt/shared/v20240214/DEBIAN_WHEEZY_GNOME_AMD64.vmdk
+or
+qemu-nbd --connect=/dev/nbd0 --read-only /mnt/shared/v20240214/DEBIAN_WHEEZY_GNOME_AMD64.vmdk
+or
+qemu-nbd -c /dev/nbd0 -r -f vmdk /mnt/shared/v20240214/DEBIAN_WHEEZY_GNOME_AMD64.vmdk
+
+查看分区信息
+-------------------
+fdisk -l /dev/nbd0
+
+普通分区
+-------------------
+# 挂载第一个分区（根据fdisk输出调整数字）
+mkdir -p /mnt/vmdisk
+mount -o ro /dev/nbd0p1 /mnt/vmdisk
+
+# 如果p1是boot分区，试试p2或其他
+mount -o ro /dev/nbd0p2 /mnt/vmdisk
+
+LVM分区
+-------------------
+# 1. 扫描LVM卷
+pvscan
+vgscan
+lvscan
+
+# 2. 激活卷组（名称通常是虚拟机的主机名，如debian、wheezy等）
+vgchange -ay
+
+# 3. 查看逻辑卷路径
+lvs
+# 输出示例：
+#   LV     VG      Attr       LSize  Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+#   root   wheezy  -wi-a----- 18.76g
+#   swap_1 wheezy  -wi-a-----  1.00g
+
+# 4. 挂载根分区（路径格式：/dev/卷组名/逻辑卷名）
+mkdir -p /mnt/vmdisk
+mount -o ro /dev/wheezy/root /mnt/vmdisk
+
+清理
+-------------------
+# 1. 卸载分区
+umount /mnt/vmdisk
+
+# 2. 如果是LVM，停用卷组
+vgchange -an
+
+# 3. 断开nbd连接
+qemu-nbd -d /dev/nbd0

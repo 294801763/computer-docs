@@ -1,0 +1,1871 @@
+问题汇总
+--------------
+问题引入
+-------
+$>apt-get install libfdt-dev
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6ull_14x14_ddr512_emmc_defconfig             #./configs/xx_defconfig
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc`
+-------
+error: redefinition of fdt_<一系列> 
+
+原因
+-------
+uboot在编译本机程序(使用HOSTCC)时出现的,出现这个问题的原因是因为系统版本太新了,然后系统中的libfdt是比较新的,uboot版本比较老,而libfdt库改动过,uboot调用该库时出现兼容问题,实际上uboot内置有libfdt.
+
+解决办法
+-------
+$>apt-get remove libfdt-dev
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6ull_14x14_ddr512_emmc_defconfig             #./configs/xx_defconfig
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc`
+
+gdb调试时指定新的源码路径
+--------------
+$>readelf <programe-name> -p .debug_str 
+-------
+/opt/share/demos
+
+$>gdb 
+ >set substitute-path /opt/share/demos /opt/share/codes              #指定新的源码搜索路径
+ >show substitute-path
+ List of all source path substitution rules:
+  `/opt/share/demos' -> `/opt/share/codes'.
+
+信息查询(uboot)
+------------
+$>bdinfo 
+$>printenv 
+$>version 
+
+环境变量(uboot)
+-------------
+$>setenv bootdelay 5
+$>saveenv
+
+$>setenv bootargs 'console=ttymxc0,115200 root=/dev/mmcblk1p2 rootwait rw'
+$>saveenv 
+
+网络(uboot)
+-------------
+$>setenv ipaddr 192.168.10.100
+$>setenv ethaddr 00:00:00:00:00:01
+$>setenv gatewayip 192.168.10.1 
+$>setenv netmask 255.255.255.0 
+$>setenv serverip 192.168.10.8 
+$>saveenv 
+
+$>ping 192.168.10.8 
+
+下载文件(uboot)
+-------------
+$>nfs 80800000 192.168.10.8:/opt/shared/zImage 
+or 
+$>tftp 80800000 zImage                 
+$>md.b 80800000 100                                   #查看下载完成后0x80800000地址处的数据,md.b查看前0x100个字节的数据
+$>hexdump zImage 
+
+引导(uboot)
+--------------
+$>tftp 80800000 zImage
+$>tftp 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb
+$>bootz 80800000 - 83000000
+
+go命令(uboot)
+--------------
+$>go addr [arg ...]       #go命令用于跳到指定的地址处执行应用,addr是应用在DRAM中的首地址,借用裸机实验print.bin;此时这里的print.bin不需要IVT信息,因为uboot已经初始化好了DDR。使用tftp命令将printf.bin下载到开发板的DRAM的0x87800000地址处,因为裸机例程的链接首地址就是0x87800000,最后使用go命令启动printf.bin.
+$>tftp 87800000 printf.bin 
+$>go 87800000
+
+run命令(uboot)
+--------------
+$>run <env-name>          #run命令用于运行环境变量中定义的命令,比如可通过"run bootcmd"来运行bootcmd中的启动命令,但是run命令最大的作用在于运行自定义的环境变量;后面调试linux系统的时候常常要在网络启动和emmc/nand启动之间来回切换,而bootcmd只能保存一种启动方式,如果要换另外一种启动方式的话就得重写bootcmd(会很麻烦);那么就可以通过自定义环境变量来实现不同的启动方式,定义net_<name>_bootcmd,emmc_<name>_bootcmd,sd_<name>_bootcmd等等.
+$>setenv net_dev_bootcmd 'tftp 80800000 zImage; tftp 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb; bootz 80800000 - 83000000'
+$>setenv net_dev_bootargs 'console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init rootwait text'
+$>setenv mmc_dev_bootcmd 'fatload mmc 1:1 80800000 zImage;fatload mmc 1:1 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb;bootz 80800000 - 83000000'
+$>setenv mmc_dev_bootargs '<以后补上>'
+$>saveenv 
+
+启动(网络)
+-------
+$>run tftp_dev_bootcmd
+$>run nfs_dev_bootargs
+
+启动(SD卡)
+-------
+$>run mmc_dev_bootcmd
+$>run mmc_dev_bootargs
+
+文件结构(uboot)
+--------------
+类型       名字            描述                               备注
+文件夹      api            与硬件无关的API函数                uboot自带
+文件夹      arch           与架构体系有关的代码               uboot自带
+文件夹      board          不同板子(开发板)的定制代码         uboot自带
+文件夹      cmd            命令相关代码                       uboot自带
+文件夹      common         通用代码                           uboot自带
+文件夹      configs        配置文件                           uboot自带
+文件夹      disk           磁盘分区相关代码                   uboot自带
+文件夹      doc            文档                               uboot自带
+文件夹      drivers        驱动代码                           uboot自带
+文件夹      dts            设备树                             uboot自带
+文件夹      examples       示例代码                           uboot自带
+文件夹      fs             文件系统                           uboot自带
+文件夹      include        头文件                             uboot自带
+文件夹      lib            库文件                             uboot自带
+文件夹      Licenses       许可证相关文件                     uboot自带
+文件夹      net            网络相关代码                       uboot自带
+文件夹      post           上电自检程序                       uboot自带
+文件夹      scripts        脚本文件                           uboot自带
+文件夹      test           测试代码                           uboot自带
+文件夹      tools          工具文件夹                         uboot自带
+文件        .config         配置文件(重要)                    编译生成文件
+文件        .gitignore      git工具相关文件                   uboot自带
+文件        .mailmap        邮件列表                          uboot自带
+文件        .u-boot.xx.cmd  一系列的文件,用于保存着一些命令   编译生产文件
+文件        config.mk       Makefile会调用此文件              uboot自带 
+文件        Kbuild          用于生成一些和汇编有关的文件      uboot自带
+文件        Kconfig         图形配置界面的描述文件            uboot自带
+文件        MAINTAINERS     维护者联系方式文件                uboot自带
+文件        MakeALL         shell脚本文件,帮助编译uboot       uboot自带
+文件        Makefile        主Makefile(重要)                  uboot自带
+文件        README          帮助文档                          uboot自带
+文件        System.map      系统映射文件                      编译生产文件
+文件        u-boot          编译出来的u-boot文件              编译生产文件
+文件        u-boot.xxx      生成的一些u-boot相关文件,包括u-boot.bin,u-boot.imx等
+
+BUILD(u-boot)
+--------------
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp distclean
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp mx6ull_14x14_ddr512_emmc_defconfig             #./configs/xx_defconfig
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp -j`nproc`
+or               #输出短命令
+$>make C=2 V=0 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp distclean
+$>make C=2 V=0 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp mx6ull_14x14_ddr512_emmc_defconfig             #./configs/xx_defconfig
+$>make C=2 V=0 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp -j`nproc`
+or               #禁止输出命令
+$>make -s C=2 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp distclean
+$>make -s C=2 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp mx6ull_14x14_ddr512_emmc_defconfig             #./configs/xx_defconfig
+$>make -s C=2 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp -j`nproc`
+
+注意:make C=1 - 使能代码检查,检查哪些需要重新编译的文件;make C=2 - 用于检查所有的源码文件.
+
+打印Makefile中的变量
+--------------
+$>vi Makefile 
+-------
+...
+.PHONY:xx_test
+xx_test:
+	@echo 'ARCH='    $(ARCH)
+	@echo 'CPU='     $(CPU)
+	@echo 'BOARD='   $(BOARD)
+	@echo 'VENDOR='  $(VENDOR)
+	@echo 'SOC='     $(SOC)
+	@echo 'CPUDIR='  $(CPUDIR)
+	@echo 'BOARDDIR='$(BOARDDIR)
+	@echo 'MAKEFLAGS'=$(MAKEFLAGS)
+	@echo 'DTC'=$(DTC)
+	@echo 'CHECK'=$(CHECK)
+	@echo 'CHECKFLAGS'=$(CHECKFLAGS)
+	@echo 'MAKE'=$(MAKE)
+	@echo 'AWK'=$(AWK)
+	@echo 'PYTHON'=$(PYTHON)
+	@echo 'CPP'=$(CPP)
+	@echo 'AR'=$(AR)
+	@echo 'NM'=$(NM)
+	@echo 'LDR'=$(LDR)
+	@echo 'STRIP'=$(STRIP)
+	@echo 'OBJCOPY'=$(OBJCOPY)
+	@echo 'OBJDUMP'=$(OBJDUMP)
+	@echo 'CONFIG_SHELL'=$(CONFIG_SHELL)
+	@echo 'HOSTCC'=$(HOSTCC)
+	@echo 'HOSTARCH'=$(HOSTARCH)
+	@echo 'HOSTOS'=$(HOSTOS)
+	@echo 'HOSTCFLAGS'=$(HOSTCFLAGS)
+	@echo 'HOSTLDFLAGS'=$(HOSTLDFLAGS)
+	@echo 'HOSTCXX'=$(HOSTCXX)
+	@echo 'HOSTCXXFLAGS'=$(HOSTCXXFLAGS)
+	@echo 'CROSS_COMPILE'=$(CROSS_COMPILE)
+	@echo 'AS'=$(AS)
+	@echo 'LD'=$(LD)
+	@echo 'CC'=$(CC)
+	@echo 'VERSION'=$(VERSION)
+	@echo 'PATCHLEVEL'=$(PATCHLEVEL)
+	@echo 'SUBLEVEL'=$(SUBLEVEL)
+	@echo 'UBOOTRELEASE'=$(UBOOTRELEASE)
+	@echo 'UBOOTVERSION'=$(UBOOTVERSION)
+	@echo 'KBUILD_CPPFLAGS'=$(KBUILD_CPPFLAGS)
+	@echo 'NOSTDINC_FLAGS'=$(NOSTDINC_FLAGS)
+	@echo 'OBJCOPYFLAGS'=$(OBJCOPYFLAGS)
+	@echo 'LDFLAGS'=$(LDFLAGS)
+	@echo 'KBUILD_CFLAGS'=$(KBUILD_CFLAGS)
+	@echo 'KBUILD_AFLAGS'=$(KBUILD_AFLAGS)
+	@echo 'MODVERDIR'=$(MODVERDIR)
+	@echo 'RCS_FIND_IGNORE'=$(RCS_FIND_IGNORE)
+	@echo 'RCS_TAR_IGNORE'=$(RCS_TAR_IGNORE)
+	@echo 'KBUILD_DEFCONFIG'=$(KBUILD_DEFCONFIG)
+	@echo 'KBUILD_KCONFIG'=$(KBUILD_KCONFIG)
+	@echo 'PLATFORM_LIBGCC'=$(PLATFORM_LIBGCC)
+	@echo 'LDPPFLAGS'=$(LDPPFLAGS)
+	@echo 'srctree'=$(srctree)
+	@echo 'objtree'=$(objtree)
+	@echo 'VPATH'=$(VPATH)
+...
+
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp xx_test
+
+$>vi Makefile.build 
+-------
+...
+__build: $(if $(KBUILD_BUILTIN),$(builtin-target) $(lib-target) $(extra-y)) \
+	 $(if $(KBUILD_MODULES),$(obj-m) $(modorder-target)) \
+	 $(subdir-ym) $(always)
+	@:
+	@echo 'builtin-target'=$(builtin-target)
+	@echo 'lib-target'=$(lib-target)
+	@echo 'extra-y'=$(extra-y)
+	@echo 'KBUILD_MODULES'=$(KBUILD_MODULES)
+	@echo 'obj-m'=$(obj-m)
+	@echo 'modorder-target'=$(modorder-target)
+	@echo 'subdir-ym'=$(subdir-ym)
+	@echo 'always'=$(always)
+...
+
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6ull_14x14_ddr512_emmc_defconfig
+$>find . -name "Kconfig" -print -exec grep --color=auto -nE "mx6" {} \;
+$>find . -name "Kconfig" -print -exec grep --color=auto -nE "ARCH_MX6" {} \;
+
+vscode
+--------------
+step.1 
+-------
+File->Open Directory...
+
+step.2 - 正则表达式
+-------
+[] - 表示一个字符,该字符可以是[]中指定的内容
+[abc]         - 这个字符可以是a或b或c
+[a-z]         - 任意一个小写字母
+[a-zA-Z]      - 任意一个字母
+[z-zA-Z0-9_]  - 任意一个数字/字母/下划线
+[^abc]        - 该字符只要不是a或b或c
+
+*             - 匹配前面的子表达式零次或多次
++             - 匹配前面的子表达式一次或多次
+{n}           - n是一个非负数,匹配确定的n次
+{n,}          - n是一个非负数,至少匹配n次
+{n,m}         - n和m均为非负数,其中n<m,最少匹配n次最多匹配m次
+
+"board/[a-zA-Z]*":true,      //任意一个字母
+"board/[^abc]*":true,        //该字符只要不是a或b或c
+
+step.3
+-------
+$>mkdir .vscode && chmod 777 .vscode
+$>cd .vscode 
+$>vi settings.json 
+-------
+{
+    "files.exclude":{
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+		"**/.vscode": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.o": true,
+        "**/*.a": true,
+        "**/*.so": true,
+        "**/*_dev": true,
+        "**/Makefile": true,
+		
+		"arch/arc":true,
+        "arch/avr32":true,
+        "arch/blackfin":true,
+        "arch/m68k":true,
+        "arch/microblaze":true,
+        "arch/mips":true,
+        "arch/nds32":true,
+        "arch/nios2":true,
+        "arch/openrisc":true,
+        "arch/powerpc":true,
+        "arch/sandbox":true,
+        "arch/sh":true,
+        "arch/sparc":true,
+        "arch/x86":true,
+
+        "arch/arm/mach*":true,
+
+        "arch/arm/cpu/arm11*":true,
+        "arch/arm/cpu/arm720t":true,
+        "arch/arm/cpu/arm9*":true,
+        "arch/arm/cpu/armv7m":true,
+        "arch/arm/cpu/armv8":true,
+        "arch/arm/cpu/pxa":true,
+        "arch/arm/cpu/sa1100":true,
+        "arch/arm/cpu/armv7/am33xx":true,
+        "arch/arm/cpu/armv7/bcm281xx":true,
+        "arch/arm/cpu/armv7/bcmcygnus":true,
+        "arch/arm/cpu/armv7/bcmnsp":true,
+        "arch/arm/cpu/armv7/iproc-common":true,
+        "arch/arm/cpu/armv7/kona-common":true,
+        "arch/arm/cpu/armv7/ls102xa":true,
+        "arch/arm/cpu/armv7/omap-common":true,
+        "arch/arm/cpu/armv7/omap*":true,
+        "arch/arm/cpu/armv7/rmobile":true,
+        "arch/arm/cpu/armv7/s5p-common":true,
+        "arch/arm/cpu/armv7/stv0991":true,
+        "arch/arm/cpu/armv7/sunxi":true,
+        "arch/arm/cpu/armv7/vf610":true,
+		"arch/arm/cpu/armv7/mx5":true,
+        "arch/arm/cpu/armv7/mx7":true,
+		
+		"board/[a-eA-E]*":true,
+        "board/[g-zG-Z]*":true,
+        "board/[0-9]*":true,
+        "board/fire*":true,
+
+        "board/freescale/[a-l]*":true,
+        "board/freescale/[n-z]*":true,
+        "board/freescale/m[0-9]*":true,
+        "board/freescale/mpc[0-9]*":true,
+        "board/freescale/mx[^6]*":true,
+        "board/freescale/mx6ul_*":true,
+        "board/freescale/mx6d*":true,
+        "board/freescale/mx6q*":true,
+        "board/freescale/mx6s*":true,
+        "board/freescale/mx6ull_ddr3*":true,
+
+        "configs/[a-l]*":true,
+        "configs/[n-z]*":true,
+        "configs/[A-Z]*":true,
+        "configs/M[a-z]*":true,
+        "configs/M[A-Z]*":true,
+        "configs/M[0-9]*":true,
+        "configs/m[a-w]*":true,
+        "configs/m[0-9]*":true,
+        "configs/[0-9]*":true,
+    },
+	"search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+		
+		"arch/arc":true,
+        "arch/avr32":true,
+        "arch/blackfin":true,
+        "arch/m68k":true,
+        "arch/microblaze":true,
+        "arch/mips":true,
+        "arch/nds32":true,
+        "arch/nios2":true,
+        "arch/openrisc":true,
+        "arch/powerpc":true,
+        "arch/sandbox":true,
+        "arch/sh":true,
+        "arch/sparc":true,
+        "arch/x86":true,
+		
+		"arch/arm/mach*":true,
+
+        "arch/arm/cpu/arm11*":true,
+        "arch/arm/cpu/arm720t":true,
+        "arch/arm/cpu/arm9*":true,
+        "arch/arm/cpu/armv7m":true,
+        "arch/arm/cpu/armv8":true,
+        "arch/arm/cpu/pxa":true,
+        "arch/arm/cpu/sa1100":true,
+        "arch/arm/cpu/armv7/am33xx":true,
+        "arch/arm/cpu/armv7/bcm281xx":true,
+        "arch/arm/cpu/armv7/bcmcygnus":true,
+        "arch/arm/cpu/armv7/bcmnsp":true,
+        "arch/arm/cpu/armv7/iproc-common":true,
+        "arch/arm/cpu/armv7/kona-common":true,
+        "arch/arm/cpu/armv7/ls102xa":true,
+        "arch/arm/cpu/armv7/omap-common":true,
+        "arch/arm/cpu/armv7/omap*":true,
+        "arch/arm/cpu/armv7/rmobile":true,
+        "arch/arm/cpu/armv7/s5p-common":true,
+        "arch/arm/cpu/armv7/stv0991":true,
+        "arch/arm/cpu/armv7/sunxi":true,
+        "arch/arm/cpu/armv7/vf610":true,
+		"arch/arm/cpu/armv7/mx5":true,
+        "arch/arm/cpu/armv7/mx7":true,
+		
+		"board/[a-eA-E]*":true,
+        "board/[g-zG-Z]*":true,
+        "board/[0-9]*":true,
+        "board/fire*":true,
+
+        "board/freescale/[a-l]*":true,
+        "board/freescale/[n-z]*":true,
+        "board/freescale/m[0-9]*":true,
+        "board/freescale/mpc[0-9]*":true,
+        "board/freescale/mx[^6]*":true,
+        "board/freescale/mx6ul_*":true,
+        "board/freescale/mx6d*":true,
+        "board/freescale/mx6q*":true,
+        "board/freescale/mx6s*":true,
+        "board/freescale/mx6ull_ddr3*":true,
+    },
+	"editor.fontSize": 16,
+    "editor.tabSize": 4,
+    "editor.minimap.maxColumn": 120, 
+    "editor.wordWrap": "off",            //自动换行
+    "editor.autoIndent": "keep",         //自动缩进
+    "editor.autoClosingBrackets":"never",
+    "editor.autoClosingQuotes":"never",
+    "editor.find.autoFindInSelection":"multiline",
+    "editor.renderLineHighlight": "line",
+    "editor.wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?",
+    "editor.renderControlCharacters":false,
+    "editor.detectIndentation": false,
+    "editor.minimap.enabled": false,
+    "editor.selectionHighlight":false,
+    "editor.colorDecorators":false,
+    "editor.emptySelectionClipboard":false,
+    "editor.formatOnSave": false,        //保存即格式化
+    "editor.rulers": [
+        120
+    ],
+
+    "files.autoSave": "onFocusChange",   //自动保存
+	"files.associations": {
+        ".c": "c",
+        ".cpp": "cpp"
+    },
+	
+	"debug.showInStatusBar": "never",
+
+    "window.zoomLevel": 0,               //窗口放大倍数
+    "window.title":"${activeEditorLong}",
+    "window.titleSeparator": " - ",
+
+    "explorer.confirmDelete": false,
+
+    "workbench.colorTheme": "Default Light+",
+    "workbench.sideBar.location":"right",
+    "workbench.iconTheme":"vscode-icons",
+    "workbench.activityBar.visible": false,
+    "workbench.statusBar.visible": false,
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.enablePreviewFromQuickOpen": false,
+    "workbench.editor.languageDetection": true,
+    "workbench.editor.showTabs": false,
+    "workbench.startupEditor": "none",
+	"workbench.layoutControl.type": "menu",
+    "workbench.tree.indent": 4,
+}
+
+Make xx_defconfig执行流程
+--------------
+make xx_defconfig -> %config(顶层Makefile)                                                                          生成
+                         (依赖) -> scripts_basic ---> make -f ./scripts/Makefile.build obj=scripts/basic ---> scripts/basic/fixdep 
+						        -> outputmakefile
+								-> FORCE                                
+						 (命令) ---> make -f ./scripts/Makefile.build obj=scripts/kconfig xx_defconfig(命令) ---> scripts/kconfig/conf(生成) ---> scripts/kconfig/conf --defconfig=arch/../configs/xx_defconfig Kconfig(命令) ---> .config(生成)
+Make过程
+--------------
+命令    默认目标   依赖    依赖
+make ->   __all  -> all -> ALL-y   依赖 
+                               -> u-boot.srec             依赖             依赖        依赖           变量             最终文件
+							   -> u-boot.bin      -> u-boot-nodtb.bin  ->  u-boot -> u-boot-init  ->  head-y -> arch/arm/cpu/armv7/start.o 
+							   -> u-boot.sym                                      -> u-boot.lds   
+							   -> System.map                                      -> u-boot-main  ->  libs-y -> arch/arm/cpu/built-in.o 
+							   -> u-boot.cfg                                                                    arch/arm/cpu/armv7/built-in.o 
+							   -> binary_size_check                                                             arch/arm/imx-common/built-in.o 
+							   -> 其他配置依赖                                                                  arch/arm/lib/built-in.o 
+                                                                                                                ... 
+																												drivers/spi/built-in.o 
+																												... 
+																												test/dm/built-in.o 
+																												arch/arm/lib/eabi_compat.o 
+链接脚本u-boot.lds详解 
+--------------
+1.分析u-boot的启动流程需要找到函数入口,程序的链接是由链接脚本来决定的,所以通过链接脚本可以找到程序的入口.
+2.如果没有编译过u-boot,程序链接脚本为arch/arm/cpu/u-boot.lds(这个不是最终使用的链接脚本,最终的链接脚本是在这个链接脚本的基础上生成的).
+3.编译完u-boot以后就会在u-boot根目录下生成u-boot.lds文件.
+
+$>cat arch/arm/cpu/u-boot.lds
+-------
+/*
+ * Copyright (c) 2004-2008 Texas Instruments
+ *
+ * (C) Copyright 2002
+ * Gary Jennejohn, DENX Software Engineering, <garyj@denx.de>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
+ */
+
+#include <config.h>
+
+OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+SECTIONS
+{
+#if defined(CONFIG_ARMV7_SECURE_BASE) && defined(CONFIG_ARMV7_NONSEC)
+	/*
+	 * If CONFIG_ARMV7_SECURE_BASE is true, secure code will not
+	 * bundle with u-boot, and code offsets are fixed. Secure zone
+	 * only needs to be copied from the loading address to
+	 * CONFIG_ARMV7_SECURE_BASE, which is the linking and running
+	 * address for secure code.
+	 *
+	 * If CONFIG_ARMV7_SECURE_BASE is undefined, the secure zone will
+	 * be included in u-boot address space, and some absolute address
+	 * were used in secure code. The absolute addresses of the secure
+	 * code also needs to be relocated along with the accompanying u-boot
+	 * code.
+	 *
+	 * So DISCARD is only for CONFIG_ARMV7_SECURE_BASE.
+	 */
+	/DISCARD/ : { *(.rel._secure*) }
+#endif
+	. = 0x00000000;
+
+	. = ALIGN(4);
+	.text :
+	{
+		*(.__image_copy_start)
+		*(.vectors)
+		CPUDIR/start.o (.text*)
+		*(.text*)
+	}
+
+#ifdef CONFIG_ARMV7_NONSEC
+
+#ifndef CONFIG_ARMV7_SECURE_BASE
+#define CONFIG_ARMV7_SECURE_BASE
+#endif
+
+	.__secure_start : {
+		. = ALIGN(0x1000);
+		*(.__secure_start)
+	}
+
+	.secure_text CONFIG_ARMV7_SECURE_BASE :
+		AT(ADDR(.__secure_start) + SIZEOF(.__secure_start))
+	{
+		*(._secure.text)
+	}
+
+	. = LOADADDR(.__secure_start) +
+		SIZEOF(.__secure_start) +
+		SIZEOF(.secure_text);
+
+	__secure_end_lma = .;
+	.__secure_end : AT(__secure_end_lma) {
+		*(.__secure_end)
+		LONG(0x1d1071c);	/* Must output something to reset LMA */
+	}
+#endif
+
+	. = ALIGN(4);
+	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+
+	. = ALIGN(4);
+	.data : {
+		*(.data*)
+	}
+
+	. = ALIGN(4);
+
+	. = .;
+
+	. = ALIGN(4);
+	.u_boot_list : {
+		KEEP(*(SORT(.u_boot_list*)));
+	}
+
+	. = ALIGN(4);
+
+	.image_copy_end :
+	{
+		*(.__image_copy_end)
+	}
+
+	.rel_dyn_start :
+	{
+		*(.__rel_dyn_start)
+	}
+
+	.rel.dyn : {
+		*(.rel*)
+	}
+
+	.rel_dyn_end :
+	{
+		*(.__rel_dyn_end)
+	}
+
+	.end :
+	{
+		*(.__end)
+	}
+
+	_image_binary_end = .;
+
+	/*
+	 * Deprecated: this MMU section is used by pxa at present but
+	 * should not be used by new boards/CPUs.
+	 */
+	. = ALIGN(4096);
+	.mmutable : {
+		*(.mmutable)
+	}
+
+/*
+ * Compiler-generated __bss_start and __bss_end, see arch/arm/lib/bss.c
+ * __bss_base and __bss_limit are for linker only (overlay ordering)
+ */
+
+	.bss_start __rel_dyn_start (OVERLAY) : {
+		KEEP(*(.__bss_start));
+		__bss_base = .;
+	}
+
+	.bss __bss_base (OVERLAY) : {
+		*(.bss*)
+		 . = ALIGN(4);
+		 __bss_limit = .;
+	}
+
+	.bss_end __bss_limit (OVERLAY) : {
+		KEEP(*(.__bss_end));
+	}
+
+	.dynsym _image_binary_end : { *(.dynsym) }
+	.dynbss : { *(.dynbss) }
+	.dynstr : { *(.dynstr*) }
+	.dynamic : { *(.dynamic*) }
+	.plt : { *(.plt*) }
+	.interp : { *(.interp*) }
+	.gnu.hash : { *(.gnu.hash) }
+	.gnu : { *(.gnu*) }
+	.ARM.exidx : { *(.ARM.exidx*) }
+	.gnu.linkonce.armexidx : { *(.gnu.linkonce.armexidx.*) }
+}
+
+$>cat u-boot.lds 
+-------
+OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)                            #step.1 代码当前入口点(_start),位于arch/arm/lib/vectors.S中有定义.
+SECTIONS
+{
+ . = 0x00000000;
+ . = ALIGN(4);
+ .text :
+ {
+  *(.__image_copy_start)
+  *(.vectors)
+  arch/arm/cpu/armv7/start.o (.text*)    #将arch/arm/cpu/armv7/start.s编译出来的代码放到中断向量表后面.
+  *(.text*)                              #text段,其他代码段就放到这里.
+ }
+ . = ALIGN(4);
+ .rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+ . = ALIGN(4);
+ .data : {
+  *(.data*)
+ }
+ . = ALIGN(4);
+ . = .;
+ . = ALIGN(4);
+ .u_boot_list : {
+  KEEP(*(SORT(.u_boot_list*)));
+ }
+ . = ALIGN(4);
+ .image_copy_end :
+ {
+  *(.__image_copy_end)
+ }
+ .rel_dyn_start :
+ {
+  *(.__rel_dyn_start)
+ }
+ .rel.dyn : {
+  *(.rel*)
+ }
+ .rel_dyn_end :
+ {
+  *(.__rel_dyn_end)
+ }
+ .end :
+ {
+  *(.__end)
+ }
+ _image_binary_end = .;
+ . = ALIGN(4096);
+ .mmutable : {
+  *(.mmutable)
+ }
+ .bss_start __rel_dyn_start (OVERLAY) : {
+  KEEP(*(.__bss_start));
+  __bss_base = .;
+ }
+ .bss __bss_base (OVERLAY) : {
+  *(.bss*)
+   . = ALIGN(4);
+   __bss_limit = .;
+ }
+ .bss_end __bss_limit (OVERLAY) : {
+  KEEP(*(.__bss_end));
+ }
+ .dynsym _image_binary_end : { *(.dynsym) }
+ .dynbss : { *(.dynbss) }
+ .dynstr : { *(.dynstr*) }
+ .dynamic : { *(.dynamic*) }
+ .plt : { *(.plt*) }
+ .interp : { *(.interp*) }
+ .gnu.hash : { *(.gnu.hash) }
+ .gnu : { *(.gnu*) }
+ .ARM.exidx : { *(.ARM.exidx*) }
+ .gnu.linkonce.armexidx : { *(.gnu.linkonce.armexidx.*) }
+}
+
+cat arch/arm/lib/vectors.S --  <step.1>
+-------
+.globl _start                           //由这里可以看出,_start后面就是中断向量表<.section ".vectors", "ax">,可以得到,此代码存放在..vectors段里面.
+
+/*
+ *************************************************************************
+ *
+ * Vectors have their own section so linker script can map them easily
+ *
+ *************************************************************************
+ */
+
+	.section ".vectors", "ax"         
+
+/*
+ *************************************************************************
+ *
+ * Exception vectors as described in ARM reference manuals
+ *
+ * Uses indirect branch to allow reaching handlers anywhere in memory.
+ *
+ *************************************************************************
+ */
+
+_start:
+
+#ifdef CONFIG_SYS_DV_NOR_BOOT_CFG
+	.word	CONFIG_SYS_DV_NOR_BOOT_CFG
+#endif
+
+	b	reset
+	ldr	pc, _undefined_instruction
+	ldr	pc, _software_interrupt
+	ldr	pc, _prefetch_abort
+	ldr	pc, _data_abort
+	ldr	pc, _not_used
+	ldr	pc, _irq
+	ldr	pc, _fiq
+...
+
+$>grep -nR "__image_copy_start"                       #在u-boot中查找__image_copy_start
+-------
+include/asm-generic/sections.h:72:extern char __image_copy_start[];
+arch/arm/cpu/u-boot.lds:40:		*(.__image_copy_start)
+arch/arm/cpu/u-boot-spl.lds:20:		__image_copy_start = .;
+arch/arm/cpu/u-boot-spl.lds:82:ASSERT(__image_copy_end - __image_copy_start < (CONFIG_SPL_MAX_SIZE), \
+arch/arm/lib/relocate_64.S:29:	ldr	x1, =__image_copy_start	/* x1 <- SRC &__image_copy_start */
+arch/arm/lib/sections.c:24:char __image_copy_start[0] __attribute__((section(".__image_copy_start")));
+arch/arm/lib/relocate.S:80:	ldr	r1, =__image_copy_start	/* r1 <- SRC &__image_copy_start */
+tmp/System.map:1:87800000 T __image_copy_start
+tmp/u-boot.lds:10:  *(.__image_copy_start)
+tmp/u-boot.map:928: *(.__image_copy_start)
+tmp/u-boot.map:929: .__image_copy_start
+tmp/u-boot.map:931:                0x0000000087800000                __image_copy_start
+tmp/u-boot.sym:2176:87800000 g     O .text	00000000 __image_copy_start
+common/board_r.c:148:	monitor_flash_len = _end - __image_copy_start;
+...
+
+$>cat tmp/u-boot.map 
+-------
+...
+.text           0x0000000087800000    0x3ea1c
+ *(.__image_copy_start)
+ .__image_copy_start
+                0x0000000087800000        0x0 arch/arm/lib/built-in.o
+                0x0000000087800000                __image_copy_start
+ *(.vectors)
+ .vectors       0x0000000087800000      0x300 arch/arm/lib/built-in.o
+                0x0000000087800000                _start
+                0x0000000087800020                _undefined_instruction
+                0x0000000087800024                _software_interrupt
+                0x0000000087800028                _prefetch_abort
+                0x000000008780002c                _data_abort
+                0x0000000087800030                _not_used
+                0x0000000087800034                _irq
+                0x0000000087800038                _fiq
+                0x0000000087800040                IRQ_STACK_START_IN
+ arch/arm/cpu/armv7/start.o(.text*)
+ .text          0x0000000087800300       0xb0 arch/arm/cpu/armv7/start.o
+                0x0000000087800300                reset
+                0x0000000087800304                save_boot_params_ret
+                0x0000000087800340                c_runtime_cpu_setup
+                0x0000000087800350                save_boot_params
+                0x0000000087800354                cpu_init_cp15
+                0x00000000878003a8                cpu_init_crit
+ *(.text*)
+ .text          0x00000000878003b0       0x24 arch/arm/cpu/armv7/built-in.o
+                0x00000000878003b0                lowlevel_init
+...
+
+注意:
+ 1.u-boot.map是uboot的映射文件,可以从此文件看到某个文件或函数链接到了哪个地址;由此可以看到__image_copy_start为0x87800000,而.text的起始地址也是0x87800000;vectors.S的代码是存在vectors段中的,vectors段的起始地址也是0x87800000,说明整个uboot的起始地址就是0x87800000.
+ 2.u-boot.map中除了__image_copy_start以外,其他变量值每次编译的时候可能会变化,如果修改了uboot代码,修改了uboot配置,选用不同的优化等级等等都会影响到这些值.
+
+u-boot启动流程详解
+--------------
+step.1 reset 函数源码详解
+-------
+从u-boot.lds中可以知道入口点是arch/arm/lib/vectors.S文件中的_start,代码如下:
+
+$>cat arch/arm/lib/vectors.S
+-----
+.globl _start
+
+/*
+ *************************************************************************
+ *
+ * Vectors have their own section so linker script can map them easily
+ *
+ *************************************************************************
+ */
+
+	.section ".vectors", "ax"
+
+/*
+ *************************************************************************
+ *
+ * Exception vectors as described in ARM reference manuals
+ *
+ * Uses indirect branch to allow reaching handlers anywhere in memory.
+ *
+ *************************************************************************
+ */
+
+_start:                                       //_start开始的是中断向量表
+
+#ifdef CONFIG_SYS_DV_NOR_BOOT_CFG
+	.word	CONFIG_SYS_DV_NOR_BOOT_CFG
+#endif
+
+	b	reset                                 //跳转到reset函数,实现位于arch/arm/cpu/armv7/start.S 
+	ldr	pc, _undefined_instruction            //中断向量表
+	ldr	pc, _software_interrupt               //中断向量表
+	ldr	pc, _prefetch_abort                   //中断向量表
+	ldr	pc, _data_abort                       //中断向量表
+	ldr	pc, _not_used                         //中断向量表
+	ldr	pc, _irq                              //中断向量表
+	ldr	pc, _fiq                              //中断向量表
+...
+
+$>cat arch/arm/cpu/armv7/start.S 
+-----
+...
+	.globl	reset
+	.globl	save_boot_params_ret
+
+reset:                                                   //reset函数
+	/* Allow the board to save important registers */
+	b	save_boot_params                                 //从reset函数跳转到了save_boot_params函数,而save_boot_params函数同样定义在了start.S里面.
+...
+ENTRY(save_boot_params)
+	b	save_boot_params_ret		@ back to my caller  //save_boot_params函数也是只有一句跳转语句,跳转到save_boot_params_ret函数.
+...
+save_boot_params_ret:
+	/*
+	 * disable interrupts (FIQ and IRQ), also set the cpu to SVC32 mode,
+	 * except if in HYP mode already
+	 */
+	mrs	r0, cpsr                                          //读取寄存器cpsr中的值,并保存到r0寄存器中.
+	/**
+	Cortex-A7 工作模式
+	M[4:0]   模式 
+	10000    User(usr)
+	10001    FIQ(fiq)
+	10010    IRQ(irq)
+	10011    Supervisor(svc)
+	10110    Monitor(mon)
+	10111    Abort(abt)
+	11010    Hyp(hyp)
+	11011    Undefined(und)
+	11111    System(sys)
+	**/
+	and	r1, r0, #0x1f		@ mask mode bits              //将寄存器r0中的值与0x1f进行与运算,结果保存到r1寄存器中,目的就是提取cpsr的bit0~bit4这5位,这5位为M4,M3,M2,M1,M0,M[4:0]这五位用来设置处理器的工作模式.
+	teq	r1, #0x1a		@ test for HYP mode               //判断R1寄存器的值是否等于0x1a(0b11010),也就是判断当前处理器模式是否处于Hyp模式.
+	bicne	r0, r0, #0x1f		@ clear all mode bits     //如果R1和0x1a不相等,也就是CPU不处于Hyp模式就将R0寄存器的bit0~bit5进行清零,也就是清除模式位.
+	orrne	r0, r0, #0x13		@ set SVC mode            //如果处理器不处于Hyp模式就将R0寄存器的值与0x13进行或运算,0x13=0b10011,也就是设置处理器进入SVC模式.
+	orr	r0, r0, #0xc0		@ disable FIQ and IRQ         //R0寄存器的值再与0xc0进行或运算,那么R0寄存器此时的值就是0xD3,cpsr的I位和F位分别控制IRQ和FIQ这两个中断开关,设置为1就关闭了FIQ和IRQ.
+	msr	cpsr,r0                                           //将R0寄存器写回到CPSR寄存器中,完成设置CPU处于SVC32模式,并且关闭FIQ和IRQ这两个中断.
+...
+
+step.2 lowlevel_init 函数源码详解
+-------
+$>cat arch/arm/cpu/armv7/lowlevel_init.S 
+-----
+...
+ENTRY(lowlevel_init)
+	/*
+	 * Setup a temporary stack. Global data is not available yet.
+	 */
+	ldr	sp, =CONFIG_SYS_INIT_SP_ADDR
+	bic	sp, sp, #7 /* 8-byte alignment for ABI compliance */
+#ifdef CONFIG_SPL_DM
+	mov	r9, #0
+#else
+	/*
+	 * Set up global data for boards that still need it. This will be
+	 * removed soon.
+	 */
+#ifdef CONFIG_SPL_BUILD
+	ldr	r9, =gdata
+#else
+	sub	sp, sp, #GD_SIZE
+	bic	sp, sp, #7
+	mov	r9, sp
+#endif
+#endif
+	/*
+	 * Save the old lr(passed in ip) and the current lr to stack
+	 */
+	push	{ip, lr}
+
+	/*
+	 * Call the very early init function. This should do only the
+	 * absolute bare minimum to get started. It should not:
+	 *
+	 * - set up DRAM
+	 * - use global_data
+	 * - clear BSS
+	 * - try to start a console
+	 *
+	 * For boards with SPL this should be empty since SPL can do all of
+	 * this init in the SPL board_init_f() function which is called
+	 * immediately after this.
+	 */
+	bl	s_init
+	pop	{ip, pc}
+ENDPROC(lowlevel_init)
+...
+
+step.3 s_init 函数详解 
+-------
+$>cat arch/arm/cpu/armv7/mx6/soc.c 
+-----
+void s_init(void)
+{
+	struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
+	struct mxc_ccm_reg *ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
+	u32 mask480;
+	u32 mask528;
+	u32 reg, periph1, periph2;
+
+	if (is_cpu_type(MXC_CPU_MX6SX) || is_cpu_type(MXC_CPU_MX6UL) ||
+	    is_cpu_type(MXC_CPU_MX6ULL) || is_cpu_type(MXC_CPU_MX6SLL))
+		return;
+
+	/* Due to hardware limitation, on MX6Q we need to gate/ungate all PFDs
+	 * to make sure PFD is working right, otherwise, PFDs may
+	 * not output clock after reset, MX6DL and MX6SL have added 396M pfd
+	 * workaround in ROM code, as bus clock need it
+	 */
+
+	mask480 = ANATOP_PFD_CLKGATE_MASK(0) |
+		ANATOP_PFD_CLKGATE_MASK(1) |
+		ANATOP_PFD_CLKGATE_MASK(2) |
+		ANATOP_PFD_CLKGATE_MASK(3);
+	mask528 = ANATOP_PFD_CLKGATE_MASK(1) |
+		ANATOP_PFD_CLKGATE_MASK(3);
+
+	reg = readl(&ccm->cbcmr);
+	periph2 = ((reg & MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_MASK)
+		>> MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_OFFSET);
+	periph1 = ((reg & MXC_CCM_CBCMR_PRE_PERIPH_CLK_SEL_MASK)
+		>> MXC_CCM_CBCMR_PRE_PERIPH_CLK_SEL_OFFSET);
+
+	/* Checking if PLL2 PFD0 or PLL2 PFD2 is using for periph clock */
+	if ((periph2 != 0x2) && (periph1 != 0x2))
+		mask528 |= ANATOP_PFD_CLKGATE_MASK(0);
+
+	if ((periph2 != 0x1) && (periph1 != 0x1) &&
+		(periph2 != 0x3) && (periph1 != 0x3))
+		mask528 |= ANATOP_PFD_CLKGATE_MASK(2);
+
+	writel(mask480, &anatop->pfd_480_set);
+	writel(mask528, &anatop->pfd_528_set);
+	writel(mask480, &anatop->pfd_480_clr);
+	writel(mask528, &anatop->pfd_528_clr);
+}
+
+step.4 _main函数详解
+-------
+$>cat arch/arm/lib/crt0.S 
+-----
+ENTRY(_main)
+
+/*
+ * Set up initial C runtime environment and call board_init_f(0).
+ */
+
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_STACK)
+	ldr	sp, =(CONFIG_SPL_STACK)
+#else
+	ldr	sp, =(CONFIG_SYS_INIT_SP_ADDR)
+#endif
+#if defined(CONFIG_CPU_V7M)	/* v7M forbids using SP as BIC destination */
+	mov	r3, sp
+	bic	r3, r3, #7
+	mov	sp, r3
+#else
+	bic	sp, sp, #7	/* 8-byte alignment for ABI compliance */
+#endif
+	mov	r0, sp
+	bl	board_init_f_alloc_reserve
+	mov	sp, r0
+	/* set up gd here, outside any C code */
+	mov	r9, r0
+	bl	board_init_f_init_reserve
+
+	mov	r0, #0
+	bl	board_init_f
+
+#if ! defined(CONFIG_SPL_BUILD)
+
+/*
+ * Set up intermediate environment (new sp and gd) and call
+ * relocate_code(addr_moni). Trick here is that we'll return
+ * 'here' but relocated.
+ */
+
+	ldr	sp, [r9, #GD_START_ADDR_SP]	/* sp = gd->start_addr_sp */
+#if defined(CONFIG_CPU_V7M)	/* v7M forbids using SP as BIC destination */
+	mov	r3, sp
+	bic	r3, r3, #7
+	mov	sp, r3
+#else
+	bic	sp, sp, #7	/* 8-byte alignment for ABI compliance */
+#endif
+	ldr	r9, [r9, #GD_BD]		/* r9 = gd->bd */
+	sub	r9, r9, #GD_SIZE		/* new GD is below bd */
+
+	adr	lr, here
+	ldr	r0, [r9, #GD_RELOC_OFF]		/* r0 = gd->reloc_off */
+	add	lr, lr, r0
+#if defined(CONFIG_CPU_V7M)
+	orr	lr, #1				/* As required by Thumb-only */
+#endif
+	ldr	r0, [r9, #GD_RELOCADDR]		/* r0 = gd->relocaddr */
+	b	relocate_code
+here:
+/*
+ * now relocate vectors
+ */
+
+	bl	relocate_vectors
+
+/* Set up final (full) environment */
+
+	bl	c_runtime_cpu_setup	/* we still call old routine here */
+#endif
+#if !defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_FRAMEWORK)
+# ifdef CONFIG_SPL_BUILD
+	/* Use a DRAM stack for the rest of SPL, if requested */
+	bl	spl_relocate_stack_gd
+	cmp	r0, #0
+	movne	sp, r0
+	movne	r9, r0
+# endif
+	ldr	r0, =__bss_start	/* this is auto-relocated! */
+
+#ifdef CONFIG_USE_ARCH_MEMSET
+	ldr	r3, =__bss_end		/* this is auto-relocated! */
+	mov	r1, #0x00000000		/* prepare zero to clear BSS */
+
+	subs	r2, r3, r0		/* r2 = memset len */
+	bl	memset
+#else
+	ldr	r1, =__bss_end		/* this is auto-relocated! */
+	mov	r2, #0x00000000		/* prepare zero to clear BSS */
+
+clbss_l:cmp	r0, r1			/* while not at end of BSS */
+#if defined(CONFIG_CPU_V7M)
+	itt	lo
+#endif
+	strlo	r2, [r0]		/* clear 32-bit BSS word */
+	addlo	r0, r0, #4		/* move to next */
+	blo	clbss_l
+#endif
+
+#if ! defined(CONFIG_SPL_BUILD)
+	bl coloured_LED_init
+	bl red_led_on
+#endif
+	/* call board_init_r(gd_t *id, ulong dest_addr) */
+	mov     r0, r9                  /* gd_t */
+	ldr	r1, [r9, #GD_RELOCADDR]	/* dest_addr */
+	/* call board_init_r */
+#if defined(CONFIG_SYS_THUMB_BUILD)
+	ldr	lr, =board_init_r	/* this is auto-relocated! */
+	bx	lr
+#else
+	ldr	pc, =board_init_r	/* this is auto-relocated! */
+#endif
+	/* we should not return here. */
+#endif
+
+ENDPROC(_main)
+
+$>cat common/init/board_init.c 
+-----
+void board_init_f_init_reserve(ulong base)
+{
+	struct global_data *gd_ptr;
+#ifndef _USE_MEMCPY
+	int *ptr;
+#endif
+
+	/*
+	 * clear GD entirely and set it up.
+	 * Use gd_ptr, as gd may not be properly set yet.
+	 */
+
+	gd_ptr = (struct global_data *)base;
+	/* zero the area */
+#ifdef _USE_MEMCPY
+	memset(gd_ptr, '\0', sizeof(*gd));
+#else
+	for (ptr = (int *)gd_ptr; ptr < (int *)(gd_ptr + 1); )
+		*ptr++ = 0;
+#endif
+	/* set GD unless architecture did it already */
+#if !defined(CONFIG_ARM)
+	arch_setup_gd(gd_ptr);
+#endif
+	/* next alloc will be higher by one GD plus 16-byte alignment */
+	base += roundup(sizeof(struct global_data), 16);
+
+	/*
+	 * record early malloc arena start.
+	 * Use gd as it is now properly set for all architectures.
+	 */
+
+#if defined(CONFIG_SYS_MALLOC_F)
+	/* go down one 'early malloc arena' */
+	gd->malloc_base = base;
+	/* next alloc will be higher by one 'early malloc arena' size */
+	base += CONFIG_SYS_MALLOC_F_LEN;
+#endif
+}
+
+$>cat common/board_f.c       #主要用来初始化DDR,定时器,完成代码拷贝等等.
+$>cat arch/arm/lib/relocate.S 
+$>cat arch/arm/cpu/armv7/start.S 
+$>cat common/board_r.c 
+
+注意:在_main函数里面调用了board_init_f,relocate_code,relocate_vectors和board_init_r这四个函数.
+
+step.5 board_init_f 函数详解 
+-------
+作用:
+ 1.初始化一系列外设,比如串口,定时器,或者打印一些消息等等.
+ 2.初始化gd的各个成员变量,u-boot会将自己重定位到DRAM最后面的地址区域,也就是将自己拷贝到DRAM最后面的内存区域中.这么做的目的是给Linux腾出空间,防止Linux kernel覆盖掉u-boot,将DRAM前面的区域完整的空出来.在拷贝之前肯定要给uboot各部分分配好内存位置和大小,比如gd应该存放到哪个位置,malloc内存池应该存放到哪个位置等等.这些信息都保存在gd的成员变量中,因此要对gd的这些成员变量做初始化.最终形成一个完整的内存"分配图",在后面重定位uboot的时候就会用到这个内存"分配图".
+
+$>cat common/board_f.c 
+
+step.6 relocate_code 函数详解 
+-------
+作用:
+ 用于代码拷贝.
+ 
+$>cat arch/arm/lib/relocate.S 
+
+step.7 relocate_vectors 函数详解 
+-------
+作用:
+ 用于重定位向量表 
+ 
+$>cat arch/arm/lib/relocate.S 
+
+step.8 board_init_r 函数详解 
+-------
+作用:
+ 在此函数里面会调用一系列的函数来初始化一些外设和gd的成员变量.但是board_init_f并没有初始化所有的外设,还需要做一些后续工作,这些后续工作就是由board_init_r来完成.
+ 
+$>cat common/board_r.c 
+
+step.9 run_main_loop 函数详解 
+-------
+作用:
+ uboot启动以后会进入3秒倒计时,如果在3秒倒计时结束之前按下回车键,那么就会进入uboot命令模式,如果倒计时结束以后都没有按下回车键,那么就会自动启动Linux内核.
+ 
+$>cat common/board_r.c 
+
+step.10 cli_loop 函数详解 
+-------
+作用:
+ uboot的命令行处理函数,在uboot中输入的各种命令,进行各种操作就是由cli_loop来处理的.
+ 
+$>cat common/cli.c 
+
+step.11 cmd_process 函数详解 
+-------
+
+bootz启动Linux内核过程
+--------------
+step.1 images全局变量
+-------
+$>cat cmd/bootm.c 
+-----
+
+注意:不管是bootz还是bootm命令,在启动Linux内核的时候都会用到一个重要的全局变量images.
+
+step.2 do_bootz函数
+-------
+$>cat cmd/bootm.c 
+-----
+
+注意:bootz命令的执行函数为do_bootz.
+
+step.3 bootz_start函数
+-------
+$>cat cmd/bootm.c 
+-----
+
+step.4 do_bootm_states函数
+-------
+$>cat common/bootm.c 
+-----
+
+step.5 boot_os_get_boot_func函数
+-------
+$>cat common/bootm_os.c 
+-----
+
+注意:次函数用来查找对应系统的启动函数.
+
+step.6 do_bootm_linux函数
+-------
+$>cat arch/arm/lib/bootm.c 
+-----
+
+注意:此函数就是最终启动Linux内核的函数.
+
+bootz命令 
+--------------
+bootz -> do_bootz() 
+           ->bootz_start()
+		       -> do_bootm_states()                     -- BOOT状态:BOOTM_STATE_START
+			           ->bootm_start()
+			   -> images->ep = load_addr                -- 获取Linux镜像(zImage),保存在images成员变量ep中.
+			   -> bootm_find_images()
+			           ->boot_get_fdt()                 -- 获取设备树,设备树首地址保存在images成员变量ft_addr中.
+		   ->bootm_disable_interrupts
+		   ->do_bootm_states()                          -- BOOT状态:BOOTM_STATE_OS_PREP BOOTM_STATE_OS_FAKE_GO BOOTM_STATE_OS_GO
+		       -> bootm_os_get_boot_func()              -- 获取Linux系统启动函数:do_bootm_linux().
+			   -> boot_selected_os()        
+			            ->boot_fn()                     -- 实际运行函数do_bootm_linux()
+						   ->boot_prep_linux()          -- 启动Linux之前做一些其他处理,比如在设备数chosen节点下添加子节点bootargs,bootargs子节点存放bootargs环境变量.
+						   ->boot_jump_linux()
+						      ->announce_and_cleanup()  -- 输出"Starting kernel ...",并且做一些清理工作.
+							  ->kernel_entry();         -- 启动Linux内核.
+
+u-boot移植 
+--------------
+$>cp configs/mx6ull_14x14_evk_emmc_defconfig configs/xxx_emmc_defconfig
+$>vi configs/xxx_emmc_defconfig
+-------
+CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/freescale/mx6ull_emmc_xxx/imximage.cfg,MX6ULL_EVK_EMMC_REWORK"
+CONFIG_ARM=y
+CONFIG_ARCH_MX6=y
+CONFIG_TARGET_MX6ULL_14X14_EMMC_XXX=y
+CONFIG_CMD_GPIO=y
+
+$>mkdir -pv board/freescale/mx6ull_emmc_xxx
+$>cp -rv board/freescale/mx6ullevk/* board/freescale/mx6ull_emmc_xxx/
+$>mv board/freescale/mx6ull_emmc_xxx/mx6ullevk.c board/freescale/mx6ull_emmc_xxx/mx6ull_emmc_xxx.c 
+$>vi board/freescale/mx6ull_emmc_xxx/Makefile
+-------
+obj-y  := mx6ull_emmc_xxx.o x.o y.o ...                                 #修改这一行的编译目标
+
+extra-$(CONFIG_USE_PLUGIN) :=  plugin.bin
+$(obj)/plugin.bin: $(obj)/plugin.o
+	$(OBJCOPY) -O binary --gap-fill 0xff $< $@
+	
+$>vi board/freescale/mx6ull_emmc_xxx/imximage.cfg
+-------
+...
+#ifdef CONFIG_USE_PLUGIN
+/*PLUGIN    plugin-binary-file    IRAM_FREE_START_ADDR*/
+PLUGIN	board/freescale/mx6ull_emmc_xxx/plugin.bin 0x00907000           #修改这一行的目录
+#else
+...
+
+$>vi board/freescale/mx6ull_emmc_xxx/Kconfig
+-------
+if TARGET_MX6ULL_14X14_EMMC_XXX                                         #修改 
+
+config SYS_BOARD
+	default "mx6ull_emmc_xxx"                                           #修改 
+
+config SYS_VENDOR
+	default "freescale"
+
+config SYS_SOC                                                          #新增
+    default "mx6"                                                       #新增  
+
+config SYS_CONFIG_NAME
+	default "mx6ull_emmc_xxx"                                           #修改
+
+endif
+
+$>vi board/freescale/mx6ull_emmc_xxx/MAINTAINERS
+-------
+MX6ULLEVK BOARD
+M:	Peng Fan <peng.fan@nxp.com>
+S:	Maintained
+F:	board/freescale/mx6ull_emmc_xxx/
+F:	include/configs/mx6ull_emmc_xxx.h
+F:	configs/xxx_emmc_defconfig
+
+$>vi arch/arm/Kconfig or arch/arm/cpu/armv7/mx6/Kconfig
+-------
+...
+config TARGET_MX6ULL_14X14_EMMC_XXX 
+	bool "Support mx6ull_emmc_xxx"
+	select MX6ULL
+	select DM
+	select DM_THERMAL
+...
+source "board/freescale/mx6ull_emmc_xxx/Kconfig"
+
+$>cp include/configs/mx6ullevk.h include/configs/mx6ull_emmc_xxx.h
+$>cat include/configs/mx6ullevk.h
+-------
+#ifndef __MX6ULLEVK_CONFIG_H
+#define __MX6ULLEVK_CONFIG_H
+
+
+#include <asm/arch/imx-regs.h>
+#include <linux/sizes.h>
+#include "mx6_common.h"
+#include <asm/imx-common/gpio.h>
+
+/* uncomment for PLUGIN mode support */
+/* #define CONFIG_USE_PLUGIN */
+
+/* uncomment for SECURE mode support */
+/* #define CONFIG_SECURE_BOOT */
+
+#ifdef CONFIG_SECURE_BOOT
+#ifndef CONFIG_CSF_SIZE
+#define CONFIG_CSF_SIZE 0x4000
+#endif
+#endif
+
+#define is_mx6ull_9x9_evk()	CONFIG_IS_ENABLED(TARGET_MX6ULL_9X9_EVK)
+
+#ifdef CONFIG_TARGET_MX6ULL_9X9_EVK
+#define PHYS_SDRAM_SIZE		SZ_256M
+#define CONFIG_BOOTARGS_CMA_SIZE   "cma=96M "
+#else
+#define PHYS_SDRAM_SIZE		SZ_512M
+#define CONFIG_BOOTARGS_CMA_SIZE   ""
+/* DCDC used on 14x14 EVK, no PMIC */
+#undef CONFIG_LDO_BYPASS_CHECK
+#endif
+
+/* SPL options */
+/* We default not support SPL
+ * #define CONFIG_SPL_LIBCOMMON_SUPPORT
+ * #define CONFIG_SPL_MMC_SUPPORT
+ * #include "imx6_spl.h"
+*/
+
+#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
+
+#define CONFIG_DISPLAY_CPUINFO
+#define CONFIG_DISPLAY_BOARDINFO
+
+/* Size of malloc() pool */
+#define CONFIG_SYS_MALLOC_LEN		(16 * SZ_1M)
+
+#define CONFIG_BOARD_EARLY_INIT_F
+#define CONFIG_BOARD_LATE_INIT
+
+#define CONFIG_MXC_UART
+#define CONFIG_MXC_UART_BASE		UART1_BASE
+
+/* MMC Configs */
+#ifdef CONFIG_FSL_USDHC
+#define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC2_BASE_ADDR
+
+/* NAND pin conflicts with usdhc2 */
+#ifdef CONFIG_SYS_USE_NAND
+#define CONFIG_SYS_FSL_USDHC_NUM	1
+#else
+#define CONFIG_SYS_FSL_USDHC_NUM	2
+#endif
+#endif
+
+/* I2C configs */
+#define CONFIG_CMD_I2C
+#ifdef CONFIG_CMD_I2C
+#define CONFIG_SYS_I2C
+#define CONFIG_SYS_I2C_MXC
+#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
+#define CONFIG_SYS_I2C_MXC_I2C2		/* enable I2C bus 2 */
+#define CONFIG_SYS_I2C_SPEED		100000
+
+/* PMIC only for 9X9 EVK */
+#define CONFIG_POWER
+#define CONFIG_POWER_I2C
+#define CONFIG_POWER_PFUZE3000
+#define CONFIG_POWER_PFUZE3000_I2C_ADDR  0x08
+#endif
+
+#define CONFIG_SYS_MMC_IMG_LOAD_PART	1
+
+#ifdef CONFIG_SYS_BOOT_NAND
+#define CONFIG_MFG_NAND_PARTITION "mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),1m(misc),-(rootfs) "
+#else
+#define CONFIG_MFG_NAND_PARTITION ""
+#endif
+
+#define CONFIG_MFG_ENV_SETTINGS \
+	"mfgtool_args=setenv bootargs console=${console},${baudrate} " \
+	    CONFIG_BOOTARGS_CMA_SIZE \
+		"rdinit=/linuxrc " \
+		"g_mass_storage.stall=0 g_mass_storage.removable=1 " \
+		"g_mass_storage.file=/fat g_mass_storage.ro=1 " \
+		"g_mass_storage.idVendor=0x066F g_mass_storage.idProduct=0x37FF "\
+		"g_mass_storage.iSerialNumber=\"\" "\
+		CONFIG_MFG_NAND_PARTITION \
+		"clk_ignore_unused "\
+		"\0" \
+	"initrd_addr=0x83800000\0" \
+	"initrd_high=0xffffffff\0" \
+	"bootcmd_mfg=run mfgtool_args;bootz ${loadaddr} ${initrd_addr} ${fdt_addr};\0" \
+
+#if defined(CONFIG_SYS_BOOT_NAND)
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	CONFIG_MFG_ENV_SETTINGS \
+	"panel=TFT43AB\0" \
+	"fdt_addr=0x83000000\0" \
+	"fdt_high=0xffffffff\0"	  \
+	"console=ttymxc0\0" \
+	"bootargs=console=ttymxc0,115200 ubi.mtd=4 "  \
+		"root=ubi0:rootfs rootfstype=ubifs "		     \
+		CONFIG_BOOTARGS_CMA_SIZE \
+		"mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),1m(misc),-(rootfs)\0"\
+	"bootcmd=nand read ${loadaddr} 0x4000000 0x800000;"\
+		"nand read ${fdt_addr} 0x5000000 0x100000;"\
+		"bootz ${loadaddr} - ${fdt_addr}\0"
+
+#else
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	CONFIG_MFG_ENV_SETTINGS \
+	"script=boot.scr\0" \
+	"image=zImage\0" \
+	"console=ttymxc0\0" \
+	"fdt_high=0xffffffff\0" \
+	"initrd_high=0xffffffff\0" \
+	"fdt_file=undefined\0" \
+	"fdt_addr=0x83000000\0" \
+	"boot_fdt=try\0" \
+	"ip_dyn=yes\0" \
+	"panel=TFT43AB\0" \
+	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
+	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
+	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
+	"mmcautodetect=yes\0" \
+	"mmcargs=setenv bootargs console=${console},${baudrate} " \
+		CONFIG_BOOTARGS_CMA_SIZE \
+		"root=${mmcroot}\0" \
+	"loadbootscript=" \
+		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
+	"bootscript=echo Running bootscript from mmc ...; " \
+		"source\0" \
+	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
+	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
+	"mmcboot=echo Booting from mmc ...; " \
+		"run mmcargs; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if run loadfdt; then " \
+				"bootz ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootz; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"bootz; " \
+		"fi;\0" \
+	"netargs=setenv bootargs console=${console},${baudrate} " \
+		CONFIG_BOOTARGS_CMA_SIZE \
+		"root=/dev/nfs " \
+	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+		"netboot=echo Booting from net ...; " \
+		"run netargs; " \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+		"else " \
+			"setenv get_cmd tftp; " \
+		"fi; " \
+		"${get_cmd} ${image}; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
+				"bootz ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootz; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"bootz; " \
+		"fi;\0" \
+		"findfdt="\
+			"if test $fdt_file = undefined; then " \
+				"if test $board_name = EVK && test $board_rev = 9X9; then " \
+					"setenv fdt_file imx6ull-9x9-evk.dtb; fi; " \
+				"if test $board_name = EVK && test $board_rev = 14X14; then " \
+					"setenv fdt_file imx6ull-14x14-evk.dtb; fi; " \
+				"if test $fdt_file = undefined; then " \
+					"echo WARNING: Could not determine dtb to use; fi; " \
+			"fi;\0" \
+
+#define CONFIG_BOOTCOMMAND \
+	   "run findfdt;" \
+	   "mmc dev ${mmcdev};" \
+	   "mmc dev ${mmcdev}; if mmc rescan; then " \
+		   "if run loadbootscript; then " \
+			   "run bootscript; " \
+		   "else " \
+			   "if run loadimage; then " \
+				   "run mmcboot; " \
+			   "else run netboot; " \
+			   "fi; " \
+		   "fi; " \
+	   "else run netboot; fi"
+#endif
+
+/* Miscellaneous configurable options */
+#define CONFIG_CMD_MEMTEST
+#define CONFIG_SYS_MEMTEST_START	0x80000000
+#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x8000000)
+
+#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
+#define CONFIG_SYS_HZ			1000
+
+#define CONFIG_STACKSIZE		SZ_128K
+
+/* Physical Memory Map */
+#define CONFIG_NR_DRAM_BANKS		1
+#define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
+
+#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+#define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
+
+#define CONFIG_SYS_INIT_SP_OFFSET \
+	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
+#define CONFIG_SYS_INIT_SP_ADDR \
+	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
+
+/* FLASH and environment organization */
+#define CONFIG_SYS_NO_FLASH
+
+#ifdef CONFIG_SYS_BOOT_QSPI
+#define CONFIG_FSL_QSPI
+#define CONFIG_ENV_IS_IN_SPI_FLASH
+#elif defined CONFIG_SYS_BOOT_NAND
+#define CONFIG_SYS_USE_NAND
+#define CONFIG_ENV_IS_IN_NAND
+#else
+#define CONFIG_FSL_QSPI
+#define CONFIG_ENV_IS_IN_MMC
+#endif
+
+#define CONFIG_SYS_MMC_ENV_DEV		1   /* USDHC2 */
+#define CONFIG_SYS_MMC_ENV_PART		0	/* user area */
+#define CONFIG_MMCROOT			"/dev/mmcblk1p2"  /* USDHC2 */
+
+#define CONFIG_CMD_BMODE
+
+#ifdef CONFIG_FSL_QSPI
+#define CONFIG_QSPI_BASE		QSPI0_BASE_ADDR
+#define CONFIG_QSPI_MEMMAP_BASE		QSPI0_AMBA_BASE
+
+#define CONFIG_CMD_SF
+#define CONFIG_SPI_FLASH
+#define CONFIG_SPI_FLASH_BAR
+#define CONFIG_SF_DEFAULT_BUS		0
+#define CONFIG_SF_DEFAULT_CS		0
+#define CONFIG_SF_DEFAULT_SPEED	40000000
+#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
+#define CONFIG_SPI_FLASH_STMICRO
+#endif
+
+/* NAND stuff */
+#ifdef CONFIG_SYS_USE_NAND
+#define CONFIG_CMD_NAND
+#define CONFIG_CMD_NAND_TRIMFFS
+
+#define CONFIG_NAND_MXS
+#define CONFIG_SYS_MAX_NAND_DEVICE	1
+#define CONFIG_SYS_NAND_BASE		0x40000000
+#define CONFIG_SYS_NAND_5_ADDR_CYCLE
+#define CONFIG_SYS_NAND_ONFI_DETECTION
+
+/* DMA stuff, needed for GPMI/MXS NAND support */
+#define CONFIG_APBH_DMA
+#define CONFIG_APBH_DMA_BURST
+#define CONFIG_APBH_DMA_BURST8
+#endif
+
+#define CONFIG_ENV_SIZE			SZ_8K
+#if defined(CONFIG_ENV_IS_IN_MMC)
+#define CONFIG_ENV_OFFSET		(12 * SZ_64K)
+#elif defined(CONFIG_ENV_IS_IN_SPI_FLASH)
+#define CONFIG_ENV_OFFSET		(768 * 1024)
+#define CONFIG_ENV_SECT_SIZE		(64 * 1024)
+#define CONFIG_ENV_SPI_BUS		CONFIG_SF_DEFAULT_BUS
+#define CONFIG_ENV_SPI_CS		CONFIG_SF_DEFAULT_CS
+#define CONFIG_ENV_SPI_MODE		CONFIG_SF_DEFAULT_MODE
+#define CONFIG_ENV_SPI_MAX_HZ		CONFIG_SF_DEFAULT_SPEED
+#elif defined(CONFIG_ENV_IS_IN_NAND)
+#undef CONFIG_ENV_SIZE
+#define CONFIG_ENV_OFFSET		(60 << 20)
+#define CONFIG_ENV_SECT_SIZE		(128 << 10)
+#define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
+#endif
+
+
+/* USB Configs */
+#define CONFIG_CMD_USB
+#ifdef CONFIG_CMD_USB
+#define CONFIG_USB_EHCI
+#define CONFIG_USB_EHCI_MX6
+#define CONFIG_USB_STORAGE
+#define CONFIG_EHCI_HCD_INIT_AFTER_RESET
+#define CONFIG_USB_HOST_ETHER
+#define CONFIG_USB_ETHER_ASIX
+#define CONFIG_MXC_USB_PORTSC  (PORT_PTS_UTMI | PORT_PTS_PTW)
+#define CONFIG_MXC_USB_FLAGS   0
+#define CONFIG_USB_MAX_CONTROLLER_COUNT 2
+#endif
+
+#ifdef CONFIG_CMD_NET
+#define CONFIG_CMD_PING
+#define CONFIG_CMD_DHCP
+#define CONFIG_CMD_MII
+#define CONFIG_FEC_MXC
+#define CONFIG_MII
+#define CONFIG_FEC_ENET_DEV		1
+
+#if (CONFIG_FEC_ENET_DEV == 0)
+#define IMX_FEC_BASE			ENET_BASE_ADDR
+#define CONFIG_FEC_MXC_PHYADDR          0x2
+#define CONFIG_FEC_XCV_TYPE             RMII
+#elif (CONFIG_FEC_ENET_DEV == 1)
+#define IMX_FEC_BASE			ENET2_BASE_ADDR
+#define CONFIG_FEC_MXC_PHYADDR		0x1
+#define CONFIG_FEC_XCV_TYPE		RMII
+#endif
+#define CONFIG_ETHPRIME			"FEC"
+
+#define CONFIG_PHYLIB
+#define CONFIG_PHY_MICREL
+#endif
+
+#define CONFIG_IMX_THERMAL
+
+#ifndef CONFIG_SPL_BUILD
+#define CONFIG_VIDEO
+#ifdef CONFIG_VIDEO
+#define CONFIG_CFB_CONSOLE
+#define CONFIG_VIDEO_MXS
+#define CONFIG_VIDEO_LOGO
+#define CONFIG_VIDEO_SW_CURSOR
+#define CONFIG_VGA_AS_SINGLE_DEVICE
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV
+#define CONFIG_SPLASH_SCREEN
+#define CONFIG_SPLASH_SCREEN_ALIGN
+#define CONFIG_CMD_BMP
+#define CONFIG_BMP_16BPP
+#define CONFIG_VIDEO_BMP_RLE8
+#define CONFIG_VIDEO_BMP_LOGO
+#define CONFIG_IMX_VIDEO_SKIP
+#endif
+#endif
+
+#define CONFIG_IOMUX_LPSR
+
+#if defined(CONFIG_ANDROID_SUPPORT)
+#include "mx6ullevk_android.h"
+#endif
+
+#endif
+
+$>vi include/configs/mx6ull_emmc_xxx.h       #文件名一定要与board/freescale/mx6ull_emmc_xxx/mx6ull_emmc_xxx.c源文件的名称相同
+-------
+#ifndef __MX6ULL_EMMC_XXX_CONFIG_H           #修改行
+#define __MX6ULL_EMMC_XXX_CONFIG_H           #修改行
+...
+
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp distclean
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp xxx_emmc_defconfig             #./configs/xx_defconfig
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp -j`nproc`
+$>grep -Rn "mx6ull_emmc_xxx.h" --color=auto
+-------
+...
+mp/board/freescale/mx6ullevk/.imximage.cfg.cfgtmp.cmd:45:  ../include/configs/mx6ull_emmc_xxx.h \
+tmp/board/freescale/mx6ullevk/imximage.cfg.cfgtmp:22:# 1 "../include/configs/mx6ull_emmc_xxx.h" 1
+tmp/board/freescale/mx6ullevk/imximage.cfg.cfgtmp:23:# 12 "../include/configs/mx6ull_emmc_xxx.h"
+tmp/board/freescale/mx6ullevk/imximage.cfg.cfgtmp:28:# 13 "../include/configs/mx6ull_emmc_xxx.h" 2
+tmp/board/freescale/mx6ullevk/imximage.cfg.cfgtmp:30:# 14 "../include/configs/mx6ull_emmc_xxx.h" 2
+tmp/board/freescale/mx6ullevk/imximage.cfg.cfgtmp:35:# 15 "../include/configs/mx6ull_emmc_xxx.h" 2
+tmp/board/freescale/mx6ull_emmc_xxx/.mx6ull_emmc_xxx.o.cmd:158:  ../include/configs/mx6ull_emmc_xxx.h \
+...
+
+注意:以上即是移植u-boot的完整过程.
+
+LCD
+--------------
+R[7:0]      -- 8根红色数据线
+G[7:0]      -- 8根绿色数据线
+B[7:0]      -- 8根蓝色数据线
+DE          -- 数据使能线 
+VSYNC       -- 垂直同步信号线
+HSYNC       -- 水平同步信号线
+PCLK        -- 像素时钟信号线
+
+像素时钟
+-------
+pixclock = 1/DOTCLK * 10^12=1/(fframe * (X + HBP + HFP + HSPW) * (Y + VBP + VFP + VSPW)) * 10^12  #假设fframe=60,x=1024,y=600,hbp=140,hfp=160,hspw=20,vbp=20,vfp=12,vspw=3
+         = 1/(60 * (1024 + 140 + 160 + 20) * (600 + 20 + 12 + 3)) * 10^12
+
+显示一帧图像所需要的时钟数 = (x + HBP + HFP + HSPW) * (Y + VBP + VFP + VSPW)
+                           = (1024 + 140 + 160 + 20) * (600 + 20 + 12 + 3)
+						   = 1344 * 635
+						   = 853440
+即:显示一帧图像需要853440个时钟数.
+
+60帧 = 60 * 853440 = 51206400 ~= 51.2M 
+
+$>vi mx6ull_emmc_xxx.c
+-------
+...
+struct display_info_t const displays[] = {{
+	.bus = MX6UL_LCDIF1_BASE_ADDR,
+	.addr = 0,
+	.pixfmt = 24,
+	.detect = NULL,
+	.enable	= do_enable_parallel_lcd,
+	.mode	= {
+		.name			= "TFT7016",
+		.xres           = 1024,
+		.yres           = 600,
+		.pixclock       = 19531,
+		.left_margin    = 140,            //HBPD
+		.right_margin   = 160,            //HFPD
+		.upper_margin   = 20,             //VBPD
+		.lower_margin   = 12,             //VFBD
+		.hsync_len      = 20,             //HSPW
+		.vsync_len      = 3,              //VSPW
+		.sync           = 0,
+		.vmode          = FB_VMODE_NONINTERLACED
+} } };
+...
+
+$>vi mx6ull_emmc_xxx.h
+-------
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	CONFIG_MFG_ENV_SETTINGS \
+	"script=boot.scr\0" \
+	"image=zImage\0" \
+	"console=ttymxc0\0" \
+	"fdt_high=0xffffffff\0" \
+	"initrd_high=0xffffffff\0" \
+	"fdt_file=undefined\0" \
+	"fdt_addr=0x83000000\0" \
+	"boot_fdt=try\0" \
+	"ip_dyn=yes\0" \
+	"panel=TFT7016\0" \                                                 #修改这一行.
+	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
+	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
+	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
+	"mmcautodetect=yes\0" \
+	"mmcargs=setenv bootargs console=${console},${baudrate} " \
+		CONFIG_BOOTARGS_CMA_SIZE \
+		"root=${mmcroot}\0" \
+	"loadbootscript=" \
+		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
+	"bootscript=echo Running bootscript from mmc ...; " \
+		"source\0" \
+	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
+	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
+	"mmcboot=echo Booting from mmc ...; " \
+		"run mmcargs; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if run loadfdt; then " \
+				"bootz ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootz; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"bootz; " \
+		"fi;\0" \
+	"netargs=setenv bootargs console=${console},${baudrate} " \
+		CONFIG_BOOTARGS_CMA_SIZE \
+		"root=/dev/nfs " \
+	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+		"netboot=echo Booting from net ...; " \
+		"run netargs; " \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+		"else " \
+			"setenv get_cmd tftp; " \
+		"fi; " \
+		"${get_cmd} ${image}; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
+				"bootz ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootz; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"bootz; " \
+		"fi;\0" \
+		"findfdt="\
+			"if test $fdt_file = undefined; then " \
+				"if test $board_name = EVK && test $board_rev = 9X9; then " \
+					"setenv fdt_file imx6ull-9x9-evk.dtb; fi; " \
+				"if test $board_name = EVK && test $board_rev = 14X14; then " \
+					"setenv fdt_file imx6ull-14x14-evk.dtb; fi; " \
+				"if test $fdt_file = undefined; then " \
+					"echo WARNING: Could not determine dtb to use; fi; " \
+			"fi;\0" \
+
+$>setenv panel TFT7016           #uboot-命令行 
+$>saveenv                        #uboot-命令行 
+
+注意:有关HBP,HFP,VPB,VFP等四个参数请参考docx/pdf文档.
+

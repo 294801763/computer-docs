@@ -1,0 +1,121 @@
+step.1 install
+----------------
+$>apt-get install python uuid git autoconf flex automake bison bzip2 wget yasm build-essential make gdb telnet tree mysql-server mysql-client libmysqlclient-dev pkg-config unixodbc subversion libtool libav-tools libncurses5-dev liblua5.3-dev libsndfile-dev zlib1g-dev libssl-dev libpcre3-dev libopus-dev unixodbc-dev libjpeg-dev libpng-dev sqlite3 sqlite3-pcre libsqlite3-dev libcurl4-openssl-dev speex libspeex-dev libspeexdsp-dev libldns-dev libedit-dev libtiff-dev libksane-dev libksba-dev libatomic-ops-dev uuid-dev                
+
+step.2 build 
+----------------
+$>tar -xvf opensips-2.4.6.tar.gz
+$>cd opensips-2.4.6
+$>make menuconfig                                                                                                         #进入以下菜单.
+----------
+    ->Configure Compile Options->Configure Compile Flags                                                                  #勾选如下选项.
+							>PKG_MALLOC
+							>SHM_MMAP
+							>USE_MCAST
+							>DISABLE_NAGLE
+							>STATISTICS
+							>HAVE_RESOLV_RES
+							>F_MALLOC
+							>F_MALLOC_OPTIMIZATIONS
+							>FAST_LOCK
+							>USE_FUTEX
+							>USE_SYSV_SEM
+							>USE_PTHERAD_MUTEX
+							>USE_POSIX_SEM
+							>BUSY_WAIT
+$>vi Makefile.conf
+----------
+...
+exclude_modules?= aaa_radius b2b_logic cachedb_cassandra cachedb_couchbase cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq h350 regex identity jabber json ldap lua httpd mi_xmlrpc_ng mmgeoip osp perl pi_http rabbitmq rabbitmq_consumer proto_sctp proto_tls proto_wss presence presence_dialoginfo presence_mwi presence_xml pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp python rest_client rls sngtc siprec snmpstats tls_mgm xcap xcap_client xml xmpp 
+include_modules?= db_mysql                                                                                                #添加mysql支持.
+...
+PREFIX ?= /                                                                                                               #安装目录为"/".
+
+注意:在exclude_modules中删除db_mysql,然后在include_modules添加db_mysql.
+
+$>make all && make install 
+$>whereis opensips
+$>cd opensips-2.4.6
+$>make menuconfig 
+    OpenSIPS Main Configuration Menu->Generate OpenSIPS Script->Residential Script->Configure Residential Script          #勾选如下选项(全选).
+           ->ENABLE_TCP
+		   ->USE_AUTH
+		   ->USE_DBACC
+		   ->USE_DBUSRLOC
+		   ->USE_DIALOG
+		   
+	OpenSIPS Main Configuration Menu->Generate OpenSIPS Script->Residential Script->Generate Residential Scipt            #保存配置文件后退出,继续执行如下命令.
+
+$>cd /path/opensips-2.4.6/etc && cp -r tls /etc/opensips/ && cp opensips_residential_xx.cfg	/etc/opensips/opensips.cfg
+$>vi /etc/opensips/opensips.cfg
+----------
+...
+listen=udp:127.0.0.1:5060   # CUSTOMIZE ME
+listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME
+listen=tls:127.0.0.1:5061   # CUSTOMIZE ME
+
+...
+#set module path
+mpath="/usr/local/lib/opensips/modules/"
+...
+
+例如:将"127.0.0.1"修改为对应网口的ip即可(eg.192.168.1.200).
+...
+listen=udp:192.168.1.200:5060   # CUSTOMIZE ME
+listen=tcp:192.168.1.200:5060   # CUSTOMIZE ME
+listen=tls:192.168.1.200:5061   # CUSTOMIZE ME
+
+...
+#set module path
+mpath="/lib64/opensips/modules"
+...
+
+$>vi /etc/opensips/opensipsctlrc
+----------
+...
+SIP_DOMAIN=192.168.1.200
+DBENGINE=MYSQL
+DBHOST=127.0.0.1
+DBNAME=opensips
+DBRWUSER=opensips
+DBRWPW="opensipsrw"
+DBROOTUSER="root"
+...
+
+$>opensips -C                                                                                                             #检测配置文件语法.
+$>opensipsdbctl create                                                                                                    #创建表,有Y/n都选y.
+
+step.3 服务管理
+----------------
+$>opensipsctl start 
+$>opensipsctl stop
+$>opensipsctl restart
+
+step.4 用户管理
+----------------
+$>opensipsctl add username password                                                                                       #eg.opensipsctl add 1000 1000
+$>opensipsctl rm username                                                                                                 #opensipsctl rm 1000
+
+step.5 查看sip用户
+----------------
+$>mysql -u opensips -p                                                                                                    #opensipsrw.
+$>show databases;
+$>use opensips;
+$>show tables;
+$>select * from subscriber;
+
+注意:默认的opensips的数据库密码为opensipsrw
+
+step.6 查看在线用户
+----------------
+$>opensipsctl ul show
+$>opensipsctl online
+
+step.7 卸载mysql
+----------------
+$>rm -R /var/lib/mysql/                                                                                                   #删除mysql的数据文件.
+$>rm -R /etc/mysql/                                                                                                       #删除mysql的配置文件.
+$>apt-get autoremove mysql-server mysql-client libmysqlclient-dev --purge                                                 #自动卸载mysql.
+$>apt-get remove apparmor    
+
+注意:以上内容经过测试通过了.

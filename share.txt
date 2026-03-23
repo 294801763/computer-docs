@@ -1,0 +1,587 @@
+>gcc -g -c -fPIC -Wall sources
+>gcc -g -shared -o xxx.so objects
+
+>gcc -g -fPIC -Wall sources -shared -o xxx.so
+
+>nm object | grep _GLOBAL_OFFSET_TABLE_                       #位置独立的代码，确定一个目标在编译的时候是否使用了-fPIC选项,_GLOBAL_OFFSET_TABLE_.
+>readelf -s object|grep _GLOBAL_OFFSET_TABLE_
+
+>objdump --all-headers xxx.so|grep TEXTREL                    #如果产生了输出,那么指定的共享库中至少存在一个目标模块在编译时没有指定-fPIC选项.
+>readelf -d xxx.so|grep TEXTREL
+
+>gcc -g -Wall -o prog sources xxx.so                          #prog 的运行需要指定 LD_LIBRARY_PATH 环境变量.
+
+>gcc -g -c -fPIC -Wall sources                               #共享库的soname，Wl,-soname选项是传给连接器的指令以将共享库libxxx.so的soname设置为libbar.so.
+>gcc -g -shared -Wl,-soname,libbar.so -o libxxx.so objects   
+
+>objdump -p libxxx.so|grep SONAME                            #确定共享库的是否包含soname.
+>readelf -d libxxx.so|grep SONAME
+
+>gcc -g -Wall -o prog sources libxxx.so                      #LD_LIBRARY_PATH=. ./prog : prog,error in loading shared libraries:libbar.so:cannot open shared object file:no such file or directory.
+>ln -s libxxx.so libbar.so                                   #解决办法,LD_LIBRARY_PATH=. ./prog 没出现上面的错误了.
+
+>ldd prog                                                    #共享库的有用工具,ldd,objdump,readelf .
+>nm -A /usr/lib/lib*.so 2>/dev/null|grep 'crypt$'            #查找那个库定义了crypt()函数.
+
+名称               格式                    描述
+------------------------------------------------------
+真实名称     libname.so.maj.min           保存库代码的文件,每个库的major-plus-minor版本都存在一个真实名称.
+soname      libname.so.maj               库的每个主要版本都存在一个soname;在链接时被嵌入到可执行文件中,在运行时用来找出指向相应的(最新的)真实名称的同名符号链接所引用的库.
+链接器名称    libname.so                   指向真实名称或最新的,soname的符号链接,只存在一个实例;允许构建版本独立的链接命令.
+
+---------------------          --------------------                   ----------------------
+真实名称                         soname                                 链接器的名称
+libname.so.maj.min              libname.so.maj                         libname.so 
+------------          ------->  -------------          ----------->    -----------------
+(常规文件)                        (符号链接)                              (符号链接)
+库模块的目标代码                    libname.so.maj.min                    libname.so.maj
+--------------------           ---------------------                  -----------------------
+
+>gcc -g -c -fPIC -Wall sources                                       #使用标准规范创建共享库
+>gcc -g -shared -Wl,-soname,libxxx.so.1 -o libxxx.so.1.0.1 objects   #创建共享库,真实名称为 libxxx.so.1.0.1,soname 为 libxxx.so.1.
+
+>ln -sv libxxx.so.1.0.1 libxxx.so.1                                  #为soname和链接器名称创建恰当的符号链接.
+>ln -sv libxxx.so.1 libxxx.so
+
+>ls -l libxxx.so*|awk '{print $1,$9,$10,$11}'                        #使用ls验证配置.
+
+>gcc -g -Wall -o prog sources -L. -lxxx    $LD_LIBRARY_PATH=. ./prog
+
+>mv libxxx.so.1.0.1 /usr/lib          #安装共享库,/usr/lib,/usr/local/lib;ld.so.conf or /etc/ld.so.cache.  ldconfig(8):ldconfig -p 会显示/etc/ld.so.cache的当前内容,-N 防止缓存重建 -X 阻止soname符号链接的创建 -v 输出描述其执行的动作信息.
+>cd /usr/lib && ln -sv libxxx.so.1.0.1 libxxx.so.1 && ln -sv libxxx.so.1 libdemo.so
+
+>mv libxxx.so.1.0.1 libxxx.so.2.0.0 /usr/lib                   #安装一个库的两个不同的主要版本.
+>ldconfig -v|grep libxxx
+>cd /usr/lib && ls -l libxxx*|awk '{print $1,$9,$10,$11}'
+ln -s libxxx.so.2 libxxx.so       #为链接器创建符号链接.
+
+>mv libxxx.so.2.0.1 /usr/lib      #更新一个库的2.x次要版本.
+>ldconfig -v|grep -i libxxx
+
+>gcc -g -c -fPIC -Wall sources 
+>gcc -g -shared -Wl,-soname,libxxx.so.1 -o libxxx.so.1.0.1 objects
+>/sbin/ldconfig -nv .
+>ls -l libxxx.so*|awk '{print $1,$9,$10,$11}'
+
+>gcc -g -c -fPIC -Wall sources           #升级共享库
+>gcc -g -shared -Wl,-soname,libxxx.so.1 -o libxxx.so.1.0.2 objects
+>mv libxxx.so.1.0.2 /usr/lib 
+>ldconfig -v|grep libxxx
+
+>gcc -g -c -fPIC -Wall sources
+>gcc -g -shared -Wl,-soname,libxxx.so.2 -o libxxx.so.2.0.0 objects
+>mv libxxx.so.2.0.0 /usr/lib 
+>ldconfig -v|grep -i libxxx 
+>cd /usr/lib 
+>ln -sf libxxx.so.2 libxxx.so
+
+##########两种通知动态链接器共享库的位置的方法,使用LD_LIBRARY_PATH 环境变量和将共享库安装到其中一个标准库目录中(/lib,/usr/lib,/usr/local/lib 或在/etc/ld.so.conf中列出其中一个目录).##########
+>gcc -g -Wall,-rpath,/path -o prog sources libxxx.so    #在目标文件中指定搜索目录,将字符串/path复制到了可执行文件prog的运行是库路径(rpath)列表中;因此当运行这个程序时,动态链接器在解析共享库引用时还会搜索这个目录.-rpath 选项可以多次指定,在一个rpath选中可以指定由多个分号分割开来的目录列表.
+##########-rpath选项的替代方案是LD_RUN_PATH环境变量.可以将多个分号分隔开的目录的字符串赋给该变量,当构建可执行文件时可以将这个变量作为rpath列表来使用.只有当构建可执行文件时不知定-rpath选项时才会使用LD_RUN_PATH变量.##########
+
+               prog                  d1/libx1.so                          d2/libx2.so
+               (prog.c)              (modx1.c)                             (modx2.c)
+               main(){x1();}         x1(){x2();}                           x2(){}
+>cd /path/d2                                #首先在/path/d2目录中构建libx2.so（这里省略了库的版本号和soname）.
+>gcc -g -c -fPIC -Wall modx2.c 
+>gcc -g -shared -o libx2.so modx2.o
+
+>cd /path/d1                #接着在/path/d1目录中构建libx1.so;由于libx1.so依赖于libx2.so，并且libx2.so位于一个非标准目录中,因此指定libx2.so的运行时位置时需要使用-rpath链接器选项.这个选项的取值与库的链接时位置(-L选项指定)可以不同,尽管在这个例子中这个两个位置是相同的.
+>gcc -g -c -Wall -fPIC modx1.c
+>gcc -g -shared -o libx1.so modx1.o -Wl,-rpath,/path/d2 -L/path/d2 -lx2
+
+>cd /path/                 #最后在/path目录中构建主程序,由于主程序使用了libx1.so并且这个库位于一个非标准目录中,因此还需要使用-rpath链接器选项;注意在链接主程序时无需指定libx2.so，由于链接器能够分析libx1.so中的rpath列表,因此它能够够找到libx2.so同时在静态库链接阶段解析出所有的符号.
+>gcc -g -Wall -o prog sources -Wl,-rpath,/path/d1 -L/path/d1 -lx1
+
+>objdump -p prog|grep PATH     #检查prog和libx1.so，以便查看他们的rpath列表内容.
+>objdump -p d1/libx1.so|grep PATH  #通过查找readelf --dynamic or readelf -d 查看rpath列表.
+>ldd prog      #查看prog的完整的动态依赖列表.
+
+###########ELF DT_RPATH,DT_RUNPATH条目###########
+在第一版ELF规范中,只有一种rpath列表能够被嵌入到可执行文件或共享库中,它对应于ELF文件中的DT_RPATH标签;后续的ELF规范舍弃了DT_RPATH,同时引入了一种新标签DT_RUNPATH来表示rpath列表.这两种rpath列表之间的差别在于当动态链接器在运行时搜索共享库时他们相对于LD_LIBRARY_PATH环境变量的优先级:DT_RPATH的优先级更高,而DT_RUNPATH的优先级则更低.
+在默认情况下,链接器会将rpath列表创建为DT_RPATH标签;为了让链接器将rpath列表创建为DT_RUNPATH条目必须要额外使用--enable-new-dtags(启用新动态标签)链接器选项.
+>gcc -g -Wall -o prog sources -Wl,--enable-new-dtags -Wl,-rpath,/path/d1 -L/path/d1 -lx1
+>objdump -p prog |grep -i PATH    #可执行文件包含了DT_RPATH和DT_RUNPATH标签.链接器采用这种方式复写了rpath列表是为了不理解DT_RUNPATH标签的老式动态链接器能够正常工作.(glibc 2.2增加了对DT_RUNPATH的支持).
+
+>gcc -Wl,-rpath,'$ORIGIN'/lib ...    #or gcc -Wl,-rpath,'${ORIGIN}'/lib ... ，这样在运行时应用程序的共享库位于包含应用程序的可执行文件的目录的子目录lib中.通过这种方式向用户提供一个简单的包含应用程序以及相关的库的安装包,同时允许用户将这个包安装在任意并运行这个应用程序了(即所谓的"turn-key"应用程序).
+
+#####################在运行时找出共享库#####################
+在解析库依赖时，动态链接器首先会检查各个依赖字符串以确定它是否包含斜线(/),因为在链接可执行文件时如果指定了一个显示的库路径名的话就会发生这种情况;如果找到了一个斜线,那么依赖字符串就会被解释成一个路径名(绝对路径名和相对路径名),并且会使用该路径名加载库.否则动态链接器会使用下面的规则来搜索共享库.
+1.如果可执行文件的DT_RPATH运行时库路径列表（rpath）中包含目录并且不包含DT_RUNPATH列表,那么就搜索这些目录.
+2.如果定义了LD_LIBRARY_PATH环境变量,那么就会轮流搜索该变量值中以冒号分割的各个目录.如果可执行文件是一个set-user-id or set-group-id程序，那么就会忽略LD_LIBRARY_PATH变量.这项安全措施是为了防止用户欺骗动态链接器让其加载一个与可执行文件所需的库的名称一样的私有库.
+3.如果可执行文件 DT_RUNPATH 运行时库路径列表中包含目录,那么就会搜索这些目录(按照链接程序时指定的目录顺序).
+4.检查/etc/ld.so.cache文件已确认它是否包含了与库相关的条目.
+5.搜索/lib 和 /usr/lib 目录(按照这个顺序).
+
+#####################运行时符号解析#####################
+假设在多个地方定义了一个全局符号（即全局函数或变量）,如在一个可执行文件和一个共享库中或多个共享库中.那么如何解析指向这个符号的引用呢？
+假设现在有一个主程序和一个共享库,他们两个都定义了一个全局函数xyz()，并且共享库中的另一个函数调用了xyz(),
+   prog                              libxxx.so 
+xyz(){printf("main-xyz\n");}     xyz(){printf("xxx-xyz\n");}
+main(){func();}    -------------->func(){xyz();}
+在构建共享库和可执行程序并运行这个程序之后能够看到下面的输出.
+>gcc -g -c -fPIC -Wall -c sources 
+>gcc -g -shared -o libxxx.so objects
+>gcc -g -o prog sources libxxx.so 
+>LD_LIBRARY_PATH=. ./prog 
+main-xyz
+从上面输出的最后一行可以看出,主程序中的xyz()定义覆盖(优先)了共享库中的定义.
+尽管这种处理方式在一开始看起来有些令人惊讶,但这样做是有历史原因的.第一个共享库实现在设计时的目标是使符号解析的默认语义与那些和同一库等价的静态库进行链接的应用程序中的符号解析的语义完成一致.这意味着下面的语义是正确的.
+1.主程序中全局符号的定义覆盖库中相应的定义.
+2.如果一个全局符号在多个库中进行了定义,那么对该符号的引用会被绑定到在扫描库时找到的第一个定义,其中扫描顺序是按照这些库在静态链接命令行中列出时从左至右的顺序.
+虽然这些语义使得从静态库到共享库的转变变得相对简单了,但这种做法会导致一些问题.其中最大的问题是这些语义在使用共享库实现一个自包含的子系统时会与共享库模型产生矛盾.在默认情况下,共享库无法确保一个指向其自身的某个全局符号的引用会真正被绑定到该符号在库中的定义上,从而导致当该共享库被集成到一个更大的系统中时共享库的属性可能发生改变.这会导致应用程序出现令人意料之外的行为,同时也使得分治调试的执行变得更加困难(即尝试使用更少或不同的共享库来重现问题).
+在上面的例子中,如果想要确保在共享库中对xyz()的调用确实调用了库中定义的相应函数,那么在构建共享库的就需要使用-Bsymbolic链接器选项.
+>gcc -g -c -fPIC -Wall -c sources
+>gcc -g -shared -Wl,-Bsymbolic -o libxxx.so objects 
+>gcc -g -o prog sources libxxx.so 
+>LD_LIBRARY_PATH=. ./prog 
+xxx-xyz
+-Bsymbolic 链接器选项指定了共享库中对全局符号的应用应该优先被绑定到库中的相应定义上(如果存在的话).(注意不管是否使用了这个选项,在主程序中调用xyz()总是会调用主程序中定义的xyz().)
+
+#####################使用静态库取代共享库#####################
+虽然在大多数情况下都应该使用共享库,但是在某些场景中静态库则更加合适.特别地,静态链接的应用程序包含了它在运行时所需的全局代码这一事实是非常有利的.如当用户不希望或者无法在运行程序的系统上安装共享库或者程序在另一个无法使用共享库的环境中运行时（如可能是一个chroot监狱(jail)）,静态链接就派上用场了.此外,即使是一个兼容的共享库升级可能会在无意中引入一个bug,从而导致应用程序无法正常工作.通过静态链接应用程序就能确保系统上共享库的变动不会影响到它并且它已经拥有了运行时的所有全局代码(付出的代价就是程序更大了,从而会需要更多的磁盘空间和内存).
+在默认情况下,当链接器能够选择名称一样的共享库和静态库时(如在链接时使用-Lsomedir -ldemo 并且libdemo.so 和libdemo.a都存在)会优先使用共享库.要强制使用库的静态版本则可以完成下列之一.
+1.在gcc命令行中指定静态库的路径名(包含.a扩展).
+2.在gcc命令行指定-static选项.
+3.使用-Wl,-Bstatic和-Wl,-Bdynamic gcc选项来显示的指定链接器选择共享库还是静态库.在gcc命令行中可以使用-l选项来混合这些选项.链接器会按照选项被指定时的顺序来处理这些选项.
+
+
+共享库高级特性
+----------------------------------------------------------------------------------------------------------------------------------
+当一个可执行文件开始运行之后,动态链接器会加载程序的动态依赖列表中的所有共享库,但有些时候延迟加载库是比较有用的,如只在需要的时候再加载一个插件.动态链接器的这项功能是通过一组API来实现的.这组API通常被称为dlopen API，它源自Solaris，现在其中大部分内容都在SUSv3中进行了规定.
+dlopenAPI使得程序能够在运行时打开一个共享库,根据名字在库中搜索一个函数,然后调用这个函数.在运行时采用这种方式加载的共享库通常被称为动态加载的库,它的创建方式与其他共享库的创建方式完全一样.
+核心dlopen API有下列函数(所有这些函数都在SUSv3进行了规定)构成.
+1.dlopen() 函数打开一个共享库,返回一个供后续调用使用的句柄.
+2.dlsym() 函数在库中搜索一个符号(一个包含函数或变量的字符串)并返回其他地址.
+3.dlclose() 函数关闭之前由dlopen()打开的库.
+4.dlerror() 函数返回一个错误消息字符串,在调用上述函数中的某个函数发生错误时可以使用这个函数来获取错误消息.
+glibc 实现还包含了一组相关的函数,其中一些将会在后面予以介绍.
+要在Linux上使用dlopen API构建程序必须指定-ldl选项以便与libdl库链接起来.
+
+
+打开共享库
+dlopen()函数将名为libfilename的共享库加载进调用进程的虚拟地址空间并增加该库的打开引用计数.
+#inclde <dlfcn.h>
+void *dlopen(const char *libfilename,int flags);
+                             Return library handle on success,or NULL on error
+如果libfilename包含了一个斜线(/),那么dlopen()会将其解释成一个绝对或相对路径名,否则动态链接器会使用“运行时找出共享库”.
+dlopen()在成功时会返回一个句柄,在后续对dlopen API中的函数的调用可以使用该句柄来引用这个库.如果发生了错误(如无法找到库),那么dlopen()会返回NULL.
+如果libfilename指定的共享库依赖于其他共享库,那么dlopen()会自动加载那些库.如果有必要的话,这一过程会递归进行.这种被加载进来的库被称为这个库的依赖树.
+在同一个库文件中可以多次调用dlopen(),但将库加载进内存的操作只会发生一次(第一次调用),所有的调用都返回同样的句柄值.但dlopen API会为每个库的句柄维护一个引用计数,每次调用dlopen()都会增加引用计数,每次调用dlclose()都会减小引用计数,只有当计数为0时dlclose()才会从内存中删除这个库.
+flags 参数是一个位掩码,的取值是RTLD_LAZY 和 RTLD_NOW中的一个,这个两个值的含义如下:
+  RTLD_LAZY 只有当代码被执行的时候才解析库中未定义的函数符号.如果需要某个特定符号的代码没有被执行到,那么永远都不会解析该符号.延迟解析只适用函数引用,对变量的引用会被立即解析.指定RTLD_LAZY标记能够提供与在加载可执行文件的动态依赖列表中的共享库时动态链接器的常规操作对应的行为.
+  RLD_NOW 在dlopen() 结束之前立即加载库中所有的未定义符号,不管是否需要用到这些符号,这种做法的结果是打开库变得更慢了,但能够立即检测到任何潜在的未定义函数符号错误,而不是后面某个时刻才检测到这种错误.在调试应用程序时这种做法是比较有用的,因为它能够确保应用程序在碰到未解析的符号时立即发生错误,而不是在执行了很长一段时间之后才发生错误.
+通过将环境变量LD_BIND_NOW设置为一个非空字符串能够强制动态链接器在加载可执行文件的动态依赖列表中的共享库时立即解析所有符号(即类似于RTLD_NOW).这个环境变量在glibc 2.1.1以及后续的版本中是有效的,设置LD_BIND_NOW会覆盖dlopen() RTLD_LAZY标记效果.
+flags 可以取其他的值,SUSv3规定了下列几种标记:
+  RTLD_GLOBAL
+    这个库及依赖树中的符号在解析由这个进程加载的其他库中的引用和通过dlsym()查找时可用.
+  RTLD_LOCAL
+    与RTLD_GLOBAL相反,如果不指定任何常量,那么就取这个默认值.它规定在解析后续的库中的引用时这个库及其依赖树中的符号不可用.
+    在不指定RTLD_GLOBAL或RTLD_LOCAL时,SUSv3并没有规定一个默认值.大多数UNIX实现与LINUX一样,将RTLD_LOCAL作为默认值,但一些实现将RTLD_GLOBAL作为默认值.
+  RTLD_NODELETE (自glibc2.2开始)
+    在dlopen()调用中不要卸载库,即使其引用计数已经变成了0了.这意味这在后面重新通过dlopen()加载库时不会重新初始化库中的静态变量.(对于有动态链接器自动加载的库来讲,在创建库时通过指定gcc -Wl,-znodelete 选项能够取得类似的效果.)
+  RTLD_NOLOAD (自glibc2.2开始)
+    不加载库.这个标记有两个目的：1.可以使用这个标记来检查某个特定的库是否已经被加载到了进程的地址空间中.如果已经加载了,那么dlopen()会返回库的句柄;如果没有加载，那么dlopen会返回NULL.2.可以使用这个标记来“提升”已加载的库的标记.如果在对之前使用RTLD_LOCAL打开的库使用dlopen()时可以在flags参数中指定RTLD_NOLOAD|RTLD_GLOBAL.
+  RTLD_DEEPBIND (自glibc2.3.4开始)
+    在解析这个库中的符号引用时先搜索库中定义,然后再搜索已加载的库中的定义.这个标记使得一个库能够实现自包含,即优先使用自己的符号定义,而不是在已加载的其他库中定义同名全局符号.（与之前的-Bsymbolic 链接器选项具有类似的效果.）
+    RTLD_NODELETE,RTLD_NOLOAD标记在Solaris dlopen API中也进行了实现,但提供这个两个标记的UNIX实现很少.RTLD_DEEPBIND标记是Linux特有的.
+    当libfilename指定为NULL时dlopen()会返回主程序的句柄.(SUSv3将这种句柄称为“全局符号对象”的句柄)在后续的对dlsym()的调用中使用这个句柄会导致首先在主程序中搜索符号;然后在程序启动时加载的共享库中进行搜索,最后在所有使用了RTLD_GLOBAL标记的动态加载的库中进行搜索.
+    
+>man 3 dlopen
+
+错误诊断:dlerror()
+如果在dlopen()调用或dlopen API的其他函数调用中得到了一个错误,那么可以使用dlerror()来获取一个指向表明错误原因的字符串指针.
+#include <dlfcn.h>
+const char* dlerror(void);
+		    Returns pointer to error-diagnostic string,or NULL if no error has occurred since previous call to dlerror()
+如果上一次调用dlerror()到现在没有发生错误,那么dlerror()函数返回NULL,读者在下一节就会看到这种处理方式带来的好处了.
+
+获取符号的地址:dlsym()
+dlsym()函数在handle指向的库以及该库的依赖树中的库中搜索名为symbol的符号(函数或变量).
+#include <dlfcn.h>
+void *dlsym(void *handle,char *symbol);
+	    Returns address of symbol,or NULL if symbol is not found
+如果找到了symbol,那么dlsym()返回其地址,否则返回NULL.handle参数通常是上一个dlopen()调用返回库句柄,或者他也可以是下面介绍的其中一个所谓的伪句柄.
+dlvsym(handle,symbol,version)与dlsym()类似,但他能够用来在符号版本化的库中搜索版本与在字符串version中指定的版本匹配的符号定义.(后面会介绍符号版本化.)要从<dlfcn.h>中获取这个函数的声明必须要定义_GNU_SOURCE 特性测试宏.
+dlsym()返回的符号值可能是NULL,这一点与"找不到符号"的返回是无法区分的.为了弄清楚具体是哪种情况就必须要先调用dlerror()(确保之前的错误字符串已经被清除了),如果在调用dlsym()之后dlerror()返回了一个非NULL值,那么就可以得出发生错误的结论了.
+如果symbol是一个变量名称,那么可以将dlsym()的返回值赋给一个合适的指针类型,并通过反引用该指针来得到变量的值.
+int *ip;
+ip=(int*)dlsym(symbol,"myvar");
+if(ip!=NULL){
+  printf("value is %d\n",*ip);
+}
+如果symbol是一个函数的名称,那么可以使用dlsym()返回的指针来调用该函数,可以将dlsym()返回的值存储到一个类型合适的指针中,eg.
+int (*funcp)(int);/*Pointer to a function taking an integer argement and returning an integer*/
+但不能简单地将 dlsym的结果赋值给此类指针,eg.
+funcp=dlsym(handle,symbol);
+其原因是c99标准禁止函数指针和void *之前的赋值操作.这个问题的解决方案是使用下面的类型转换.
+*(void **)(&funcp)=dlsym(handle,symbol);
+通过dlsym()得到了指向函数的指针之后就能够通过常规的c语法反引用函数指针来调用这个函数了,eg.
+res=(*funcp)(somearg);
+读者在将dlsym()的返回值进行赋值时可能会使用下面这段看起来与上述代码等价的代码来取代上面的*(void **)语法.
+(void *) funcp=dlsym(handle,symbol);
+但gcc -pedantic 在碰到上面这段代码时会发出"ANSI C forbids the use of cast expressions as lvales."的警告信息.而使用*(void**)语言就不会出现这个警告信息,因为是在向赋值语句的左值指向的地址赋值.
+在很多UNIX实现中可以使用下面这样的类型转换消除C编译器的警告.
+funcp=(int (*)(int))dlsym(handle,symbol);
+但SUSv3 Technical Corrigendum Number 1中dlsym()的规范指出C99标准仍然要求编译器对此类转换生成警告信息并列举了上面的*(void **)语法.
+SUSv3 TC1指出由于需要用到*(void **)语法,因此标准的后续版本可能会定义一个与dlsym()类似的API来处理数据和函数指针.但SUSv4在这一点上并没有发生任何变化.
+在dlsym()中使用库伪句柄，dlsym()函数中的handle参数除了能够取由dlopen()调用返回的句柄值之外,还能够取下列句柄值：
+  RTLD_DEFAULT
+    从主程序中开始查找symbol,接着按序在所有已加载的共享库中查找,包括那些通过使用了RTLD_GLOBAL标记的dlopen()调用动态加载的库,这个标记对于动态链接器所采用的默认搜索模型.
+  RTLD_NEXT
+    在调用dlsym()之后加载的共享库中搜索symbol,这个标记适用于需要创建与在其他地方定义的函数同名的包装函数的情况.如在主程序中可能会定义一个malloc()(它可能完成内存的分配的薄记工作),而这个函数在调用实际的malloc()之前首先会通过调用func=symbol(RTLD_NEXT,"malloc")来获取其地址.
+SUSv3并没有要求实现上述列出的伪句柄(甚至没有保留这个两个值以供后续之用),并且所有UNIX实现也没有定义上述伪句柄.为了从<dlfcn.h>中获取这些常量的定义必须要定义_GNU_SOURCE特性测试宏.
+示例程序,演示了dlopen API的使用.这个程序接受两个命令行参数:需要加载的共享库名称和需执行的库中函数的名称.下面的例子演示了这个程序的使用.
+--------------------------
+>./dynload ./libdemo.so.1 x1
+Called mod1-x1
+>LD_LIBRARY_PATH=. ./dynload libdemo.so.1 x1
+Called mod1-x1
+
+上述命令的第一个命令中,dlopen()注意到库路径包含了一个斜线,因此将其解释成一个相对路径名(表示一个位于当前工作目录中的库).在第二个命令中指定了库搜索路径LD_LIBRARY_PATH；动态链接器会根据正常的规则来解释这个搜索路径(同样表示在当前工作目录中查找库).
+使用dlopen API 
+--------------------------
+/* dynload.c
+
+   Usage: dynload library-path function-name
+
+   Demonstrate dynamic loading of libraries. The program loads the
+   named library and then executes the named function in that library.
+*/
+#include <dlfcn.h>
+#include "tlpi_hdr.h"
+
+int
+main(int argc, char *argv[])
+{
+    void *libHandle;            /* Handle for shared library */
+    void (*funcp)(void);        /* Pointer to function with no arguments */
+    const char *err;
+
+    if (argc != 3 || strcmp(argv[1], "--help") == 0)
+        usageErr("%s lib-path func-name\n", argv[0]);
+
+    /* Load the shared library and get a handle for later use */
+
+    libHandle = dlopen(argv[1], RTLD_LAZY);
+    if (libHandle == NULL)
+        fatal("dlopen: %s", dlerror());
+
+    /* Search library for symbol named in argv[2] */
+
+    (void) dlerror();                           /* Clear dlerror() */
+#pragma GCC diagnostic ignored "-pedantic"
+    funcp = (void (*)(void)) dlsym(libHandle, argv[2]);
+
+    /* In the book, instead of the preceding line, the code uses a
+       rather clumsy looking cast of the form:
+
+           *(void **) (&funcp) = dlsym(libHandle, argv[2]);
+
+       This was done because the ISO C standard does not require compilers
+       to allow casting of pointers to functions back and forth to 'void *'.
+       (See TLPI pages 863-864.) SUSv3 TC1 and SUSv4 accepted the ISO C
+       requirement and proposed the clumsy cast as the workaround. However,
+       the 2013 Technical Corrigendum to SUSv4 requires implementations
+       to support casts of the more natural form (now) used in the code
+       above. However, various current compilers (e.g., gcc with the
+       '-pedantic' flag) may still complain about such casts. Therefore,
+       we use a gcc pragma to disable the warning (note that this pragma
+       is available only since gcc 4.6, released in 2010). See also the
+       erratum note for page 864 at http://www.man7.org/tlpi/errata/. */
+
+    err = dlerror();
+    if (err != NULL)
+        fatal("dlsym: %s", err);
+
+    /* Try calling the address returned by dlsym() as a function
+       that takes no arguments */
+
+    (*funcp)();
+
+    dlclose(libHandle);                         /* Close the library */
+
+    exit(EXIT_SUCCESS);
+}
+
+关闭共享库 dlclose()
+-------------------------
+dlclose()函数关闭一个库.
+#include <dlfcn.h>
+int dlclose(void *handle);           Returns 0 on success,or -1 on error
+dlclose()函数会减小handle所引用的库的打开引用的系统计数.如果这个引用计数变成了0并且其他库已经不需要用到该库中的符号了;那么就会卸载这个库.系统也会在这个库的依赖树中的库执行(递归地)同样的过程;当进程终止时会隐式地对所有库执行dlclose().
+注意:从glibc 2.2.3开始,共享库中的函数可以使用atexit()(或on_exit())来设置一个在库被卸载时自动调用的函数.
+
+获取与加载的符号相关的信息 dladdr()
+dladdr()返回一个包含地址addr(通常通过前面的dlopen()调用获得)的相关信息的结构.
+#define _GNU_SOURCE
+#include <dlfcn.h>
+int dladdr(const void *addr,Dl_info *info);    Returns nonzero value of addr was found in a shared library，otherwise 0.
+
+info参数是一个指向由调用者分配的结构指针,其结构形式如下:
+typedef struct{
+  const char *dli_fname;  /*Pathname of shared library containing 'addr'*/
+  void *dli_fbase;    /*Base address at which shared library is loaded*/
+  const char *dli_sname;  /*Name of nearest run-time symbol with an address <= 'addr'*/
+  void *dli_saddr;    /*Actual value of the symbol returned in 'dli_sname'*/
+}Dl_info;
+
+Dl_info结构中的前两个字段指定了包含地址addr的共享库的路径名和运行时基地址.最后两个字段返回地址相关的信息.假设addr指向共享库中一个符号的确切地址,那么dli_saddr返回的值与传入的addr值一样.
+SUSv3并没有规定dladdr(),所有UNIX实现也都没有提供这个函数.
+
+在主程序中访问符号
+假设使用dlopen()动态加载了一个共享库,然后使用dlsym()获取了共享库中x()函数的地址;接着调用x().如果在x()中调用了函数y(),那么通常会在程序加载的其中一个共享库中搜索y().
+有些时候需要让x()调用主程序中的y()实现(类似与回调机制).为了达到这个目的就必须要使主程序中的符号(全局作用域)对动态链接器可用,即在链接程序时使用 --export-dynamic 链接器选项.
+>gcc -Wl,--export-dynamic main.c   (plus further options and arguments) 
+或者可以编写下面这个等价命令
+>gcc --export-dynamic main.c
+使用这些选项中的一个就能够允许动态加载的库访问主程序中的全局符号.
+
+注意:gcc -rdynamic 选项和gcc -Wl,-E选项的含义.以及-Wl,--export-dynamic 是一样的.
+
+控制符号的可见性
+设计良好的共享库应该只公开那些构成其声明的应用程序二进制接口(ABI)的符号(函数和变量)，其原因如下:
+1.如果共享库的设计人员不小心导出了末详细说明的接口,那么使用这个库的应用程序的作者可能会选择使用这些接口.这样在将来升级共享库时可能会带来兼容性问题;库的开发人员认为可以修改或删除那些不属于文档中记录的ABI中的接口,而库的用户则希望继续使用名称与他们当前正在使用的接口名称一样的接口(同时语义保持不变).
+2.在运行时符号解析阶段,由共享库导出的所有符号可能会优先于其他共享库提供的相关定义.
+3.导出非必需的符号会增加在运行时需加载的动态符号表的大小.
+当库的设计人员确保只导出那些库的声明的ABI所需的符号就能使上述问题发生的可能性降低到最低或避免上述问题的发生.下列技术可以用来控制符号的导出:
+4.在C程序中可以使用static关键词使得一个符号私有于源代码模块,从而使得它无法被其他目标文件绑定.
+注意:除了使一个符号私有于源代码模块之外,static关键词还能达到一个相反的效果.如果一个符号被标记为static,那么在同一源文件中对该符号的所有引用会被绑定到该符号的定义上,其结果是这些引用在运行时不会被关联到其他共享库中的相应定义上（"运行时符号解析"中描述的方式）.static关键词的这种效果类似于"运行时符号解析"介绍的链接器选项,但差别在于static关键词只影响单个源文件中的单个符号.
+5.GNU C编译器gcc提供了一个特有的特性声明,它执行与static关键词类似的任务.
+void __attribute__ ((visibility("hidden")))
+func(void){ /*CODE*/ }
+static关键词将一个符号的可见性限制在单个源代码文件中,而hidden特性使得一个符号对构成共享库的所有源代码文件都可见;但对库之外的文件不可见.
+注意:与static关键词一样,hidden特性也能达到一个相反的效果;即防止在运行时发生符号插入.
+6.版本脚本可以用来精确控制符号的可见性以及选择将一个引用绑定到符号的哪个版本.
+7.当动态加载一个共享库时,dlopen()接收的RTLD_GLOBAL标记可以用来指定这个库中定义的符号应该用于后续加载的库中的绑定操作;--export-dynamic链接器选项可以用来使主程序的全局符号对动态加载的库可用.
+更多有关符号可见性方面的细节信息可以参见[Drepper,2004(b)].
+
+链接器版本脚本
+版本脚本是一个包含链接器ld执行的指令的文本文件,要使用版本脚本必须要指定--version-script链接器选项.
+>gcc -Wl,--version-script,myscriptfile.map ...
+版本脚本的后缀通常(但不统一)是.map.
+下面将介绍版本脚本的用途:
+1.使用版本脚本控制符号的可见性，版本脚本的一个用途是控制哪些可能会在无意中变成全局可见(即对与该库进行链接的应用程序可见)的符号的可见性.举个简单的例子,假设需要从三个源文件vis_common.c,vis_fl.c以及vis_f2.c中构建一个库,这三个源文件分别定义了函数vis_common(),vis_fl()以及vis_f2().vis_common()由vis_f1()和vis_f2()调用,但不想与该库进行链接的应用程序直接使用.再假设使用常规的方式来构建共享库.
+>gcc -g -c fPIC -Wall vis_common.c vis_f1.c vis_f2.c
+>gcc -g -shared -o vis.so vis_common.o vis_f1.o vis_f2.o
+如果使用下面的readelf命令来列出该库导出动态符号,那么就会看到下面的输出.
+>readelf --syms --use-dynamic vis.so |grep vis_
+-------------------------------------------------------
+30      12:000000790  59  FUNC  GLOBAL DEFAULT 10 vis_f1
+25      12:0000007d0  73  FUNC  GLOBAL DEFAULT 10 vis_f2
+27      12:000000770  20  FUNC  GLOBAL DEFAULT 10 vis_common
+这三个共享库导出了三个符号:vis_f1(),vis_f2(),vis_common();但这里需要确保这个库只导出vis_f1()和vis_f2()符号，这种效果可以通过下面的版本脚本来实现.
+>cat vis.map
+--------------------------
+VER_1{
+  global:
+    vis_f1;
+    vis_f2;
+  local:
+    *;
+};
+
+标识符VER_1是一种版本标签.在下面章节会对符号版本化的讨论中将会看到一个版本脚本可以包含多个版本节点,每个版本节点以括号({})组织起来并且在括号前面设置一个唯一的版本标签.如果使用版本脚本只是为了控制符号符号的可见性,那么版本标签是多余的,但老版本的ld仍然需要用到这个标签,ld的现代版本允许省略版本标签.如果省略了版本标签的话就认为版本节点拥有一个匿名版本标签并且在这个脚本中不能存在其他版本节点.
+在版本节点中,关键词global标记出了以分号分隔的对库之外的程序可见的符号列表的起始位置.关键词local标记出了以分号分隔的对库之外的程序隐藏的符号列表的起始位置.上面的星号(*)说明在符号规范中可以使用掩码模式,所使用的掩码字符与shell文件名匹配中使用的掩码字符是一样的(如*和?).(更多细节清参考glob(7)手册)在本例中,local规范中的星号表示除了在global段中显示声明的符号之外的所有符号都对外隐藏.如果不这样声明,那么vis_common()仍然是可见的,因为在默认情况下C全局符号对共享库之外的程序是可见的.
+接着可以像下面这样使用版本脚本来构建共享库:
+>gcc -g -c -fPIC -Wall vis_common.c vis_f1.c vis_f2.c
+>gcc -g -shared -o vis.so vis_common.o vis_f1.o vis_f2.o -Wl,--version-script,vis.map
+再次使用readelf可以看出vis_common()不再对外可见了.
+>readelf --syms --use-dynamic vis.so |grep vis_ 
+-------------------------------------------------------
+25      12:000000790  59  FUNC  GLOBAL DEFAULT 11 vis_f1
+29      12:0000007d0  73  FUNC  GLOBAL DEFAULT 11 vis_f2
+
+2.符号版本化,符号版本化允许一个共享库提供同一个函数的多个版本.每个程序会使用它与共享库进行(静态)链接时函数的当前版本.这种处理方式的结果是可以对共享库进行不兼容的改动而无需提升库的主要本号.从极端的角度来讲,符号版本化可以取代传统的共享库主要和次要版本化模型.glibc 从2.1开始使用了这种符号版本化技术,因此glibc 2.0 以及之前的所有版本都是通过单个主要库版本(libc.so.6)来支持的.
+下面通过一个简单的例子来展示符号版本化的用途,首先使用一个版本脚本来创建共享库的第一个版本.
+>cat sv_lib_v1.c
+----------------------------
+#include <stdio.h>
+void xyz(){printf("v1 xyz\n");}
+
+>cat sv_v1.map
+----------------------------
+VER_1{
+  global:xyz;
+  local: *;   #hide all other symbols
+};
+
+>gcc -g -c -fPIC -Wall sv_lib_v1.c
+>gcc -g -shared -o libsv.so sv_lib_v1.o -Wl,--version-script,sv_v1.map
+注意:在版本脚本中,#开启一段注释.
+
+(为了使例子尽量简单点,这里没有使用显式的库soname和库的主要版本号.)
+在这个阶段,版本脚本sv_v1.map只用来控制共享库的符号的可见性;即只导出xyz().同时隐藏其他所有符号(在这个简短的例子中没有其他符号了),接着创建一个程序pl来使用这个库.
+>cat sv_prog.c
+----------------------------
+#include <stdlib.h>
+int main(int argc,char *argv[]){
+  void xyz(void);
+  xyz();
+  exit(EXIT_SUCCESS);
+}
+>gcc -g -o p1 sv_prog.c libsv.so    #运行这个程序之后就能看到预期的结果.
+>LD_LIBRARY_PATH=. ./p1
+v1 xyz
+
+现在假设需要修改库中xyz()的定义,但同时仍然需要确保程序pl继续使用老版本的函数.为了完成这个任务,必须要在库中定义两个版本的xyz().
+>cat sv_lib_v2.c
+----------------------------
+#include <stdio.h>
+__asm__(".symver xyz_old,xyz@VER_1");
+__asm__(".symver xyz_new,xyz@@VER_2");
+
+void xyz_old(void){printf("v1 xyz\n");}
+void xyz_new(void){printf("v2 xyz\n");}
+void pqr(void){printf("v2 pqr\n");}
+
+这里两个版本的xyz()是通过函数xyz_old()和xyz_new()来实现的.xyz_old()函数对应于原来的xyz()定义,pl程序应该继续使用这个函数.xyz_new()函数提供了与库的新版本进行链接的程序所使用的xyz()的定义.
+修改过的版本脚本中的两个.symver汇编器指令将这两个函数绑定到了两个的版本标签上,下面将使用这个脚本来创建共享库的新版本.第一个指令指示与版本标签VER_1进行链接的应用程序(即程序p1)所使用的xyz()的实现是xyz_old(),与版本标签VER_2进行链接的应用程序所使用的xyz()的实现是xyz_new().
+第二个.symver指令使用@@(不是@)来指示当应用程序与这个共享库进行静态链接时应该使用的xyz()的默认定义.一个符号的.symver指令中应该只有一个指令使用@@标记.
+下面是与修改之后的库对应的版本脚本.
+>cat sv_v2.map
+------------------------------------
+VER_1{
+  global:xyz;
+  local: *;    #Hide all other symbols
+};
+
+VER_2{
+  global:pqr;
+}VER_1;
+
+这个版本脚本提供了一个新版本标签VER_2,它依赖与标签VER_1.这种依赖关系是通过下面这样进行标记的.
+}VER_1;
+版本标记依赖表明了相邻两个库之间的关系.从语义上来讲Linux上的版本标签依赖唯一效果是版本节点可以从它所依赖的版本节点中继承global和local规范.
+依赖可以串联起来,这样就可以定义另一个依赖与VER_2的版本节点VER_3并以此类推的定义其他版本节点.
+版本标签名本身没有任何意义,他们相互之前的关系是通过指定的版本依赖来确定的,因此这里选择名称VER_1和VER_2仅仅为了暗示他们之间的关系.为了便于维护,建议在版本标签名中包含包名称和一个版本号.如glibc会使用名为GLIBC_2.0和GLIBC_2.1之类的版本标签名.
+VER_2版本标签还指定了将库中的pqr()函数导出并绑定到VER_2版本标签.如果没有通过这种方式声明的pqr(),那么VER_2版本标签从VER_1版本标签继承而来的local规范将会使pgr()对外不可见.还需注意的是如果省略了local规范,那么库中的xyz_old()和xyz_new()符号也会被导出(这通常不是期望发生的事情).
+现在按照以往方式构建库的新版本:
+>gcc -g -c -fPIC -Wall sv_lib_v2.c
+>gcc -g -shared -o libsv.so sv_lib_v2.o -Wl,--version-script,sv_v2.map
+现在创建一个新程序p2,它使用了xyz()的新定义,同时程序p1使用了旧版的xyz().
+>gcc -g -o p2 sv_prog.c libsv.so
+>LD_LIBRARY_PATH=. ./p2
+v2 xyz                            USE xyz@VER_2 
+>LD_LIBRARY_PATH=. ./p1
+v1 xyz                            USE xyz@VER_1
+
+可执行文件的版本标签依赖是在静态链接时进行记录的,使用objdump -t 可以打印除每个可执行文件的符号表;从而能够显示出两个程序中不同的版本标签依赖.
+>objdump -t p1 |grep xyz 
+08048380     F *UND*  0000002e           xyz@VER_1
+>objdump -t p2 |grep xyz 
+08048380     F *UND*  0000002e           xyz@@VER_2 
+还可以使用readelf -s获取类似信息.
+注意:更多有关符号版本化的信息可以通过命令info ld scripts version.
+
+初始化和终止函数，可以定义一个或多个在共享库被加载时自动执行的函数,这样在使用共享库时就能够完成一些初始化和终止工作了.不管库是自动被加载还是使用dlopen接口显示加载的,初始化函数和终止函数都会被执行.
+初始化和终止函数是使用gcc的constructor和destructor特性来定义的.在库被加载时需要执行的所有函数都应该定义成下面的形式.
+void __attribute__ ((constructor)) some_name_load(void){
+  /*Initialization*/
+}
+类似的,卸载函数的形式如下:
+viod __attribute__ ((destructor)) some_name_unload(void){
+  /*Finalization code*/
+}
+读者可以根据需要使用其他名字替换函数名some_name_load()和some_name_unload().
+注意:使用gcc的constructor和destructor特性还能创建主程序的初始化函数和终止函数.
+
+_init() 和_fini() 函数,用来完成共享库的初始化和终止工作的一项较早的技术是在库中创建两个函数_init()和fini().当库首次被进程加载时会执行void _init(void)中的代码,当库被卸载时会执行void _fini(void)函数中的代码.
+如果创建了_init()和_fini()函数，那么在构建共享库时必须要指定gcc -nostartfiles 选项以防止链接器加入这些函数的默认实现.(如果需要的话可以使用-Wl,-init 和 -Wl,-fini 链接器选项来指定函数的名称.)
+有了gcc的constructor和destructor特性之后已经不建议使用_init()和_fini()函数了,因为gcc的constructor和destructor特性允许定义多个初始化终止函数.
+
+预加载共享库,出于测试的目的有些时候可以有选择的覆盖一些正常情况下会被动态链接器按照“在运行时找出共享库”中介绍的规则找出的函数(以及其他符号).要完成这个任务可以定义一个环境变量LD_PRELOAD,其值由在加载其他共享库之前需加载的共享库名称构成,其中共享库名称之间用空格或冒号分隔.由于首先会加载这些共享库,因此可执行文件自动会使用这些库中定义的函数,从而覆盖那些动态链接器在其他情况下会搜索的同名函数.如假设有一个程序调用了函数x1()和x2(),并且这两个函数在libdemo库中进行了定义.这样当运行这个程序时会看到下面这样的输出:
+>./prog 
+Called mod1-x1 DEMO
+Called mod2-x2 DEMO 
+(在本例中假设共享库位于其中一个标准目录中,因此无需使用LD_LIBRARY_PATH环境变量.)
+
+接着需要覆盖函数x1(),这样可以通过创建另一个包含了不同的x1()定义的共享库libalt.so来完成.在运行这个程序时预加载这个库会得到下面的输出.
+>LD_PRELOAD=libalt.so ./prog
+Called mod1-x1 ALT
+Called mod2-x2 DEMO
+从上面的输出可以看出程序调用了libalt.so中定义的x1(),但libalt.so并没有定义x2(),因此对x2()的调用仍然会调用libdemo.so中定义的x2()函数.
+LD_PRELOAD环境变量控制着进程级别的预加载行为,或者可以用/etc/ld.so.preload文件来在系统层面完成同样的任务;该文件列出了以空格分隔的库列表.(LD_PRELOAD 指定的库将在加载/etc/ld.so.preload指定的库之前加载).
+出于安全原因,set-user-id和set-group-id程序忽略了LD_PRELOAD.
+
+监控动态链接器LD_DEBUG,有些时候需要监控动态链接器的操作以弄清楚它在搜索哪些库;这可以通过LD_DEBUG环境变量来完成.通过将这个变量设置为一个(或多个)标准关键词可以从动态链接器中得到各种跟踪信息.
+如果将help赋给LD_DEBUG,那么动态链接器会输出有关LD_DEBUG的帮助信息,而指定的命令不会被执行.
+>LD_DEBUG=help date
+------------------------------------
+Valid options for the LD_DEBUG environment variable are:
+
+  libs        display library search paths
+  reloc       display relocation processing
+  files       display progress for input file
+  symbols     display symbol table processing
+  bindings    display information about symbol binding
+  versions    display version dependencies
+  all         all previous options combined
+  statistics  display relocation statistics
+  unused      determined unused DSOs
+  help        display this help message and exit
+
+To direct the debugging output into a file instead of standard output
+a filename can be specified using the LD_DEBUG_OUTPUT environment variable.
+注意:要将调试信息输出到一个文件而不是标准输出中,则可以使用LD_DEBUG_OUTPUT环境变量指定一个文件名.
+当请求与跟踪库搜索相关的信息时会产生很多输出,下面的例子对输出进行了删减.
+>LD_DEBUG=libs date
+------------------------------------
+...
+      7456:	find library=librt.so.1 [0]; searching
+      7456:	 search path=/home/prog/mpi/openmpi/lib/tls/x86_64:/home/prog/mpi/openmpi/lib/tls:/home/prog/mpi/openmpi/lib/x86_64:/home/prog/mpi/openmpi/lib:tls/x86_64:tls:x86_64:		(LD_LIBRARY_PATH)
+      7456:	  trying file=/home/prog/mpi/openmpi/lib/tls/x86_64/librt.so.1
+      7456:	  trying file=/home/prog/mpi/openmpi/lib/tls/librt.so.1
+      7456:	  trying file=/home/prog/mpi/openmpi/lib/x86_64/librt.so.1
+      7456:	  trying file=/home/prog/mpi/openmpi/lib/librt.so.1
+      7456:	  trying file=tls/x86_64/librt.so.1
+      7456:	  trying file=tls/librt.so.1
+      7456:	  trying file=x86_64/librt.so.1
+      7456:	  trying file=librt.so.1
+      7456:	 search cache=/etc/ld.so.cache
+      7456:	  trying file=/lib/x86_64-linux-gnu/librt.so.1
+      7456:	
+      7456:	find library=libc.so.6 [0]; searching
+      7456:	 search path=/home/prog/mpi/openmpi/lib:tls/x86_64:tls:x86_64:	(LD_LIBRARY_PATH)
+      7456:	  trying file=/home/prog/mpi/openmpi/lib/libc.so.6
+      7456:	  trying file=tls/x86_64/libc.so.6
+      7456:	  trying file=tls/libc.so.6
+      7456:	  trying file=x86_64/libc.so.6
+      7456:	  trying file=libc.so.6
+      7456:	 search cache=/etc/ld.so.cache
+      7456:	  trying file=/lib/x86_64-linux-gnu/libc.so.6
+      7456:	
+      7456:	find library=libpthread.so.0 [0]; searching
+      7456:	 search path=/home/prog/mpi/openmpi/lib:tls/x86_64:tls:x86_64:	(LD_LIBRARY_PATH)
+      7456:	  trying file=/home/prog/mpi/openmpi/lib/libpthread.so.0
+      7456:	  trying file=tls/x86_64/libpthread.so.0
+      7456:	  trying file=tls/libpthread.so.0
+      7456:	  trying file=x86_64/libpthread.so.0
+      7456:	  trying file=libpthread.so.0
+      7456:	 search cache=/etc/ld.so.cache
+      7456:	  trying file=/lib/x86_64-linux-gnu/libpthread.so.0
+      7456:	
+      7456:	
+      7456:	calling init: /lib/x86_64-linux-gnu/libpthread.so.0
+      7456:	
+      7456:	
+      7456:	calling init: /lib64/ld-linux-x86-64.so.2
+      7456:	
+      7456:	
+      7456:	calling init: /lib/x86_64-linux-gnu/libc.so.6
+      7456:	
+      7456:	
+      7456:	calling init: /lib/x86_64-linux-gnu/librt.so.1
+      7456:	
+      7456:	
+      7456:	initialize program: date
+      7456:	
+      7456:	
+      7456:	transferring control: date
+      7456:	
+...
+每一行开头处的10687是指所跟踪的进程的进程ID,当监控多个进程(如父进程和子进程)时会用到这个值.
+在默认情况下,LD_DEBUG的输出会被写到标准错误上,但可以将一个路径名赋给一个环境变量LD_DEBUG_OUTPUT来将输出重定向到其他地方.
+如果需要的话可以给LD_DEBUG赋多个选项,各个选项之前使用逗号分隔(不能出现空格).symbols选项(跟踪动态链接器的符号解析)的输出特别多.
+LD_DEBUG对于有动态链接器隐式加载的库和使用dlopen()动态加载的库都有效.
+出于安全的原因,在set-user-id和set-group-id程序中将会忽略LD_DEBUG(自glibc2.2.5开始).

@@ -1,0 +1,95 @@
+$>./config -d no-asm -d no-shared --prefix=/wireshark-3.2.5  2>&1 | tee configure.log
+$>make -j`nproc`  2>&1 | tee build.log && make install
+$>openssl version
+
+服务端
+--------------
+$>cd /path/... && vi ssl/openssl.cnf 
+---------
+...
+[ CA_default ]
+dir             = .  
+...
+[ req_distinguished_name ]
+countryName                     = Country Name (2 letter code)
+countryName_default             = CN
+countryName_min                 = 2
+countryName_max                 = 2
+
+stateOrProvinceName             = State or Province Name (full name)
+stateOrProvinceName_default     = hubei
+
+localityName                    = Locality Name (eg, city)
+localityName_default            = wuhan
+
+0.organizationName              = Organization Name (eg, company)
+0.organizationName_default      = hy
+
+# we can do this but it is not needed normally :-)
+#1.organizationName             = Second Organization Name (eg, company)
+#1.organizationName_default     = World Wide Web Pty Ltd
+
+organizationalUnitName          = Organizational Unit Name (eg, section)
+organizationalUnitName_default  = 00
+
+commonName                      = Common Name (e.g. server FQDN or YOUR name)
+commonName_max                  = 64
+commonName_default              = example.com
+
+emailAddress                    = Email Address
+emailAddress_max                = 64
+emailAddress_default            = hy@example.com
+...
+
+$>/path/.../bin/openssl genrsa -des3 -passout pass:123456 -out srv.key 2048
+$>/path/.../bin/openssl rsa -passin pass:123456 -in srv.key -out srv.key
+$>/path/.../bin/openssl req -new -key srv.key -out srv.csr
+ >CN
+ >hubei
+ >wuhan
+ >hy
+ >00
+ >www.wuhan.com
+ >hy@example.com
+ 
+$>/path/.../bin/openssl genrsa -passout pass:123456 -des3 -out ca.key 2048
+$>/path/.../bin/openssl req -passin pass:123456 -new -x509 -key ca.key -out ca.crt -days 36500
+ >CN
+ >hubei
+ >wuhan
+ >hy
+ >00
+ >www.wuhan.com
+ >hy@example.com
+
+$>mkdir -pv {certs,crl,req,newcerts,crlnumber}
+$>touch serial index.txt
+$>echo "00" > serial
+$>/path/.../bin/openssl ca -passin pass:123456 -in srv.csr -out srv.crt -cert ca.crt -keyfile ca.key -config ./ssl/openssl.cnf 
+或者
+$>vi x 
+----------
+ca_passwd=`./bin/openssl rand -hex 1024`
+key_passwd=`./bin/openssl rand -hex 1024`
+./bin/openssl genrsa -des3 -passout pass:$key_passwd -out demo.key 2048
+./bin/openssl rsa -passin pass:$key_passwd -in demo.key -out demo.key
+./bin/openssl req -new -key demo.key -out demo.csr
+./bin/openssl genrsa -passout pass:$ca_passwd -des3 -out ca.key 2048
+./bin/openssl req -passin pass:$ca_passwd -new -x509 -key ca.key -out ca.crt -days 36500
+mkdir -pv {certs,crl,req,newcerts,crlnumber}
+touch serial index.txt
+echo "00" > serial
+./bin/openssl ca -passin pass:$ca_passwd -in demo.csr -out demo.crt -cert ca.crt -keyfile ca.key -config ./ssl/openssl.cnf 
+
+$>chmod 777 ./x && ./x 
+$>scp demo.crt ca.crt demo.key [用户@服务器地址]:/path/.../
+$>gcc srv.c -I /path/.../include/ /path/.../lib/libssl.a /path/.../lib/libcrypto.a -ldl
+
+注意:程序中会用到ca.crt,demo.key,demo.crt.
+
+客户端
+--------------
+$>gcc cli.c -I /path/.../include/ /path/.../lib/libssl.a /path/.../lib/libcrypto.a -ldl
+
+注意:程序中会用到ca.crt,demo.key,demo.crt.
+

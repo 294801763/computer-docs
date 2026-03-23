@@ -1,0 +1,53 @@
+版本说明
+----
+generic - 一般/通用Linux
+legacy  - 奔腾4之前的Linux
+geode   - AMD公司geode处理器定制Linux
+
+ros
+-------------------
+vboxmanage createvm --name "ros" --ostype "Linux" --register
+VBoxManage modifyvm "ros" --memory 256 --cpus 1 --vram 256 --graphicscontroller vmsvga --vrde on --vrdeport 6689 --clipboard-mode bidirectional --drag-and-drop bidirectional --nic1 bridged --nicpromisc1 allow-all --bridgeadapter1 "Intel(R) Ethernet Connection I219-V" --nic2 bridged --nicpromisc2 allow-all --bridgeadapter2 "Intel(R) Dual Band Wireless-AC 7265"
+VBoxManage storagectl "ros" --name "SATA Controller" --add sata --controller IntelAHCI
+VBoxManage storageattach "ros" --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "c:/ros/openwrt.vdi"
+VBoxHeadless --startvm "ros" -e "TCP/Ports=8889" >/dev/null 2>&1 &
+VBoxManage controlvm "ros" poweroff               #关闭
+VBoxManage unregistervm "ros"
+
+使用命令
+----
+$>gzip -d openwrt-*.img.gz
+$>VBoxManage convertfromraw --format VDI openwrt-23.05.2-x86-generic-generic-ext4-combined.img openwrt.vdi
+$>VBoxManage modifymedium openwrt.vdi --resize 128
+vms>
+   >uci set network.lan.ipaddr='192.168.10.250'
+   >uci commit network
+   >service network restart
+   >uci show network
+   >uci show network.lan 
+   >uci set network.lan.proto=dhcp 
+   >uci commit network
+   >uci show network.wan 
+
+pppoe>
+     >uci set network.wan.proto=pppoe
+	 >uci set network.wan.username=<上网账户>
+	 >uci set network.wan.password=<上网密码>
+	 >uci commit network
+
+注意:虚拟机第一个网口接"192.168.10.<1-200>"段的网络地址,然后网页访问"192.168.10.250"即可打开配置界面.
+
+配置文件
+----
+$>nano /etc/config/network
+--
+...
+
+恢复出厂
+----
+$>firstboot
+$>reboot
+
+清空地址
+----
+$>ip addr flush dev <接口名称>

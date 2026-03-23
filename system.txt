@@ -1,0 +1,229 @@
+GRUB
+-------------------
+$>grub-install --boot-directory=/.../boot/
+
+GRUB 
+-------------------
+$>apt-get install grub-pc grub-efi-amd64 -y
+$>update-initramfs -c -k all                            #生成/boot/initrd.img-`uname -r`文件.
+$>grub-mkconfig -o /boot/grub/grub.cfg                  #生成Grub配置文件. 
+$>update-grub 
+$>grub-install <磁盘驱动器,eg./dev/sda>
+
+debootstrap
+-------------------
+step.1 安装/vsftpd/web/nginx-1.2.1/v1.4/v1.4.iso
+
+step.2 自定义系统
+--------
+$>apt-get install binfmt-support squashfs-tools isolinux syslinux genisoimage debootstrap -y
+$>mkdir -pv /systems
+$>mkdir -pv /systems/isolinux
+$>ln -sf /usr/share/debootstrap/scripts/sid /usr/share/debootstrap/scripts/buster
+$>/sbin/debootstrap --no-check-gpg --verbose --arch=amd64 --include=vim,openssh-server,ethtool,net-tools,telnet,gdb,locales,vim,bash-completion buster /systems http://192.168.0.102:81/v1.4                        #物理机用此命令.
+or 
+$>/sbin/debootstrap --no-check-gpg --verbose --arch=amd64 --include=vim,openssh-server,ethtool,net-tools,telnet,locales,vim,bash-completion --foreign buster /systems http://192.168.0.102:81/v1.4              #虚拟机用此命令.
+$>LC_ALL=C LANGAGE=C LANG=C /sbin/chroot /systems/ debootstrap/debootstrap --second-stage
+$>mount -o bind /proc /systems/proc
+$>mount -o bind /sys /systems/sys
+$>mount -o bind /dev /systems/dev
+$>mount -o bind /dev/pts /systems/dev/pts
+$>/sbin/chroot /systems/
+$>apt-get install linux-image-`uname -r` linux-headers-`uname -r` build-essential -y
+$>tasksel install standard
+$>apt-get clean 
+$>exit
+$>/sbin/chroot /systems umount /proc
+$>/sbin/chroot /systems umount /sys 
+$>/sbin/chroot /systems umount /dev/pts 
+$>/sbin/chroot /systems umount /dev
+$>mksquashfs /systems /filesystem.squashfs -comp xz                             #制作文件系统.
+$>unsquashfs -d /systems /filesystem.squashfs                                   #解压文件系统.
+
+注意:以上内容操作成功.
+
+自定义系统
+-------------------
+$>apt-get install live-build binfmt-support squashfs-tools isolinux syslinux genisoimage debootstrap -y
+$>export PATH=$PATH:/usr/sbin/:/sbin:/usr/local/sbin
+$>lb config -d buster --archive-areas "main contrib" --mirror-bootstrap http://192.168.10.88:81/v1.4
+$>lb build 
+$>lb clean 
+
+修改光盘
+-------------------
+$>mkdir -pv /systems
+$>mkdir -pv /systems/isolinux
+$>mount -t iso9660 -o ro,loop /vsftpd/web/nginx-1.2.1/v1.4/v1.4.iso /media                                   #自动化安装请参考:doc/manual/zh_CN/install.zh_CN.txt.
+$>cp -fv /media/isolinux/{ldlinux.c32,isolinux.bin,vesamenu.c32,libcom32.c32,libutil.c32,boot.cat} /systems/isolinux
+$>cp -fv /media/install.amd/{initrd.gz,vmlinuz} /systems/isolinux
+$>vi /systems/isolinux/isolinux.cfg 
+--------
+default vesamenu.c32
+prompt 0
+timeout 0
+menu hshift 4
+menu width 70
+label install
+    menu label ^Install
+    kernel vmlinuz
+    append vga=788 initrd=initrd.gz --- quiet
+
+$>genisoimage -o /x.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -J -V 'X' /systems
+
+注意:以上内容经过验证,制作后的iso可以启动但在挂载iso失败了.
+
+开机启动光盘系统
+----------------
+step.1 编辑默认grub配置.
+----------
+$>vi /etc/default/grub
+------
+...
+GRUB_TIMEOUT=0
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 text"
+...
+
+step.2 更新grub
+----------
+$>export PATH=$PATH:/usr/sbin/:/sbin:/usr/local/sbin
+$>/sbin/update-grub
+
+step.3 自定义grub
+----------
+$>vi /etc/grub.d/40_custom
+------
+menuentry "DEBIAN ISO" {
+    insmod ext2
+    set root=(hd0,msdos1)
+    set iso="/opt/X.iso"
+    loopback loop ${iso}
+    linux (loop)/live/vmlinuz-5.10.0-10-amd64 boot=live components locales=en_US.UTF-8 findiso=${iso}
+    initrd (loop)/live/initrd.img-5.10.0-10-amd64
+}
+
+注意:"hd0,msdos1"来源于"/boot/grub/grub.cfg"中的"set root='hd0,msdos1'",debian-live-11.2.0-amd64-standard.iso->X.iso,linux {内容参考$isoboot/grub/grub.cfg}.
+
+step.4 更新grub
+----------
+$>export PATH=$PATH:/usr/sbin/:/sbin:/usr/local/sbin
+$>/sbin/update-grub
+
+NETCONSOLE
+-------------------
+$>apt-get install netconsole linux-image-amd64 linux-headers-amd64
+$>sh -c 'echo netconsole >> /etc/modules'
+$>vi /etc/default/grub
+--------
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 netconsole=+6666@<填写netconsole本地IP地址,eg.192.168.10.88>/<填写设备名称,eg.ens33>,6666@<填写接收日志远程IP地址,eg.192.168.10.22>/ text"
+
+$>export PATH=$PATH:/usr/sbin/:/sbin:/usr/local/sbin
+$>/sbin/update-grub
+$>/sbin/reboot 
+$>dmesg | grep -B1 netconsole
+$>/sbin/modprobe netconsole netconsole=+6666@192.168.10.88/ens33,6666@192.168.10.22/        #安装.
+$>/sbin/modprobe -r netconsole                                                              #卸载.
+
+注意:"192.168.10.88"是Linux主机,"192.168.10.22"是Windows主机,然后在Windows执行"nc -l -u -p 6666 > kernel.log"进行监控日志输出即可.
+
+强制内核使用物理内存
+-------------------
+$>vi /etc/sysctl.conf 
+--------
+vm.overcommit_kbytes=0 
+vm.overcommit_ratio=0
+vm.overcommit_memory=2 
+
+注意:以上内容会导致"Network Time Synchronization,Samba NMB Daemon"异常从而导致Linux系统启动困难,配置在"/etc/default/grub"中证明是无效的.
+
+有关内核模块的配置
+-------------------
+$>vi /etc/modules
+--------
+...
+
+$>vi /etc/modprobe.d/<自定义配置>
+--------
+...
+
+$>vi /etc/modules-load.d/<自定义配置>
+--------
+...
+
+sysctl
+-------------------
+$>whereis sysctl 
+$>/sbin/sysctl -a | grep --color=always "net.ipv4.tcp_slow_start_after_idle"
+
+内核配置
+-------------------
+$>vi /etc/sysctl.conf 
+--------
+kernel.msgmax=8192
+kernel.msgmnb=16384 
+kernel.msgmni=16 
+kernel.shmall=2097152 
+kernel.shmmax=33554432 
+kernel.shmmni=4096
+kernel.nmi_watchdog=0
+kernel.randomize_va_space=0
+net.ipv4.ip_forward=1
+net.ipv4.tcp_slow_start_after_idle = 0 
+
+注意:以上内容经过测试证明是有效的.
+
+更改网卡名称
+-------------------
+step.1 小知识
+--------
+ENO  --  主板bios内置网卡
+ENS  --  主板内置PCI-E网卡
+ENP  --  PCI-E独立网卡 
+ETH  --  除以上情况
+
+step.2 配置
+--------
+$>/etc/default/grub
+----
+...
+GRUB_TERMINAL="console serial"
+GRUB_SERIAL_COMMAND="serial --unit=0 --speed=115200 --word=8 --parity=no --stop=1"                          #"ttyS0"
+GRUB_CMDLINE_LINUX_DEFAULT="net.ifnames=0 biosdevname=0"
+...
+
+$>/sbin/update-grub 
+
+注意:在4.19.x内核上测试通过.
+
+ALL CONSOLE
+-------------------
+$>apt-get install netconsole linux-image-amd64 linux-headers-amd64
+$>sh -c 'echo netconsole >> /etc/modules'
+$>vi /etc/default/grub
+--------
+...
+GRUB_TERMINAL="console serial"
+GRUB_SERIAL_COMMAND="serial --unit=0 --speed=115200 --word=8 --parity=no --stop=1"                          #"ttyS0"
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 console=ttyS0,115200 netconsole=+6666@<填写netconsole本地IP地址,eg.192.168.10.88>/<填写设备名称,eg.ens33>,6666@<填写接收日志远程IP地址,eg.192.168.10.22>/ net.ifnames=0 biosdevname=0 text"
+...
+
+$>export PATH=$PATH:/usr/sbin/:/sbin:/usr/local/sbin
+$>/sbin/update-grub
+
+内核参数-屏幕旋转90度
+---------------------
+GRUB_CMDLINE_LINUX="video=efifb fbcon=rotate:1"
+
+0   degree  --  0         normal rientation
+90  degree  --  1         clockwise rientation
+180 degree  --  2         upside down rientation
+270 degree  --  3         counterclockwise orientation
+
+KGDBoE
+------------------
+$>cd kgdboe 
+$>make -C /lib/modules/$(uname -r)/build M=$(pwd)
+$>insmod kgdboe.ko device_name=eth0 udp_port=31337
+$>dmesg | tail 
+$>gdb 
+>target remote udp:<IP>:<PORT> 

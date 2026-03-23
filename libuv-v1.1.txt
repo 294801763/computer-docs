@@ -1,0 +1,313 @@
+compile
+--
+CFLAGS="-g3 -O0 -gdwarf-4" ./configure --prefix=/<路径>/libuv/
+make V=1 && make install 
+
+gdb - v1.0
+--
+b main 
+r 
+info sharedlibrary
+info proc mappings
+
+gdb - v1.1
+--
+set environment LD_LIBRARY_PATH <路径>
+
+gdb - v1.1
+--
+directory /home/github/<libuv 目录>/
+
+gdb - v1.2
+--
+define uv
+	set environment LD_LIBRARY_PATH 
+	directory /home/github/libuv
+	b main
+	r
+	info sharedlibrary
+	info proc mappings
+end
+
+document uv
+	调试libuv库
+	compile
+	--
+	CFLAGS="-g3 -O0 -gdwarf-4" ./configure --prefix=/<路径>/libuv/
+	make V=1 && make install 
+end
+
+version
+--
+#include <uv.h>
+
+int main(int argc,char **argv)
+{
+  printf("libuv version:%d\n",uv_version());
+  printf("libuv version:%s\n",uv_version_string());
+  return 0;
+}
+
+type
+--
+/* Handle types. */
+typedef struct uv_loop_s uv_loop_t;
+typedef struct uv_handle_s uv_handle_t;
+typedef struct uv_dir_s uv_dir_t;
+typedef struct uv_stream_s uv_stream_t;
+typedef struct uv_tcp_s uv_tcp_t;
+typedef struct uv_udp_s uv_udp_t;
+typedef struct uv_pipe_s uv_pipe_t;
+typedef struct uv_tty_s uv_tty_t;
+typedef struct uv_poll_s uv_poll_t;
+typedef struct uv_timer_s uv_timer_t;
+typedef struct uv_prepare_s uv_prepare_t;
+typedef struct uv_check_s uv_check_t;
+typedef struct uv_idle_s uv_idle_t;
+typedef struct uv_async_s uv_async_t;
+typedef struct uv_process_s uv_process_t;
+typedef struct uv_fs_event_s uv_fs_event_t;
+typedef struct uv_fs_poll_s uv_fs_poll_t;
+typedef struct uv_signal_s uv_signal_t;
+
+/* Request types. */
+typedef struct uv_req_s uv_req_t;
+typedef struct uv_getaddrinfo_s uv_getaddrinfo_t;
+typedef struct uv_getnameinfo_s uv_getnameinfo_t;
+typedef struct uv_shutdown_s uv_shutdown_t;
+typedef struct uv_write_s uv_write_t;
+typedef struct uv_connect_s uv_connect_t;
+typedef struct uv_udp_send_s uv_udp_send_t;
+typedef struct uv_fs_s uv_fs_t;
+typedef struct uv_work_s uv_work_t;
+typedef struct uv_random_s uv_random_t;
+
+/* None of the above. */
+typedef struct uv_env_item_s uv_env_item_t;
+typedef struct uv_cpu_info_s uv_cpu_info_t;
+typedef struct uv_interface_address_s uv_interface_address_t;
+typedef struct uv_dirent_s uv_dirent_t;
+typedef struct uv_passwd_s uv_passwd_t;
+typedef struct uv_utsname_s uv_utsname_t;
+typedef struct uv_statfs_s uv_statfs_t;
+
+loop - v1.0
+--
+#include <uv.h>
+
+uv_loop_t *loop;
+
+int main(int argc,char **argv)
+{
+  loop = uv_loop_new(); //一定要手动调用free
+  //todo ...
+  uv_run(loop,UV_RUN_DEFAULT);
+  uv_loop_close(loop);
+  free(loop); //这里一定要free
+  return 0;
+}
+
+loop - v1.1
+--
+#include <uv.h>
+
+uv_loop_t *loop;
+
+int main(int argc,char **argv)
+{
+  loop = uv_default_loop(); //不能使用free
+  //todo ...
+  uv_run(loop,UV_RUN_DEFAULT);
+  uv_loop_close(loop);
+  return 0;
+}
+
+loop - v1.2
+--
+#include <uv.h>
+
+uv_loop_t *loop;
+
+int main(int argc,char **argv)
+{
+  loop = uv_loop_new(); //一定要手动调用free
+  //todo ...
+  uv_run(loop,UV_RUN_NOWAIT);   //程序不会阻塞在这里
+  uv_loop_close(loop);
+  free(loop); //这里一定要free
+  return 0;
+}
+
+async - v1.0
+--
+#include <uv.h>
+
+uv_loop_t *loop;
+uv_async_t async;
+
+void close_cb()
+{
+  printf("close_cb\n");
+  fflush(stdout);
+}
+
+void async_cb(uv_async_t* handle)
+{
+  printf("async_cb\n");
+  fflush(stdout);
+
+  uv_close((uv_handle_t*)&async,close_cb);     //这里关闭了uv_run - UV_RUN_DEFAULT循环也就退出了
+}
+
+int main(int argc,char **argv)
+{
+  loop = uv_loop_new(); //一定要手动调用free
+  
+  uv_async_init(loop,&async,async_cb);
+  uv_async_send(&async);
+  
+  uv_run(loop,UV_RUN_DEFAULT);
+  uv_loop_close(loop);
+  free(loop); //这里一定要free
+  return 0;
+}
+
+timer - v1.0
+--
+#include <uv.h>
+
+uv_loop_t *loop;
+uv_timer_t timer;
+
+void close_cb()
+{
+  printf("close_cb\n");
+  fflush(stdout);
+}
+
+void timer_cb(uv_timer_t* handle)
+{
+  printf("timer_cb\n");
+  fflush(stdout);
+
+  uv_close((uv_handle_t*)&timer,close_cb);
+}
+
+int main(int argc,char **argv)
+{
+  loop = uv_loop_new(); //一定要手动调用free
+  
+  uv_timer_init(loop,&timer);
+  uv_timer_start(&timer,timer_cb,1000,1);
+  
+  uv_run(loop,UV_RUN_DEFAULT); 
+  uv_loop_close(loop);
+  free(loop); //这里一定要free
+  return 0;
+}
+
+idle - v1.0
+--
+#include <uv.h>
+
+uv_loop_t *loop;
+uv_idle_t idle;
+
+void close_cb()
+{
+  printf("close_cb\n");
+  fflush(stdout);
+}
+
+void idle_cb(uv_timer_t* handle)
+{
+  printf("idle_cb\n");
+  fflush(stdout);
+
+  uv_close((uv_handle_t*)&idle,close_cb);
+}
+
+int main(int argc,char **argv)
+{
+  loop = uv_loop_new(); //一定要手动调用free
+  
+  uv_idle_init(loop,&idle);
+  uv_idle_start(&idle,idle_cb);
+  
+  uv_run(loop,UV_RUN_DEFAULT); 
+  uv_loop_close(loop);
+  free(loop); //这里一定要free
+  return 0;
+}
+
+file - v1.0
+--
+#include <uv.h>
+
+uv_loop_t *loop;
+
+uv_fs_t open_req;
+uv_fs_t read_req;
+uv_fs_t write_req;
+uv_buf_t iov;
+
+char buffer[1024];
+
+void read_cb(uv_fs_t *req);
+void write_cb(uv_fs_t *req)
+{
+  if (req->result < 0)
+  {
+    fprintf(stderr, "Write error: %s\n", uv_strerror((int)req->result));
+  }
+  else
+  {
+    uv_fs_read(uv_default_loop(), &read_req, open_req.result, &iov, 1, -1, read_cb);
+  }
+}
+
+void read_cb(uv_fs_t *req)
+{
+  if (req->result < 0)
+  {
+    fprintf(stderr, "Read error: %s\n", uv_strerror(req->result));
+  }
+  else if (req->result == 0)
+  {
+    uv_fs_t close_req;
+    // synchronous
+    uv_fs_close(uv_default_loop(), &close_req, open_req.result, NULL);
+  }
+  else if (req->result > 0)
+  {
+    iov.len = req->result;
+    uv_fs_write(loop, &write_req, 1, &iov, 1, -1, write_cb);
+  }
+}
+
+void open_cb(uv_fs_t *req)
+{
+  assert(req == &open_req);
+  if (req->result >= 0)
+  {
+    iov = uv_buf_init(buffer, sizeof(buffer));
+    uv_fs_read(loop, &read_req, req->result, &iov, 1, -1, read_cb);
+  }
+  else
+  {
+    fprintf(stderr, "error opening file: %s\n", uv_strerror((int)req->result));
+  }
+}
+
+int main(int argc,char **argv)
+{
+  loop = uv_loop_new(); //一定要手动调用free
+  
+  uv_fs_open(loop,&open_req,argv[1],O_RDONLY,0,open_cb);
+  
+  uv_run(loop,UV_RUN_DEFAULT); 
+  uv_loop_close(loop);
+  free(loop); //这里一定要free
+  return 0;
+}
+

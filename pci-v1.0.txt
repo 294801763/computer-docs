@@ -1,0 +1,4 @@
+$>apt-get install rasdaemon
+$>systemctl enable --now rasdaemon
+$>ras-mc-ctl --summary                          #摘要
+$>ras-mc-ctl --errors                           #错误

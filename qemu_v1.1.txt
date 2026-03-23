@@ -1,0 +1,174 @@
+DRI
+-------------------
+/github/unix/kernel/drivers/gpu/drm
+
+查找配置项
+-------------------
+$>find /github/unix/kernel/ -name Makefile -type f | xargs grep -w "+= <name>.o"
+
+Qemu开发主机配置
+-------------------
+step.1 NETWORK
+--------------
+$>touch /usr/bin/tap && chmod a+x /usr/bin/tap 
+$>mkdir -p /etc/qemu && echo "allow br0" > /etc/qemu/bridge.conf
+$>echo "bridge">>/etc/modules
+$>nano /etc/network/interfaces
+--------
+...
+allow-hotplug eth0 br0
+auto eth0 br0
+iface br0 inet static
+address 192.168.10.10
+netmask 255.255.255.0
+gateway 192.168.10.1
+hwaddress 00:00:00:00:00:01
+dns-nameservers 192.168.10.1
+pre-up ip link set eth0 promisc on
+pre-up ip tuntap add tap0 mode tap user root 
+pre-up echo "1">/proc/sys/net/ipv4/ip_forward
+up route add -net 192.168.10.0/24 gw 192.168.10.1 metric 30
+down route del -net 192.168.10.0/24 gw 192.168.10.1 metric 30
+bridge_ports eth0
+...
+
+$>nano /usr/bin/tap 
+--------
+#!/bin/sh
+
+set -x
+if [ -n "$1" ];then
+	ip link set $1 up
+	sleep 0.5s
+	ip link set $1 master br0 
+	ip link set $1 promisc on
+	exit 0
+fi
+
+step.2 INSTALL
+--------------
+$>apt-get install build-essential dh-autoreconf libncurses5-dev tftp-hpa tftpd-hpa xinetd nfs-common nfs-kernel-server samba gcc-multilib g++-multilib gdb-multiarch net-tools pkg-config v4l-utils dh-make libgmp-dev libelf-dev xserver-xorg-core xserver-xorg x11-xserver-utils libxkbcommon-dev libxkbcommon-x11-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-render-util0-dev libxcb-util0-dev libxcb-keysyms1-dev python2.7-dev dpkg-dev xfonts-75dpi xfonts-100dpi xfonts-base ninja-build libguestfs-tools libfdt-dev libssl-dev libglib2.0-dev libpixman-1-dev zlib1g-dev python3-pip qemu-system bridge-utils uml-utilities virtualenv python3 devscripts imagemagick python2 sparse meson netcat bc lzop texinfo bison flex make automake autoconf gdb cscope ctags tree git dos2unix minicom ttyrec cmake unzip astyle indent slurm socat tcpdump ipcalc nmap ffmpeg nano vim gawk screen tmux valgrind autogen ethtool rsync dejagnu  
+
+step.3 KERNEL
+--------------
+*** Compiler: gcc (Debian 8.3.0-6) 8.3.0 ***
+[*] Networking support  --->
+ --- Networking support
+ Networking options  --->
+  --- TCP/IP networking
+  [*]   IP: kernel level autoconfiguration
+File systems  --->
+ [*] Network File Systems  --->
+  --- Network File Systems
+  <*>   NFS client support
+  < >     NFS client support for NFS version 2
+  <*>     NFS client support for NFS version 3
+  [*]       NFS client support for the NFSv3 ACL protocol extension
+  <*>     NFS client support for NFS version 4
+  [ ]     Provide swap over NFS support
+  [*]   Root file system on NFS                                                               #这一项极其重要,关乎NFS-rootfs能否成功运行;依赖于NETWORK_FILESYSTEMS,NFS_FS,IP_PNP.
+  [ ]   Use the legacy NFS DNS resolver
+  < >   NFS server support
+
+$>cd /home/vsftpd/linux/Linux
+$>./b
+
+注意:/home/vsftpd/linux/Linux.tar.gz默认并没有开启"CONFIG_ROOT_NFS","CONFIG_IP_PNP".
+
+step.4 编译工具箱
+--------------
+$>cd /github/unix/tools/busybox
+$>git checkout v1.27.2 -fb v1.27.2
+$>mkdir tmp
+$>make V=1 O=./tmp -j`nproc` defconfig
+$>make V=1 O=./tmp -j`nproc` menuconfig
+----
+Settings  --->    
+ --- Build Options 
+  [x] Build static binary (no shared libs)
+--- Applets
+ Shells  ---> 
+  [ ]   Job control                                                                         #去掉勾选,为了解决'sh: can't access tty; job control turned off'
+
+$>make V=1 O=./tmp -j`nproc` install 
+
+注意:要想NFS能成功运行rootfs,编译busybox和内核gcc编译器版本要一致;否则rootfs无法成功运行成功.
+
+step.5 根文件系统
+----------
+$>cd /github/unix/tools/busybox
+$>dd if=/dev/zero of=./rootfs.img bs=1M count=256
+$>mkfs.ext3 rootfs.img
+$>mount -o loop ./rootfs.img /mnt/
+$>cp -avf ./tmp/_install/* /mnt/
+$>cd /mnt/
+$>mkdir -pv proc/ sys/ etc/ mnt/ usr/sbin/ usr/bin/ usr/lib/ lib/ dev/ root/ tmp/ media/ usr/share/alsa etc/init.d/ var/run/wpa/ var/empty/ 
+$>touch init etc/fstab etc/passwd etc/group etc/pointercal
+$>chmod a+x init
+$>nano init
+-------
+#!/bin/busybox sh
+
+export PATH=/sbin:/bin:/usr/sbin:usr/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib
+
+export TERM=vt100
+export TERMINFO=/usr/share/terminfo
+
+busybox mount -t proc none /proc
+busybox mount -t sysfs none /sys
+busybox mount -t tmpfs none /dev
+
+busybox mkdir /dev/pts
+busybox mount -t devpts none /dev/pts
+busybox mount -a 
+
+busybox mknod /dev/console c 5 1
+busybox mknod /dev/null c 1 3
+
+busybox mdev -s
+
+busybox mkdir -p /lib/modules/`uname -r` >/dev/null 2>&1&
+
+busybox adduser -u 0 -s /bin/sh -h /root root >/dev/null 2>&1&
+busybox echo "root:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox telnetd >/dev/null 2>&1&
+
+busybox cat <<!
+Boot took $(busybox cut -d' ' -f1 /proc/uptime) seconds
+        _       _     __ _                  
+  /\/\ (_)_ __ (_)   / /(_)_ __  _   ___  __
+ /    \| | '_ \| |  / / | | '_ \| | | \ \/ /
+/ /\/\ \ | | | | | / /__| | | | | |_| |>  < 
+\/    \/_|_| |_|_| \____/_|_| |_|\__,_/_/\_\ 
+
+Welcome to MINI Linux
+!
+
+exec /bin/busybox sh
+
+$>umount /mnt/
+
+注意:"busybox mdev -s"是针对busybox-v1.27.2的写法,更高版本可参考"arm_v1.0.txt".
+
+step.6 编译虚拟机
+--------------
+$>cd /home/vsftpd/linux/
+$>tar -xvf qemu-2.12.1.tar.gz 
+$>./configure --prefix=/opt/v2.12.1 --sysconfdir=/etc --enable-debug --target-list=x86_64-softmmu,x86_64-linux-user,arm-softmmu,arm-linux-user
+$>make -j`nproc` && make install 
+$>nano /etc/profile 
+-------
+PATH=/opt/v2.12.1/bin/:$PATH
+
+step.7 RUN 
+--------------
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap0,script=/usr/bin/tap,downscript=no -kernel /mnt/x86_64/vbuild/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.88:/opt/shared/share,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off rootwait text' -boot c 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+step.8 debug 
+--------------
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap0,script=/usr/bin/tap,downscript=no -kernel /mnt/x86_64/vbuild/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.88:/opt/shared/share,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off rootwait text' -boot c -S -gdb tcp::8888 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+注意:以上内容在v1.4.iso(debian 10)上测试通过.
+

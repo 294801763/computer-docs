@@ -1,0 +1,98 @@
+快捷键 
+-------------
+CTRL + 鼠标左键         - 跳转到头文件
+
+类基本元素 
+---------------
+class window : public QMainWindow
+{
+	Q_OBJECT
+public:
+	...
+
+private:
+	...
+
+protected:
+	...
+
+private slots:
+	void on_<name>_<event>();
+};
+
+void window::on_<name>_<event>()
+{
+	
+}
+
+信号与槽关联
+----------------------
+QObject::connect(<sender>,SIGNAL(signal()),<receiver>,SLOT(slot()));
+
+eg.
+ >QObject::connect(pushButton,SIGNAL(clicked()),window,SLOT(close()));
+
+断开信号与槽
+----------------------
+QObject::disconect(<sender>,SIGNAL(signal()),<receiver>,SLOT(slot()));
+
+1.0 断开一切与win连接的信号或槽
+-------
+disconect(win,0,0,0);
+等同于
+win->disconect();
+
+1.1 断开所有特定信号与槽
+-------
+disconect(win,SIGNAL(xxSignal()),0,0);
+等同于 
+win->disconect(SIGNAL(xxSignal()));
+
+1.2 与指定的接收者断开连接
+--------
+disconect(win,0,xxReceiver,0);
+等同于 
+win->disconect(xxReceiver);
+
+自定义信号与槽
+----------------
+学校->通知->学生->上课
+
+School school : QObject
+{
+	Q_OBJECT
+	
+private signals:          //QT信号的关键字,只需声明不需要定义.
+	void sendMessage();
+
+public slots:
+
+};
+
+Student student : QObject
+{
+	Q_OBJECT
+
+private signals:          //QT信号的关键字
+
+public slots:             //槽既需要声明又需要定义.
+	void comeBackToClass();
+	
+};
+
+//关联写法
+QObject::connect(school,SIGNAL(sendMessage()),student,SLOT(comeBackToClass()));
+emit school->sendMessage();
+
+信号连接规则 
+---------------
+1.一个信号可以连接多个槽
+2.多个信号可以连接同一个槽
+3.一个信号可以连接另外一个信号
+
+注意:参考"QT信号与槽机制".
+
+查看样式表
+--------------
+搜索:setStyleSheet
+

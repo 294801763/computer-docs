@@ -1,0 +1,56 @@
+NGINX-DAV
+-----------------
+$>apt-get install nginx nginx-extras libnginx-mod-http-dav-ext libnginx-mod-http-auth-pam
+$>mkdir -pv /opt/notes/ && chown -R www-data:www-data /opt/notes/
+$>usermod -aG shadow www-data
+$>cat > /etc/nginx/sites-available/default << EOF
+server {
+    listen 8088 default_server;
+    listen [::]:8088 default_server;
+    root /opt/notes/;
+    index index.html index.htm index.nginx-debian.html;
+    server_name _;
+
+    location / {
+        dav_methods PUT DELETE MKCOL COPY MOVE;
+        dav_ext_methods PROPFIND OPTIONS;
+        dav_access user:rw group:rw all:rw;
+
+        client_max_body_size 0;
+        create_full_put_path on;
+        client_body_temp_path /tmp/;
+
+        auth_pam "Restricted";
+        auth_pam_service_name "common-auth";
+    }
+}
+EOF
+
+$>nginx -t && nginx -s reload
+
+Joplin-2.9.17
+-----------------
+$>Tools->Options->Synchronisation->Synchronisation target:WebDAV
+                                  >WebDAV URL:http://<Server IP>:8088/
+								  >WebDAV username:<填写操作系统用户>
+								  >WebDAV password:<填写操作系统用户密码>
+
+设置Markdown渲染字体大小
+-----------------
+工具->选项->外观->显示高级选项->适用于已渲染 Markdown 的自定义样式表->userstyle.css <渲染样式>
+----
+*{
+  font-size:12px !important;
+}
+
+工具->选项->外观->显示高级选项->适用于 Joplin 全域应用样式的自定义样式表->userchrome.css <编辑器样式>
+----
+*{
+  font-size:12px !important;
+}
+
+注意:修改后不会立即生效,重启Joplin才能看到效果.
+
+Joplin使用注意事项
+-----------------
+1.版本一旦选择就不要频繁更换

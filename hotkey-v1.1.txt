@@ -1,0 +1,209 @@
+循环
+-------------------
+Loop, 10  ; 循环 10 次
+{
+    Send, Hello{Enter}  ; 模拟按键发送 "Hello" 并按下回车
+    Sleep, 1000  ; 每次循环间隔 1 秒
+}
+
+counter := 0
+while (counter < 10)
+{
+    Send, % counter{Enter}  ; 发送当前计数并按下回车
+    counter++  ; 计数器加 1
+    Sleep, 500  ; 每次循环间隔 0.5 秒
+}
+
+counter := 0
+while (counter < 10)
+{
+    Send, % counter{Enter}  ; 发送当前计数并按下回车
+    counter++  ; 计数器加 1
+    Sleep, 500  ; 每次循环间隔 0.5 秒
+}
+
+for i, item in [1, 2, 3, 4, 5]
+{
+    Send, Item %item%{Enter}  ; 发送数组中的每个元素并按下回车
+    Sleep, 300  ; 每次循环间隔 0.3 秒
+}
+
+循环 + 按键操作
+-------------------
+Send, a{Enter}  ; 模拟按下 "a" 键并回车
+Send, {Ctrl}c  ; 模拟按下 Ctrl+C
+Send, {Shift}+{F1}  ; 模拟按下 Shift+F1
+
+Loop, 5  ; 循环 5 次
+{
+    Send, {F1}  ; 模拟按下 F1 键
+    Sleep, 500  ; 每次循环间隔 0.5 秒
+}
+
+counter := 0
+while (counter < 10)
+{
+    if (counter % 2 = 0)  ; 如果计数是偶数
+    {
+        Send, {Ctrl}a  ; 模拟按下 Ctrl+A
+    }
+    else
+    {
+        Send, {Ctrl}c  ; 模拟按下 Ctrl+C
+    }
+    counter++
+    Sleep, 1000  ; 每次循环间隔 1 秒
+}
+
+F2::  ; 当按下 F2 键时
+{
+    Loop, 3  ; 循环 3 次
+    {
+        Send, {Ctrl}v{Enter}  ; 模拟按下 Ctrl+V 和回车
+        Sleep, 200  ; 每次循环间隔 0.2 秒
+    }
+    return
+}
+
+模拟按键输入
+-------------------
+Send, Hello World!{Enter}  ; 输入文本并按下回车
+
+Send, ^c  ; Ctrl+C（复制）
+Send, ^v  ; Ctrl+V（粘贴）
+Send, ^{F2}  ; Ctrl+F2
+
+Send, {F1}  ; 发送 F1 键
+Send, {Tab}  ; 发送 Tab 键
+Send, {Enter}  ; 发送回车键
+Send, {Shift}a  ; 按住 Shift 并输入 "a"（大写 A）
+Send, {Ctrl}+{Shift}+N  ; Ctrl+Shift+N
+
+Send, {Click}  ; 模拟鼠标左键单击
+Send, {Click Right}  ; 模拟鼠标右键单击
+Send, {Click Middle}  ; 模拟鼠标中键单击
+
+F1::  ; 按下 F1 时触发
+{
+    MsgBox, 按下了 F1 键！
+    return
+}
+
+^F2::  ; Ctrl+F2
+{
+    MsgBox, 按下了 Ctrl+F2！
+    return
+}
+
++Tab::  ; Shift+Tab
+{
+    MsgBox, 按下了 Shift+Tab！
+    return
+}
+
+XButton1::  ; 鼠标侧键（通常为 XButton1）
+{
+    MsgBox, 按下了鼠标侧键！
+    return
+}
+
+#Persistent  ; 保持脚本运行
+SetTimer, CheckKey, 1000  ; 每秒检查一次
+
+CheckKey:
+{
+    if (GetKeyState("Ctrl", "P"))
+    {
+        MsgBox, Ctrl 键正在被按下！
+    }
+    return
+}
+
+Loop, 5  ; 循环 5 次
+{
+    Send, {F1}  ; 发送 F1 键
+    Sleep, 500  ; 每次间隔 0.5 秒
+}
+
+F3::  ; 按下 F3 键时触发
+{
+    Loop, 3  ; 循环 3 次
+    {
+        Send, {Ctrl}a  ; 模拟按下 Ctrl+A
+        Sleep, 200
+        Send, {Ctrl}c  ; 模拟按下 Ctrl+C
+        Sleep, 200
+    }
+    return
+}
+
+; 按下 F9 键开始循环
+F8:: ; 使用 F8 作为开始/停止的控制键
+    if (toggle := !toggle) ; 切换状态
+    {
+        ; 开始循环按下 F9
+        SetTimer, PressF9, 100 ; 每隔 100 毫秒按下一次 F9，你可以根据需要调整时间间隔
+    }
+    else
+    {
+        ; 停止循环
+        SetTimer, PressF9, Off
+    }
+    return
+
+PressF9:
+    Send, {F9} ; 模拟按下 F9 键
+    return
+
+循环按下多个按键(每隔1秒钟依次按下"W","A","S","D"四个按键)
+-------------------
+#Persistent
+SetTimer, PressKey, 1000  ; 每1000毫秒触发一次 PressKey 标签
+keyList := ["W", "A", "S", "D"]  ; 定义按键列表
+keyIndex := 1  ; 初始化按键索引
+
+PressKey:
+    Send, {% keyList[keyIndex] %}  ; 模拟按下当前索引对应的按键
+    keyIndex := Mod(keyIndex, keyList.MaxIndex()) + 1  ; 更新索引
+return
+
+在特定条件下停止定时按键(每隔0.5秒按下一次"E"键,但当按下"1"键时停止定时按键)
+-------------------
+#Persistent
+SetTimer, PressKey, 500  ; 每500毫秒（0.5秒）触发一次 PressKey 标签
+
+PressKey:
+    Send, {E}  ; 模拟按下 E 键
+return
+
+1::  ; 定义 1 为热键
+    SetTimer, PressKey, Off  ; 关闭定时器
+return
+
+按下某个热键后开始定时按键(在按下F5后开始每隔1秒钟按下一次"E"键,再次按下F5停止定时按键)
+-------------------
+#Persistent
+v_Enable := 0  ; 定义一个变量来控制定时器的开启和关闭
+
+$F5::  ; 定义 F5 为热键
+{
+    v_Enable := !v_Enable  ; 切换 v_Enable 的值
+    if (v_Enable = 0)
+        SetTimer, PressKey, Off  ; 关闭定时器
+    else
+        SetTimer, PressKey, 1000  ; 每1000毫秒触发一次 PressKey 标签
+}
+return
+
+PressKey:
+    Send, {E}  ; 模拟按下 E 键
+return
+
+每隔固定时间按下某个按键(每隔1秒钟按下一次"E"键)
+-------------------
+#Persistent  ; 保持脚本运行
+SetTimer, PressKey, 1000  ; 每1000毫秒（1秒）触发一次 PressKey 标签
+
+PressKey:
+    Send, {E}  ; 模拟按下 E 键
+return

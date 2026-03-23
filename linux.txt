@@ -1,0 +1,4217 @@
+下载内核文档
+--------------
+$>wget -c -r -np -k -L -p https://www.kernel.org/doc/html/v4.19/
+$>wget -c -r -np -k -L -p https://www.kernel.org/doc/html/v5.4/
+$>wget -c -r -np -k -L -p https://www.kernel.org/doc/html/v5.6/
+$>wget -c -r -np -k -L -p https://www.kernel.org/doc/html/latest/
+
+Linux查看执行文是否带调试信息
+----------------
+$>readelf -S xx-prog |grep debug
+$>readelf --debug-dump xx-prog 
+$>nm -a xx-prog 
+$>file xx-prog 
+
+Gdb调试过程跳出内循环
+----------------
+u ln.     
+
+eg.>
+1.for(...)
+2.{
+3.  ...
+4.  for(...)
+5.  {
+6.    ...
+7.  }
+8.}
+
+注意:此时如果执行"u 7"则会导致该函数直接执行完毕,正确做法是"u 3".
+
+该GCC只用来编译内核
+----------------
+$>mkdir -p /tools/gcc
+$>cp /home/vsftpd/src.tar.gz /tools/gcc
+$>cd /tools/gcc && tar -xvf src.tar.gz
+$>mkdir /tools/gcc/build && cd build
+$>../src/configure --prefix=/tools -without-headers --with-local-prefix=/tools --with-native-system-header-dir=/tools/include --enable-obsolete --disable-libmudflap --disable-nls --disable-shared --disable-multilib --disable-decimal-float --disable-threads --disable-libatomic --disable-libgomp --disable-libmpx --disable-libquadmath --disable-libssp --disable-libvtv --disable-libstdcxx --enable-languages=c,c++
+
+memwatch使用
+----------------
+$>vi xx-name.c
+-------------
+...
+#include "memwatch.h"
+
+void xx-name(void)   //推荐这种写法.
+{
+...
+mwStatistics( 2 );
+mwNoMansLand( MW_NML_ALL );
+...
+}
+
+void yy-name(void)
+{
+...
+mwStatistics( 2 );
+mwLimit(1000000);
+mwNoMansLand( MW_NML_ALL );
+CHECK();
+...
+}
+
+void zz-name(void)
+{
+...
+mtrace()           //检测起点
+...
+muntrace();        //检测终点,检测到程序末尾时可以省略不写.
+}
+
+$>gcc -o xx-name -DMEMWATCH -DMEMWATCH_STDIO xx-name.c memwatch.c
+
+辅助函数-打印内存数据
+----------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * usage:
+ * #ifdef v_debug
+ * v_hexdump((char *)&variable_name, sizeof(variable_name));
+ * #endif
+ * 
+ * @author HY (6/9/18)
+ * 
+ * @param v_first_address 
+ * @param v_length 
+ */
+#ifdef v_debug
+void v_hexdump(unsigned char *v_first_address, unsigned long v_length) {
+    unsigned long i,j,k;
+    unsigned char v_binstr[256];
+
+    /**
+     * 多行.
+     */
+    for ( i = 0l; i<v_length; i++ ) {
+        if ( 0 == ( i%16 ) ) {                             //行首.            
+            sprintf(v_binstr,"%p -",i+v_first_address);    //sprintf(v_binstr,"0x%012x -",i+v_first_address);                                   
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);                  
+        } 
+        else if ( 15 == ( i%16 ) ) {                       //在"0x000000000000 - 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"后面输出字符.     
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);                 
+            sprintf(v_binstr,"%s  ",v_binstr);                                                               
+
+            for ( j = i-15; j <= i; j++ ) {                                                      
+                sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.'); 
+            }
+            printf("%s\n",v_binstr);                       //换行并打印字符                               
+        } else {
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);
+        }
+    }
+
+    /*
+    *单行或者最后一行.
+    */
+    if ( 0 != ( i%16 ) ) {
+        k = 16 - ( i%16 );
+
+        for ( j = 0; j < k; j++ ) {
+            sprintf(v_binstr,"%s   ",v_binstr);
+        }
+
+        sprintf(v_binstr,"%s  ",v_binstr);
+        k = 16 - k;
+
+        for ( j = i - k; j < i; j++ ) {
+            sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.');
+        }
+        printf("%s\n",v_binstr);                           //换行并打印字符
+    }
+}
+#endif
+
+内核辅助函数-打印内存数据
+----------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * usage:
+ * #ifdef v_debug
+ * v_hexdump((char *)&variable_name, sizeof(variable_name));
+ * #endif
+ * 
+ * @author HY (6/9/18)
+ * 
+ * @param v_first_address 
+ * @param v_length 
+ */
+#ifdef v_debug
+void v_hexdump(unsigned char *v_first_address, unsigned long v_length) {
+    unsigned long i,j,k;
+    unsigned char v_binstr[256];
+
+    /**
+     * 多行.
+     */
+    for ( i = 0l; i<v_length; i++ ) {
+        if ( 0 == ( i%16 ) ) {                             //行首.            
+            sprintf(v_binstr,"%p -",i+v_first_address);    //sprintf(v_binstr,"0x%012x -",i+v_first_address);                                   
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);                  
+        } 
+        else if ( 15 == ( i%16 ) ) {                       //在"0x000000000000 - 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"后面输出字符.     
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);                 
+            sprintf(v_binstr,"%s  ",v_binstr);                                                               
+
+            for ( j = i-15; j <= i; j++ ) {                                                      
+                sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.'); 
+            }
+            printk(KERN_NOTICE "%s\n",v_binstr);                       //换行并打印字符                               
+        } else {
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);
+        }
+    }
+
+    /*
+    *单行或者最后一行.
+    */
+    if ( 0 != ( i%16 ) ) {
+        k = 16 - ( i%16 );
+
+        for ( j = 0; j < k; j++ ) {
+            sprintf(v_binstr,"%s   ",v_binstr);
+        }
+
+        sprintf(v_binstr,"%s  ",v_binstr);
+        k = 16 - k;
+
+        for ( j = i - k; j < i; j++ ) {
+            sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.');
+        }
+        printk(KERN_NOTICE "%s\n",v_binstr);                           //换行并打印字符
+    }
+}
+#endif
+
+内核中循环打印一串字符的例子
+----------------
+$>cd linux-x.y.z
+$>vi mykernel/Makefile
+-------------
+#
+# Makefile for the linux mykernel.
+#
+
+obj-y     = mymain.o myinterrupt.o
+
+$>vi mykernel/myinterrupt.c
+-------------
+/*
+ *  linux/mykernel/myinterrupt.c
+ *
+ *  Kernel internal my_timer_handler
+ *
+ *  Copyright (C) 2013  Mengning
+ *
+ */
+#include <linux/kernel_stat.h>
+#include <linux/export.h>
+#include <linux/interrupt.h>
+#include <linux/percpu.h>
+#include <linux/init.h>
+#include <linux/mm.h>
+#include <linux/swap.h>
+#include <linux/pid_namespace.h>
+#include <linux/notifier.h>
+#include <linux/thread_info.h>
+#include <linux/time.h>
+#include <linux/jiffies.h>
+#include <linux/posix-timers.h>
+#include <linux/cpu.h>
+#include <linux/syscalls.h>
+#include <linux/delay.h>
+#include <linux/tick.h>
+#include <linux/kallsyms.h>
+#include <linux/irq_work.h>
+#include <linux/sched.h>
+#include <linux/sched/sysctl.h>
+#include <linux/slab.h>
+
+#include <asm/uaccess.h>
+#include <asm/unistd.h>
+#include <asm/div64.h>
+#include <asm/timex.h>
+#include <asm/io.h>
+
+#define CREATE_TRACE_POINTS
+#include <trace/events/timer.h>
+
+/*
+ * Called by timer interrupt.
+ */
+void my_timer_handler(void)
+{
+    printk(KERN_NOTICE "\n>>>>>>>>>>>>>>>>>my_timer_handler here<<<<<<<<<<<<<<<<<<\n\n");
+}
+
+$>vi mykernel/mymain.c
+-------------
+/*
+ *  linux/mykernel/mymain.c
+ *
+ *  Kernel internal my_start_kernel
+ *
+ *  Copyright (C) 2013  Mengning
+ *
+ */
+#include <linux/types.h>
+#include <linux/module.h>
+#include <linux/proc_fs.h>
+#include <linux/kernel.h>
+#include <linux/syscalls.h>
+#include <linux/stackprotector.h>
+#include <linux/string.h>
+#include <linux/ctype.h>
+#include <linux/delay.h>
+#include <linux/ioport.h>
+#include <linux/init.h>
+#include <linux/initrd.h>
+#include <linux/bootmem.h>
+#include <linux/acpi.h>
+#include <linux/tty.h>
+#include <linux/percpu.h>
+#include <linux/kmod.h>
+#include <linux/vmalloc.h>
+#include <linux/kernel_stat.h>
+#include <linux/start_kernel.h>
+#include <linux/security.h>
+#include <linux/smp.h>
+#include <linux/profile.h>
+#include <linux/rcupdate.h>
+#include <linux/moduleparam.h>
+#include <linux/kallsyms.h>
+#include <linux/writeback.h>
+#include <linux/cpu.h>
+#include <linux/cpuset.h>
+#include <linux/cgroup.h>
+#include <linux/efi.h>
+#include <linux/tick.h>
+#include <linux/interrupt.h>
+#include <linux/taskstats_kern.h>
+#include <linux/delayacct.h>
+#include <linux/unistd.h>
+#include <linux/rmap.h>
+#include <linux/mempolicy.h>
+#include <linux/key.h>
+#include <linux/buffer_head.h>
+#include <linux/page_cgroup.h>
+#include <linux/debug_locks.h>
+#include <linux/debugobjects.h>
+#include <linux/lockdep.h>
+#include <linux/kmemleak.h>
+#include <linux/pid_namespace.h>
+#include <linux/device.h>
+#include <linux/kthread.h>
+#include <linux/sched.h>
+#include <linux/signal.h>
+#include <linux/idr.h>
+#include <linux/kgdb.h>
+#include <linux/ftrace.h>
+#include <linux/async.h>
+#include <linux/kmemcheck.h>
+#include <linux/sfi.h>
+#include <linux/shmem_fs.h>
+#include <linux/slab.h>
+#include <linux/perf_event.h>
+#include <linux/file.h>
+#include <linux/ptrace.h>
+#include <linux/blkdev.h>
+#include <linux/elevator.h>
+
+#include <asm/io.h>
+#include <asm/bugs.h>
+#include <asm/setup.h>
+#include <asm/sections.h>
+#include <asm/cacheflush.h>
+
+#ifdef CONFIG_X86_LOCAL_APIC
+#include <asm/smp.h>
+#endif
+
+void __init my_start_kernel(void)
+{
+    int i = 0;
+    while(1)
+    {
+        i++;
+        if(i%100000 == 0)
+            printk(KERN_NOTICE "my_start_kernel here  %d \n",i);
+            
+    }
+}
+
+$>vi mykernel/README.md
+-------------
+mykernel
+==========
+It is a platform to write your own OS kernel,its based on Linux Kernel x.y.z source code.
+
+$>vi arch/x86/kernel/time.c
+-------------
+...
+#include <linux/time.h>
+#include <linux/timer.h>                            /*add by self.*/
+#include <linux/export.h>
+...
+static irqreturn_t timer_interrupt(int irq, void *dev_id)
+{
+    global_clock_event->event_handler(global_clock_event);
+    my_timer_handler();                             /*add by self.*/
+    return IRQ_HANDLED;
+}
+...
+void __init setup_default_timer_irq(void)
+{
+    printk(KERN_NOTICE "timer interrupt setup\n");  /*add by self.*/
+    setup_irq(0, &irq0);
+}
+...
+
+$>vi include/linux/start_kernel.h
+-------------
+...
+extern asmlinkage void __init start_kernel(void);
+extern void __init my_start_kernel(void);          /*add by self.*/
+...
+
+$>vi include/linux/timer.h
+-------------
+...
+extern void init_timers(void);
+extern void run_local_timers(void);
+extern void my_timer_handler(void);               /*add by self.*/
+...
+
+$>vi init/main.c
+-------------
+...
+asmlinkage void __init start_kernel(void)
+{
+   ...
+   my_start_kernel();                            /*add by self.*/
+   ...
+}
+...
+
+$>vi Makefile
+-------------
+...
+core-y		+= kernel/ mm/ fs/ ipc/ security/ crypto/ block/ mykernel/
+...
+
+注意:"mykernel/"自定义内核源码目录.
+
+$>vi mykernel/myinterrupt.c                    /*version 2*/
+-------------
+/*
+ *  linux/mykernel/myinterrupt.c
+ *
+ *  Kernel internal my_timer_handler
+ *
+ *  Copyright (C) 2013  Mengning
+ *
+ */
+#include <linux/types.h>
+#include <linux/string.h>
+#include <linux/ctype.h>
+#include <linux/tty.h>
+#include <linux/vmalloc.h>
+
+#include "mypcb.h"
+
+extern tPCB task[MAX_TASK_NUM];
+extern tPCB * my_current_task;
+extern volatile int my_need_sched;
+volatile int time_count = 0;
+
+/*
+ * Called by timer interrupt.
+ * it runs in the name of current running process,
+ * so it use kernel stack of current running process
+ */
+void my_timer_handler(void)
+{
+#if 1
+    if(time_count%1000 == 0 && my_need_sched != 1)
+    {
+        printk(KERN_NOTICE ">>>my_timer_handler here<<<\n");
+        my_need_sched = 1;
+    } 
+    time_count ++ ;  
+#endif
+    return;  	
+}
+
+void my_schedule(void)
+{
+    tPCB * next;
+    tPCB * prev;
+
+    if(my_current_task == NULL 
+        || my_current_task->next == NULL)
+    {
+    	return;
+    }
+    printk(KERN_NOTICE ">>>my_schedule<<<\n");
+    /* schedule */
+    next = my_current_task->next;
+    prev = my_current_task;
+    if(next->state == 0)/* -1 unrunnable, 0 runnable, >0 stopped */
+    {
+    	my_current_task = next; 
+    	printk(KERN_NOTICE ">>>switch %d to %d<<<\n",prev->pid,next->pid);  
+    	/* switch to next process */
+    	asm volatile(	
+        	"pushl %%ebp\n\t" 	    /* save ebp */
+        	"movl %%esp,%0\n\t" 	/* save esp */
+        	"movl %2,%%esp\n\t"     /* restore  esp */
+        	"movl $1f,%1\n\t"       /* save eip */	
+        	"pushl %3\n\t" 
+        	"ret\n\t" 	            /* restore  eip */
+        	"1:\t"                  /* next process start here */
+        	"popl %%ebp\n\t"
+        	: "=m" (prev->thread.sp),"=m" (prev->thread.ip)
+        	: "m" (next->thread.sp),"m" (next->thread.ip)
+    	); 
+ 	
+    }
+    else
+    {
+        next->state = 0;
+        my_current_task = next;
+        printk(KERN_NOTICE ">>>switch %d to %d<<<\n",prev->pid,next->pid);
+    	/* switch to new process */
+    	asm volatile(	
+        	"pushl %%ebp\n\t" 	    /* save ebp */
+        	"movl %%esp,%0\n\t" 	/* save esp */
+        	"movl %2,%%esp\n\t"     /* restore  esp */
+        	"movl %2,%%ebp\n\t"     /* restore  ebp */
+        	"movl $1f,%1\n\t"       /* save eip */	
+        	"pushl %3\n\t" 
+        	"ret\n\t" 	            /* restore  eip */
+        	: "=m" (prev->thread.sp),"=m" (prev->thread.ip)
+        	: "m" (next->thread.sp),"m" (next->thread.ip)
+    	);          
+    }   
+    return;	
+}
+
+$>vi mykernel/mymain.c                         /*version 2*/
+-------------
+/*
+ *  linux/mykernel/mymain.c
+ *
+ *  Kernel internal my_start_kernel
+ *
+ *  Copyright (C) 2013  Mengning
+ *
+ */
+#include <linux/types.h>
+#include <linux/string.h>
+#include <linux/ctype.h>
+#include <linux/tty.h>
+#include <linux/vmalloc.h>
+
+#include "mypcb.h"
+
+tPCB task[MAX_TASK_NUM];
+tPCB * my_current_task = NULL;
+volatile int my_need_sched = 0;
+
+void my_process(void);
+
+void __init my_start_kernel(void)
+{
+    int pid = 0;
+    int i;
+    /* Initialize process 0*/
+    task[pid].pid = pid;
+    task[pid].state = 0;/* -1 unrunnable, 0 runnable, >0 stopped */
+    task[pid].task_entry = task[pid].thread.ip = (unsigned long)my_process;
+    task[pid].thread.sp = (unsigned long)&task[pid].stack[KERNEL_STACK_SIZE-1];
+    task[pid].next = &task[pid];
+    /*fork more process */
+    for(i=1;i<MAX_TASK_NUM;i++)
+    {
+        memcpy(&task[i],&task[0],sizeof(tPCB));
+        task[i].pid = i;
+        task[i].state = -1;
+        task[i].thread.sp = (unsigned long)&task[i].stack[KERNEL_STACK_SIZE-1];
+        task[i].next = task[i-1].next;
+        task[i-1].next = &task[i];
+    }
+    /* start process 0 by task[0] */
+    pid = 0;
+    my_current_task = &task[pid];
+	asm volatile(
+    	"movl %1,%%esp\n\t" 	/* set task[pid].thread.sp to esp */
+    	"pushl %1\n\t" 	        /* push ebp */
+    	"pushl %0\n\t" 	        /* push task[pid].thread.ip */
+    	"ret\n\t" 	            /* pop task[pid].thread.ip to eip */
+    	"popl %%ebp\n\t"
+    	: 
+    	: "c" (task[pid].thread.ip),"d" (task[pid].thread.sp)	/* input c or d mean %ecx/%edx*/
+	);
+}   
+void my_process(void)
+{
+    int i = 0;
+    while(1)
+    {
+        i++;
+        if(i%10000000 == 0)
+        {
+            printk(KERN_NOTICE "this is process %d -\n",my_current_task->pid);
+            if(my_need_sched == 1)
+            {
+                my_need_sched = 0;
+        	    my_schedule();
+        	}
+        	printk(KERN_NOTICE "this is process %d +\n",my_current_task->pid);
+        }     
+    }
+}
+
+$>vi mypcb.h                                   /*version 2*/
+-------------
+/*
+ *  linux/mykernel/mypcb.h
+ *
+ *  Kernel internal PCB types
+ *
+ *  Copyright (C) 2013  Mengning
+ *
+ */
+
+#define MAX_TASK_NUM        4
+#define KERNEL_STACK_SIZE   1024*8
+
+/* CPU-specific state of this task */
+struct Thread {
+    unsigned long		ip;
+    unsigned long		sp;
+};
+
+typedef struct PCB{
+    int pid;
+    volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+    char stack[KERNEL_STACK_SIZE];
+    /* CPU-specific state of this task */
+    struct Thread thread;
+    unsigned long	task_entry;
+    struct PCB *next;
+}tPCB;
+
+void my_schedule(void);
+
+$>vi Makefile                                  /*version 2*/
+-------------
+#
+# Makefile for the linux mykernel.
+#
+
+obj-y     = mymain.o myinterrupt.o
+
+$>vi mykernel/myinterrupt.c                    /*version 3*/
+-------------
+/*	mykernel--Simple simulation of the linux OS  process schedule
+ *
+ *  linux/mykernel/myinterrupt.c
+ *
+ *  Kernel internal my_timer_handler
+ *
+ *  Copyright (C) 2013  Mengning
+ *  
+ *  Modified 2014 zhyq
+ * 
+ * 
+ *  You can redistribute or modify this program under the terms
+ *  of the GNU General Public License as published by
+ *  the Free Software Foundation.
+ *
+ * You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <linux/kernel_stat.h>
+#include <linux/export.h>
+#include <linux/interrupt.h>
+#include <linux/percpu.h>
+#include <linux/init.h>
+#include <linux/mm.h>
+#include <linux/swap.h>
+#include <linux/pid_namespace.h>
+#include <linux/notifier.h>
+#include <linux/thread_info.h>
+#include <linux/time.h>
+#include <linux/jiffies.h>
+#include <linux/posix-timers.h>
+#include <linux/cpu.h>
+#include <linux/syscalls.h>
+#include <linux/delay.h>
+#include <linux/tick.h>
+#include <linux/kallsyms.h>
+#include <linux/irq_work.h>
+#include <linux/sched.h>
+#include <linux/sched/sysctl.h>
+#include <linux/slab.h>
+
+#include <asm/uaccess.h>
+#include <asm/unistd.h>
+#include <asm/div64.h>
+#include <asm/timex.h>
+#include <asm/io.h>
+
+#include <linux/types.h>
+#include <linux/string.h>
+#include <linux/ctype.h>
+#include <linux/tty.h>
+#include <linux/vmalloc.h>
+
+#include "mypcb.h"
+
+#define CREATE_TRACE_POINTS
+#include <trace/events/timer.h>
+
+extern tPCB task[MAX_TASK_NUM];
+extern tPCB * my_current_task;
+extern volatile int my_need_sched;
+volatile int time_count = 0;
+
+/*
+* Called by timer interrupt.
+* it runs in the name of current running process,
+* so it use kernel stack of current running process
+*/
+void my_timer_handler(void)
+{
+#if 1
+    // make sure need schedule after system circle 2000 times.
+    if(time_count%2000 == 0 && my_need_sched != 1)
+    {
+        my_need_sched = 1;
+	//time_count=0;
+    }
+    time_count ++ ;
+#endif
+    return;
+}
+
+void all_task_print(void);
+
+tPCB * get_next(void)
+{
+	int pid,i;
+	tPCB * point=NULL;
+	tPCB * hig_pri=NULL;//points to the the hightest task
+	all_task_print();
+	hig_pri=my_current_task;
+	for(i=0;i<MAX_TASK_NUM;i++)
+		if(task[i].priority<hig_pri->priority)	
+			hig_pri=&task[i];
+	printk("                higst process is:%d priority is:%d\n",hig_pri->pid,hig_pri->priority);
+	return hig_pri;
+
+}//end of priority_schedule
+
+void my_schedule(void)
+{
+    tPCB * next;
+    tPCB * prev;
+    // if there no task running or only a task ,it shouldn't need schedule
+    if(my_current_task == NULL
+        || my_current_task->next == NULL)
+    {
+	printk(KERN_NOTICE "                time out!!!,but no more than 2 task,need not schedule\n");
+     return;
+    }
+    /* schedule */
+
+    next = get_next();
+    prev = my_current_task;
+    printk(KERN_NOTICE "                the next task is %d priority is %u\n",next->pid,next->priority);
+    if(next->state == 0)/* -1 unrunnable, 0 runnable, >0 stopped */
+    {//save current scene
+     /* switch to next process */
+     asm volatile(	
+         "pushl %%ebp\n\t" /* save ebp */
+         "movl %%esp,%0\n\t" /* save esp */
+         "movl %2,%%esp\n\t" /* restore esp */
+         "movl $1f,%1\n\t" /* save eip */	
+         "pushl %3\n\t"
+         "ret\n\t" /* restore eip */
+         "1:\t" /* next process start here */
+         "popl %%ebp\n\t"
+         : "=m" (prev->thread.sp),"=m" (prev->thread.ip)
+         : "m" (next->thread.sp),"m" (next->thread.ip)
+     );
+     my_current_task = next;//switch to the next task
+     printk(KERN_NOTICE "                switch from %d process to %d process\n                >>>process %d running!!!<<<\n\n",prev->pid,next->pid,next->pid);
+
+  }
+    else
+    {
+        next->state = 0;
+        my_current_task = next;
+    printk(KERN_NOTICE "                switch from %d process to %d process\n                >>>process %d running!!!<<<\n\n\n",prev->pid,next->pid,next->pid);
+
+     /* switch to new process */
+     asm volatile(	
+         "pushl %%ebp\n\t" /* save ebp */
+         "movl %%esp,%0\n\t" /* save esp */
+         "movl %2,%%esp\n\t" /* restore esp */
+         "movl %2,%%ebp\n\t" /* restore ebp */
+         "movl $1f,%1\n\t" /* save eip */	
+         "pushl %3\n\t"
+         "ret\n\t" /* restore eip */
+         : "=m" (prev->thread.sp),"=m" (prev->thread.ip)
+         : "m" (next->thread.sp),"m" (next->thread.ip)
+     );
+    }
+    return;	
+}//end of my_schedule
+
+void all_task_print(void)
+{
+	int i,cnum=62;//
+	printk(KERN_NOTICE "\n                current task is:%d   all task in OS are:\n",my_current_task->pid);
+
+	printk("        ");
+	for(i=0;i<cnum;i++)
+		printk("-");
+	printk("\n        |  process:");
+	for(i=0;i< MAX_TASK_NUM;i++)
+		printk("| %2d ",i);
+	printk("|\n        | priority:");
+	for(i=0;i<MAX_TASK_NUM;i++)
+		printk("| %2d ",task[i].priority);
+
+	printk("|\n        ");
+	for(i=0;i<cnum;i++)
+		printk("-");
+	printk("\n");
+}
+
+$>vi mykernel/mymain.c                         /*version 3*/
+-------------
+/*	mykernel--Simple simulation of the linux OS  process schedule
+ *
+ *  linux/mykernel/mymain.c
+ *
+ *  Kernel internal my_timer_handler
+ *
+ *  Copyright (C) 2013  Mengning
+ *  
+ *  Modified zhyq
+ * 
+ * 
+ *  You can redistribute or modify this program under the terms
+ *  of the GNU General Public License as published by
+ *  the Free Software Foundation.
+ *
+ * You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <linux/types.h>
+#include <linux/module.h>
+#include <linux/proc_fs.h>
+#include <linux/kernel.h>
+#include <linux/syscalls.h>
+#include <linux/stackprotector.h>
+#include <linux/string.h>
+#include <linux/ctype.h>
+#include <linux/delay.h>
+#include <linux/ioport.h>
+#include <linux/init.h>
+#include <linux/initrd.h>
+#include <linux/bootmem.h>
+#include <linux/acpi.h>
+#include <linux/tty.h>
+#include <linux/percpu.h>
+#include <linux/kmod.h>
+#include <linux/vmalloc.h>
+#include <linux/kernel_stat.h>
+#include <linux/start_kernel.h>
+#include <linux/security.h>
+#include <linux/smp.h>
+#include <linux/profile.h>
+#include <linux/rcupdate.h>
+#include <linux/moduleparam.h>
+#include <linux/kallsyms.h>
+#include <linux/writeback.h>
+#include <linux/cpu.h>
+#include <linux/cpuset.h>
+#include <linux/cgroup.h>
+#include <linux/efi.h>
+#include <linux/tick.h>
+#include <linux/interrupt.h>
+#include <linux/taskstats_kern.h>
+#include <linux/delayacct.h>
+#include <linux/unistd.h>
+#include <linux/rmap.h>
+#include <linux/mempolicy.h>
+#include <linux/key.h>
+#include <linux/buffer_head.h>
+#include <linux/page_cgroup.h>
+#include <linux/debug_locks.h>
+#include <linux/debugobjects.h>
+#include <linux/lockdep.h>
+#include <linux/kmemleak.h>
+#include <linux/pid_namespace.h>
+#include <linux/device.h>
+#include <linux/kthread.h>
+#include <linux/sched.h>
+#include <linux/signal.h>
+#include <linux/idr.h>
+#include <linux/kgdb.h>
+#include <linux/ftrace.h>
+#include <linux/async.h>
+#include <linux/kmemcheck.h>
+#include <linux/sfi.h>
+#include <linux/shmem_fs.h>
+#include <linux/slab.h>
+#include <linux/perf_event.h>
+#include <linux/file.h>
+#include <linux/ptrace.h>
+#include <linux/blkdev.h>
+#include <linux/elevator.h>
+
+#include <asm/io.h>
+#include <asm/bugs.h>
+#include <asm/setup.h>
+#include <asm/sections.h>
+#include <asm/cacheflush.h>
+
+#include <linux/vmalloc.h>
+
+#include <linux/module.h> 
+#include <linux/kernel.h>
+
+#ifdef CONFIG_X86_LOCAL_APIC
+#include <asm/smp.h>
+#endif
+#include "mypcb.h"
+
+tPCB task[MAX_TASK_NUM];
+tPCB * my_current_task = NULL;
+volatile int my_need_sched = 0;
+
+void my_process(void);
+unsigned long get_rand(int );
+
+void sand_priority(void)
+{
+	int i;
+	for(i=0;i<MAX_TASK_NUM;i++)
+		task[i].priority=get_rand(PRIORITY_MAX);
+}
+void __init my_start_kernel(void)
+{
+    int pid = 0;
+    /* Initialize process 0*/
+    task[pid].pid = pid;
+    task[pid].state = 0;/* -1 unrunnable, 0 runnable, >0 stopped */
+    // set task 0 execute entry address to my_process
+    task[pid].task_entry = task[pid].thread.ip = (unsigned long)my_process;
+    task[pid].thread.sp = (unsigned long)&task[pid].stack[KERNEL_STACK_SIZE-1];
+    task[pid].next = &task[pid];
+    /*fork more process */
+    for(pid=1;pid<MAX_TASK_NUM;pid++)
+    {
+        memcpy(&task[pid],&task[0],sizeof(tPCB));
+        task[pid].pid = pid;
+        task[pid].state = -1;
+        task[pid].thread.sp = (unsigned long)&task[pid].stack[KERNEL_STACK_SIZE-1];
+	task[pid].priority=get_rand(PRIORITY_MAX);//each time all tasks get a random priority
+    }
+	task[MAX_TASK_NUM-1].next=&task[0];
+    printk(KERN_NOTICE "\n\n\n\n\n\n                system begin :>>>process 0 running!!!<<<\n\n");
+    /* start process 0 by task[0] */
+    pid = 0;
+    my_current_task = &task[pid];
+asm volatile(
+     "movl %1,%%esp\n\t" /* set task[pid].thread.sp to esp */
+     "pushl %1\n\t" /* push ebp */
+     "pushl %0\n\t" /* push task[pid].thread.ip */
+     "ret\n\t" /* pop task[pid].thread.ip to eip */
+     "popl %%ebp\n\t"
+     :
+     : "c" (task[pid].thread.ip),"d" (task[pid].thread.sp)	/* input c or d mean %ecx/%edx*/
+);
+}
+void my_process(void)
+{
+    int i = 0;
+    while(1)
+    {
+        i++;
+        if(i%10000000 == 0)
+        {
+	  
+            if(my_need_sched == 1)
+            {
+                my_need_sched = 0;
+		sand_priority();
+	   	my_schedule();  
+		
+	   }
+        }
+    }
+}//end of my_process
+
+//produce a random priority to a task
+unsigned long get_rand(max)
+{
+	unsigned long a;
+	unsigned long umax;
+	umax=(unsigned long)max;
+ 	get_random_bytes(&a, sizeof(unsigned long ));
+	a=(a+umax)%umax;
+	return a;
+}
+
+$>vi mypcb.h                                   /*version 3*/
+-------------
+/*	mykernel--Simple simulation of the linux OS  process schedule
+ *
+ *  linux/mykernel/mypcb.h
+ *
+ *  Kernel internal my_timer_handler
+ *
+ *  Copyright (C) 2013  Mengning
+ *  
+ *  Modified 2014 Yunquan Zhang  <zhangyunquan@hotmail.com>
+ * 
+ * 
+ *  You can redistribute or modify this program under the terms
+ *  of the GNU General Public License as published by
+ *  the Free Software Foundation.
+ *
+ * You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#define MAX_TASK_NUM 10 // max num of task in system
+#define KERNEL_STACK_SIZE 1024*8
+#define PRIORITY_MAX 30 //priority range from 0 to 30
+
+/* CPU-specific state of this task */
+struct Thread {
+    unsigned long	ip;//point to cpu run address
+    unsigned long	sp;//point to the thread stack's top address
+    //todo add other attrubte of system thread
+};
+//PCB Struct
+typedef struct PCB{
+    int pid; // pcb id 
+    volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+    char stack[KERNEL_STACK_SIZE];// each pcb stack size is 1024*8
+    /* CPU-specific state of this task */
+    struct Thread thread;
+    unsigned long	task_entry;//the task execute entry memory address
+    struct PCB *next;//pcb is a circular linked list
+    unsigned long priority;// task priority ////////
+    //todo add other attrubte of process control block
+}tPCB;
+
+//void my_schedule(int pid);
+void my_schedule(void);
+
+$>vi Makefile                                  /*version 3*/
+-------------
+#
+# Makefile for the linux mykernel.
+#
+
+obj-y     = mymain.o myinterrupt.o
+
+系统调用列表
+----------------
+$>vi linux-x.y.z/arch/x86/syscalls/syscall_32.tbl
+$>vi linux-x.y.z/arch/x86/syscalls/syscall_64.tbl
+
+注意:使用库函数api和c代码中嵌入汇编代码两种方式使用同一个系统调用.
+
+例子编译与运行
+----------------
+$>make allnoconfig                                                 #最小编译(最简内核配置).
+$>make                                                             #编译
+$>/usr/bin/qemu-system-x86_64 -kernel arch/x86/boot/bzImage        #使用x86_64模式启动内核.
+$>/usr/bin/qemu-system-x86_64 -no-frame -enable-kvm -kernel arch/x86/boot/bzImage
+$>/usr/bin/qemu-system-x86_64 -curses -kernel arch/x86/boot/bzImage
+or
+$>/usr/bin/qemu-system-i386 -kernel arch/x86/boot/bzImage          #使用i386模式启动内核.
+$>/usr/bin/qemu-system-i386 -no-frame -enable-kvm -kernel arch/x86/boot/bzImage
+$>/usr/bin/qemu-system-i386 -curses -kernel arch/x86/boot/bzImage
+$>diff -Naur linux-x.y.z linux-x.y.z.new/ > linux-x.y.z_xx.patch   #创建补丁.
+$>cd linux-x.y.z && patch -p1 < /path/linux-x.y.z_xx.patch         #给内核打补丁.
+
+注意:在qemu中ctrl+alt退出鼠标光标,修改内核"linux-x.y.z/Makfile"会在编译的时候生效.
+
+学习内核汇编
+----------------
+$>gcc -S -o xx.s xx.c -m32        
+
+注意:通过反汇编简单的c程序来学习汇编.
+
+编译内核
+----------------
+$>make allyesconfig          #尽可能多编译yes选项.
+$>make allnoconfig           #最小编译(最简内核配置).
+$>make allmodconfig          #编译所有模块.
+$>make randconfig            #使用的是Kconfig.
+$>make oldconfig             
+
+调试x86最简单的内核
+---------------
+$>make allnoconfig           #step.1
+$>make menuconfig            #step.2,并进行"Kernel hacking  --->"设置;最后根据"调试内核必须的选项"检查是否都设置了.
+
+注意:根据实际操作已经证明可行了.
+
+调试内核必须的选项
+----------------
+CONFIG_DEBUG_INFO=y
+CONFIG_FRAME_POINTER=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_DEBUG_FS=y
+CONFIG_SLUB_DEBUG_ON=y
+CONFIG_DMA_API_DEBUG=y
+
+编译指定架构的内核
+----------------
+$>make x86_64_defconfig           #生成x86_64(.config)配置文件,然后make即可编译内核.
+$>make i386_defconfig             #生成x86(.config)配置文件,然后make即可编译内核.
+
+调试x86_64内核
+----------------
+$>make x86_64_defconfig    #step.1
+$>make menuconfig          #step.2,并进行"Kernel hacking  --->"设置;最后根据"调试内核必须的选项"检查是否都设置了.
+
+调试x86内核
+----------------
+$>make i386_defconfig      #step.1
+$>make menuconfig          #step.2,并进行"Kernel hacking  --->"设置;最后根据"调试内核必须的选项"检查是否都设置了.
+
+交叉编译嵌入式内核
+----------------
+$>make ARCH=arm CROSS_COMPILE=arm-linux-gnu- allnoconfig                    #step.1,"CROSS_COMPILE"设置编译器的前缀.
+$>make ARCH=arm CROSS_COMPILE=arm-linux-gnu-                                #step.2,编译内核.
+$>make ARCH=arm CROSS_COMPILE=arm-linux-gnu- modules                        #step.3,编译模块.
+$>make ARCH=arm CROSS_COMPILE=arm-linux-gnu- modules_install                #step.4,模块安装.
+$>mkinitramfs ARCH=arm CROSS_COMPILE=arm-linux-gnu- -o initrd.img-<x.y.z>   #step.5,创建内存文件.
+$>update-grub                                                               #step.6
+$>reboot                                                                    #step.7
+
+eg.
+$>make ARCH=x86 allnoconfig                                        #step.1
+$>make ARCH=x86                                                    #step.2
+
+$>make ARCH=x86_64 allnoconfig                                     #step.1
+$>make ARCH=x86_64                                                 #step.2
+
+$>make ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu- allnoconfig     #step.1
+$>make ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu-                 #step.2
+$>make ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu- modules
+$>mkinitramfs ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu- -o initrd.img-<x.y.z>
+$>update-grub 
+$>reboot   
+
+$>make ARCH=arm allnoconfig                                        #step.1
+$>make ARCH=arm                                                    #step.2  
+
+修改内核编译优化选项
+----------------
+$>vi linux-x.y.z/Makefile
+-------------
+...
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O0 -fomit-frame-pointer
+HOSTCXXFLAGS = -O0
+#或者使用下面配置观察详细的编译过程
+HOSTCFLAGS   = -v -g -Wall -Wmissing-prototypes -Wstrict-prototypes -O0 -fomit-frame-pointer
+HOSTCXXFLAGS = -v -g -O0
+...
+
+...
+all: vmlinux
+
+ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+KBUILD_CFLAGS	+= -O1
+else
+KBUILD_CFLAGS	+= -O1
+endif
+...
+
+内核入口函数
+----------------
+$>vi linux-x.y.z/init/main.c
+-------------
+...
+asmlinkage void __init start_kernel(void)
+{
+...
+}
+...
+
+生成内核帮助文档
+----------------
+$>make htmldocs
+
+内核调试
+----------------
+$>/usr/bin/qemu-system-x86_64 -no-quit -S -s -kernel /path/linux-x.y.z/arch/x86/boot/bzImage      #启动一个新的终端执行当前命令.
+$>cd /path/linux-x.y.z && gdb vmlinux                                                             #在当前终端中执行命令.
+gdb$>target remote 127.0.0.1:1234
+gdb$>b start_kernel                                                                               #将断点打在start_kernel.
+gdb$>b ...                                                                                        #打断点.
+gdb$>set args ...                                                                                 #设置运行参数.
+gdb$>c or s                                                                                       #继续(continue)运行.
+gdb$>bt                                                                                           #查看堆栈.
+
+内核调试脚本
+----------------
+$>mkdir /path/bin
+$>vi ~/.bashrc
+-------------
+export PATH=$PATH:/path/bin
+
+$>vi /path/bin/kterminal.sh                                   #step.1
+-------------
+#!/bin/bash
+
+KDIR=/path/linux-x.y.z
+#####打开一个终端,一个qemu窗口#####
+cd $KDIR && gnome-terminal --hide-menubar  --title="Terminal" --geometry=100X85+85+85 &
+/usr/bin/qemu-system-x86_64 -no-quit -S -s -kernel $KDIR/arch/x86/boot/bzImage 
+
+$>vi /path/bin/r.sh                                          #step.2
+-------------
+#!/bin/bash
+
+/usr/bin/qemu-system-x86_64 -no-quit -S -s -kernel /path/linux-x.y.z/arch/x86/boot/bzImage 
+
+$>vi /path/bin/kdebug.sh                                     #step.3
+-------------
+#!/bin/bash
+
+#####启动gdb的shell脚本文件#####
+mkdir -p /path/debug
+touch /path/debug/khistory
+touch /path/debug/kcfg
+touch /path/debug/log.txt
+touch /path/debug/breakpoints
+
+gdb -x /path/debug/kcfg /path/linux-x.y.z/vmlinux           #注意这里必须使用绝对路径.
+
+$>vi /path/debug/kcfg
+-------------
+#####gdb配置文件#####
+set confirm off
+set pagination off
+set print elements 0
+set print array-indexes on
+set print pretty on
+set history filename /path/debug/khistory                   #注意这里必须使用绝对路径.
+set history save on
+set logging file /path/debug/log.txt                        #注意这里必须使用绝对路径.
+set logging on
+set logging overwrite on
+
+source /path/debug/breakpoints                              #注意这里必须使用绝对路径.
+python sys.path.append("/usr/share/gcc-4.7/python/");
+target remote 127.0.0.1:1234
+
+#breakpoints
+b start_kernel
+display $pc
+display /x $cs
+
+define rr
+  target remote 127.0.0.1:1234
+  c
+end
+
+define xx-cmd                                                #自定义命令.
+  ...
+  yy-context
+  ...
+end
+
+$>kdebug.sh                                                  #step.4
+
+构建init进程
+----------------
+vi linktable.c
+-------------
+#include<stdio.h>
+#include<stdlib.h>
+#include <pthread.h>
+#include"linktable.h"
+
+/*
+ * LinkTable Type
+ */
+struct LinkTable
+{
+    tLinkTableNode *pHead;
+    tLinkTableNode *pTail;
+    int			SumOfNode;
+    pthread_mutex_t mutex;
+
+};
+
+
+/*
+ * Create a LinkTable
+ */
+tLinkTable * CreateLinkTable()
+{
+    tLinkTable * pLinkTable = (tLinkTable *)malloc(sizeof(tLinkTable));
+    if(pLinkTable == NULL)
+    {
+        return NULL;
+    }
+    pLinkTable->pHead = NULL;
+    pLinkTable->pTail = NULL;
+    pLinkTable->SumOfNode = 0;
+    pthread_mutex_init(&(pLinkTable->mutex), NULL);
+    return pLinkTable;
+}
+
+/*
+ * Delete a LinkTable
+ */
+int DeleteLinkTable(tLinkTable *pLinkTable)
+{
+    if(pLinkTable == NULL)
+    {
+        return FAILURE;
+    }
+    while(pLinkTable->pHead != NULL)
+    {
+        tLinkTableNode * p = pLinkTable->pHead;
+        pthread_mutex_lock(&(pLinkTable->mutex));
+        pLinkTable->pHead = pLinkTable->pHead->pNext;
+        pLinkTable->SumOfNode -= 1 ;
+        pthread_mutex_unlock(&(pLinkTable->mutex));
+        free(p);
+    }
+    pLinkTable->pHead = NULL;
+    pLinkTable->pTail = NULL;
+    pLinkTable->SumOfNode = 0;
+    pthread_mutex_destroy(&(pLinkTable->mutex));
+    free(pLinkTable);
+    return SUCCESS;		
+}
+
+/*
+ * Add a LinkTableNode to LinkTable
+ */
+int AddLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode)
+{
+    if(pLinkTable == NULL || pNode == NULL)
+    {
+        return FAILURE;
+    }
+    pNode->pNext = NULL;
+    pthread_mutex_lock(&(pLinkTable->mutex));
+    if(pLinkTable->pHead == NULL)
+    {
+        pLinkTable->pHead = pNode;
+    }
+    if(pLinkTable->pTail == NULL)
+    {
+        pLinkTable->pTail = pNode;
+    }
+    else
+    {
+        pLinkTable->pTail->pNext = pNode;
+        pLinkTable->pTail = pNode;
+    }
+    pLinkTable->SumOfNode += 1 ;
+    pthread_mutex_unlock(&(pLinkTable->mutex));
+    return SUCCESS;		
+}
+
+/*
+ * Delete a LinkTableNode from LinkTable
+ */
+int DelLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode)
+{
+    if(pLinkTable == NULL || pNode == NULL)
+    {
+        return FAILURE;
+    }
+    pthread_mutex_lock(&(pLinkTable->mutex));
+    if(pLinkTable->pHead == pNode)
+    {
+        pLinkTable->pHead = pLinkTable->pHead->pNext;
+        pLinkTable->SumOfNode -= 1 ;
+        if(pLinkTable->SumOfNode == 0)
+        {
+            pLinkTable->pTail = NULL;	
+        }
+        pthread_mutex_unlock(&(pLinkTable->mutex));
+        return SUCCESS;
+    }
+    tLinkTableNode * pTempNode = pLinkTable->pHead;
+    while(pTempNode != NULL)
+    {    
+        if(pTempNode->pNext == pNode)
+        {
+            pTempNode->pNext = pTempNode->pNext->pNext;
+            pLinkTable->SumOfNode -= 1 ;
+            if(pLinkTable->SumOfNode == 0)
+            {
+                pLinkTable->pTail = NULL;	
+            }
+            pthread_mutex_unlock(&(pLinkTable->mutex));
+            return SUCCESS;				    
+        }
+        pTempNode = pTempNode->pNext;
+    }
+    pthread_mutex_unlock(&(pLinkTable->mutex));
+    return FAILURE;		
+}
+
+/*
+ * Search a LinkTableNode from LinkTable
+ * int Conditon(tLinkTableNode * pNode);
+ */
+tLinkTableNode * SearchLinkTableNode(tLinkTable *pLinkTable, int Conditon(tLinkTableNode * pNode, void * args), void * args)
+{
+    if(pLinkTable == NULL || Conditon == NULL)
+    {
+        return NULL;
+    }
+    tLinkTableNode * pNode = pLinkTable->pHead;
+    while(pNode != NULL)
+    {    
+        if(Conditon(pNode,args) == SUCCESS)
+        {
+            return pNode;				    
+        }
+        pNode = pNode->pNext;
+    }
+    return NULL;
+}
+
+/*
+ * get LinkTableHead
+ */
+tLinkTableNode * GetLinkTableHead(tLinkTable *pLinkTable)
+{
+    if(pLinkTable == NULL)
+    {
+        return NULL;
+    }    
+    return pLinkTable->pHead;
+}
+
+/*
+ * get next LinkTableNode
+ */
+tLinkTableNode * GetNextLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode)
+{
+    if(pLinkTable == NULL || pNode == NULL)
+    {
+        return NULL;
+    }
+    tLinkTableNode * pTempNode = pLinkTable->pHead;
+    while(pTempNode != NULL)
+    {    
+        if(pTempNode == pNode)
+        {
+            return pTempNode->pNext;				    
+        }
+        pTempNode = pTempNode->pNext;
+    }
+    return NULL;
+}
+
+$>vi linktable.h
+-------------
+#ifndef _LINK_TABLE_H_
+#define _LINK_TABLE_H_
+
+#include <pthread.h>
+
+#define SUCCESS 0
+#define FAILURE (-1)
+
+/*
+ * LinkTable Node Type
+ */
+typedef struct LinkTableNode
+{
+    struct LinkTableNode * pNext;
+}tLinkTableNode;
+
+/*
+ * LinkTable Type
+ */
+typedef struct LinkTable tLinkTable;
+
+/*
+ * Create a LinkTable
+ */
+tLinkTable * CreateLinkTable();
+/*
+ * Delete a LinkTable
+ */
+int DeleteLinkTable(tLinkTable *pLinkTable);
+/*
+ * Add a LinkTableNode to LinkTable
+ */
+int AddLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode);
+/*
+ * Delete a LinkTableNode from LinkTable
+ */
+int DelLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode);
+/*
+ * Search a LinkTableNode from LinkTable
+ * int Conditon(tLinkTableNode * pNode,void * args);
+ */
+tLinkTableNode * SearchLinkTableNode(tLinkTable *pLinkTable, int Conditon(tLinkTableNode * pNode, void * args), void * args);
+/*
+ * get LinkTableHead
+ */
+tLinkTableNode * GetLinkTableHead(tLinkTable *pLinkTable);
+/*
+ * get next LinkTableNode
+ */
+tLinkTableNode * GetNextLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode);
+
+#endif /* _LINK_TABLE_H_ */
+
+$>vi menu.c
+-------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "linktable.h"
+#include "menu.h"
+
+tLinkTable * head = NULL;
+int Help();
+int Quit();
+
+#define CMD_MAX_LEN 		1024
+#define CMD_MAX_ARGV_NUM 	32
+#define DESC_LEN    		1024
+#define CMD_NUM     		10
+
+char prompt[CMD_MAX_LEN] = "Input Cmd >";
+
+/* data struct and its operations */
+
+typedef struct DataNode
+{
+    tLinkTableNode * pNext;
+    char*   cmd;
+    char*   desc;
+    int     (*handler)(int argc, char *argv[]);
+} tDataNode;
+
+int SearchConditon(tLinkTableNode * pLinkTableNode,void * arg)
+{
+    char * cmd = (char*)arg;
+    tDataNode * pNode = (tDataNode *)pLinkTableNode;
+    if(strcmp(pNode->cmd, cmd) == 0)
+    {
+        return  SUCCESS;  
+    }
+    return FAILURE;	       
+}
+/* find a cmd in the linklist and return the datanode pointer */
+tDataNode* FindCmd(tLinkTable * head, char * cmd)
+{
+    tDataNode * pNode = (tDataNode*)GetLinkTableHead(head);
+    while(pNode != NULL)
+    {
+        if(!strcmp(pNode->cmd, cmd))
+        {
+            return  pNode;  
+        }
+        pNode = (tDataNode*)GetNextLinkTableNode(head,(tLinkTableNode *)pNode);
+    }
+    return NULL;
+}
+
+/* show all cmd in listlist */
+int ShowAllCmd(tLinkTable * head)
+{
+    tDataNode * pNode = (tDataNode*)GetLinkTableHead(head);
+    while(pNode != NULL)
+    {
+        printf("%s - %s\n", pNode->cmd, pNode->desc);
+        pNode = (tDataNode*)GetNextLinkTableNode(head,(tLinkTableNode *)pNode);
+    }
+    return 0;
+}
+
+int Help(int argc, char *argv[])
+{
+    ShowAllCmd(head);
+    return 0; 
+}
+
+int SetPrompt(char * p)
+{
+    if (p == NULL)
+    {
+        return 0;
+    }
+    strcpy(prompt,p);
+    return 0;
+}
+/* add cmd to menu */
+int MenuConfig(char * cmd, char * desc, int (*handler)())
+{
+    tDataNode* pNode = NULL;
+    if ( head == NULL)
+    {
+        head = CreateLinkTable();
+        pNode = (tDataNode*)malloc(sizeof(tDataNode));
+        pNode->cmd = "help";
+        pNode->desc = "Menu List:";
+        pNode->handler = Help;
+        AddLinkTableNode(head,(tLinkTableNode *)pNode);
+    }
+    pNode = (tDataNode*)malloc(sizeof(tDataNode));
+    pNode->cmd = cmd;
+    pNode->desc = desc;
+    pNode->handler = handler; 
+    AddLinkTableNode(head,(tLinkTableNode *)pNode);
+    return 0; 
+}
+
+
+/* Menu Engine Execute */
+int ExecuteMenu()
+{
+   /* cmd line begins */
+    while(1)
+    {
+		int argc = 0;
+		char *argv[CMD_MAX_ARGV_NUM];
+        char cmd[CMD_MAX_LEN];
+		char *pcmd = NULL;
+        printf("%s",prompt);
+        /* scanf("%s", cmd); */
+		pcmd = fgets(cmd, CMD_MAX_LEN, stdin);
+		if(pcmd == NULL)
+		{
+			continue;
+		}
+        /* convert cmd to argc/argv */
+		pcmd = strtok(pcmd," ");
+		while(pcmd != NULL && argc < CMD_MAX_ARGV_NUM)
+		{
+			argv[argc] = pcmd;
+			argc++;
+			pcmd = strtok(NULL," ");
+		}
+        if(argc == 1)
+        {
+            int len = strlen(argv[0]);
+            *(argv[0] + len - 1) = '\0';
+        }
+        tDataNode *p = (tDataNode*)SearchLinkTableNode(head,SearchConditon,(void*)argv[0]);
+        if( p == NULL)
+        {
+            printf("This is a wrong cmd!\n ");
+            continue;
+        }
+        
+        if(p->handler != NULL) 
+        { 
+            p->handler(argc, argv);
+        }
+    }
+} 
+
+$>vi menu.h
+-------------
+/* Set Input Prompt */
+int SetPrompt(char * p);
+/* add cmd to menu */
+int MenuConfig(char * cmd, char * desc, int (*handler)());
+
+/* Menu Engine Execute */
+int ExecuteMenu();
+
+$>vi test.c
+-------------
+#include <stdio.h>
+#include <stdlib.h>
+#include "menu.h"
+
+#define FONTSIZE 10
+int PrintMenuOS()
+{
+    int i, j;
+    char data_M[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "  *    *  ",
+        " ***  *** ",
+        " * *  * * ",
+        " * *  * * ",
+        " *  **  * ",
+        " *      * ",
+        " *      * ",
+        " *      * ",
+        "          "
+    };
+    char data_e[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "          ",
+        "    **    ",
+        "   *  *   ",
+        "  *    *  ",
+        "  ******  ",
+        "  *       ",
+        "   *      ",
+        "    ***   ",
+        "          "
+    };
+    char data_n[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "          ",
+        "    **    ",
+        "   *  *   ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "          "
+    };
+    char data_u[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "          ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "   *  **  ",
+        "    **  * ",
+        "          "
+    };
+    char data_O[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "   ****   ",
+        "  *    *  ",
+        " *      * ",
+        " *      * ",
+        " *      * ",
+        " *      * ",
+        "  *    *  ",
+        "   ****   ",
+        "          "
+    };
+    char data_S[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "    ****  ",
+        "   **     ",
+        "  **      ",
+        "   ***    ",
+        "     **   ",
+        "      **  ",
+        "     **   ",
+        "  ****    ",
+        "          "
+    };
+
+    for(i=0; i<FONTSIZE; i++)
+    {
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_M[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_e[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_n[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_u[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_O[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_S[i][j]);
+        }
+        printf("\n");
+    }
+    return 0;
+}
+
+int Quit(int argc, char *argv[])
+{
+    /* add XXX clean ops */
+    exit(0);
+}
+
+int main()
+{
+    PrintMenuOS();
+    SetPrompt("MenuOS>>");
+    MenuConfig("version","XXX V1.0(Menu program v1.0 inside)",NULL);
+    MenuConfig("quit","Quit from XXX",Quit);
+    
+    ExecuteMenu();
+}
+
+$>vi Makefile
+-------------
+CC_PTHREAD_FLAGS        = -lpthread
+CC_FLAGS                = -c 
+CC_OUTPUT_FLAGS         = -o
+CC                      = gcc
+RM                      = rm
+RM_FLAGS                = -f
+
+TARGET  =   test
+OBJS    =   linktable.o  menu.o test.o
+
+all:	$(OBJS)
+	$(CC) $(CC_OUTPUT_FLAGS) $(TARGET) $(OBJS) 
+rootfs:
+	gcc -o init linktable.c menu.c test.c -m32 -static -lpthread
+	mkdir -p ../rootfs/ && cp init ../rootfs/
+	find ../rootfs/ | cpio -o -Hnewc |gzip -9 > ../rootfs.img
+	qemu -kernel /path/linux-x.y.z/arch/x86/boot/bzImage -initrd /path/rootfs.img
+.c.o:
+	$(CC) $(CC_FLAGS) $<
+
+clean:
+	$(RM) $(RM_FLAGS)  $(OBJS) $(TARGET) *.bak
+	
+编译具备完全能够调试的内核
+----------------
+$>make i386_defconfig                        #step.1
+$>make menuconfig                            #step.2,并进行"Kernel hacking  --->"设置;最后根据"调试内核必须的选项"检查是否都设置了.
+$>vi /path/linux-x.y.z/Makefile              #step.3
+-------------
+...
+HOSTCFLAGS   = -v -g -Wall -Wmissing-prototypes -Wstrict-prototypes -O0 -fomit-frame-pointer
+HOSTCXXFLAGS = -v -g -O0
+...
+
+...
+all: vmlinux
+
+ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE          #每次menuconfig完后都需要重新设置.
+KBUILD_CFLAGS	+= -O1
+else
+KBUILD_CFLAGS	+= -O1
+endif
+...
+
+$>make CONFIG_DEBUG_SECTION_MISMATCH=y      #step.4
+
+解压debian系统rootfs(imitrd.img)
+----------------
+$>mv initrd.img-3.2.0-4-amd64 imitrd.img.gz
+$>gunzip initrd.img.gz
+$>cpio -i --make-directories < initrd.img 
+
+运行rootfs
+----------------
+$>qemu -kernel linux-x.y.z/arch/x86/boot/bzImage -initrd rootfs.img
+
+使用rootfs调试并观察内核调用 
+----------------
+$>qemu -kernel /path/linux-x.y.z/arch/x86/boot/bzImage -initrd rootfs.img -s -S   #step.1,-S:freeze CPU at startup (use ’c’ to start execution),-s:shorthand for -gdb tcp::1234 若不想使用1234端口，则可以使用-gdb tcp:xxxx来取代-s选项.
+$>gdb                                                                             #step.2
+gdb>file /path/linux-x.y.z/vmlinux                                                #在gdb界面中targe remote之前加载符号表.
+gdb>target remote:1234                                                            #建立gdb和gdbserver之间的连接,按c 让qemu上的Linux继续运行.
+gdb>break start_kernel                                                            #断点的设置可以在target remote之前，也可以在之后.
+
+注意:实现此方法需要在原生的基础上编译内核,然后使用rootfs.img.
+
+gdb调试内核实践
+----------------
+3972 void lockdep_init(void)
+3973 {
+	int i;
+
+	/*
+	 * Some architectures have their own start_kernel()
+	 * code which calls lockdep_init(), while we also
+	 * call lockdep_init() from the start_kernel() itself,
+	 * and we want to initialize the hashes only once:
+	 */
+	if (lockdep_initialized)
+		return;
+
+	for (i = 0; i < CLASSHASH_SIZE; i++)
+		INIT_LIST_HEAD(classhash_table + i);
+
+	for (i = 0; i < CHAINHASH_SIZE; i++)
+		INIT_LIST_HEAD(chainhash_table + i);
+
+	lockdep_initialized = 1;
+3992 }
+
+$>b lockdep_init
+$>bt
+---------
+#0  lockdep_init () at kernel/lockdep.c:3985
+#1  0xc1a7170c in start_kernel () at init/main.c:479
+#2  0xc1a71362 in i386_start_kernel () at arch/x86/kernel/head32.c:49
+#3  0x00000000 in ?? ()
+
+$>p lockdep_init
+$1 = {void (void)} 0xc108806d <lockdep_init>
+
+$>p $eip
+---------
+$2 = (void (*)()) 0xc1088094 <lockdep_init+39>
+
+$>disassemble /r 0xc108806d,0xc1088094
+---------
+Dump of assembler code from 0xc108806d to 0xc1088094:
+   0xc108806d <lockdep_init+0>:	55	push   %ebp
+   0xc108806e <lockdep_init+1>:	89 e5	mov    %esp,%ebp
+   0xc1088070 <lockdep_init+3>:	83 3d a0 51 18 c2 00	cmpl   $0x0,0xc21851a0
+   0xc1088077 <lockdep_init+10>:	75 57	jne    0xc10880d0 <lockdep_init+99>
+   0xc1088079 <lockdep_init+12>:	b9 00 00 00 00	mov    $0x0,%ecx
+   0xc108807e <lockdep_init+17>:	b8 00 00 00 00	mov    $0x0,%eax
+   0xc1088083 <lockdep_init+22>:	8d 14 cd a0 d1 17 c2	lea    -0x3de82e60(,%ecx,8),%edx
+   0xc108808a <lockdep_init+29>:	89 14 cd a0 d1 17 c2	mov    %edx,-0x3de82e60(,%ecx,8)
+   0xc1088091 <lockdep_init+36>:	89 52 04	mov    %edx,0x4(%edx)
+End of assembler dump.
+
+$>disassemble /m 0xc108806d,0xc1088094
+---------
+3973	{
+   0xc108806d <lockdep_init+0>:	push   %ebp
+   0xc108806e <lockdep_init+1>:	mov    %esp,%ebp
+
+3974		int i;
+3975	
+3976		/*
+3977		 * Some architectures have their own start_kernel()
+3978		 * code which calls lockdep_init(), while we also
+3979		 * call lockdep_init() from the start_kernel() itself,
+3980		 * and we want to initialize the hashes only once:
+3981		 */
+3982		if (lockdep_initialized)
+   0xc1088070 <lockdep_init+3>:	cmpl   $0x0,0xc21851a0
+   0xc1088077 <lockdep_init+10>:	jne    0xc10880d0 <lockdep_init+99>
+   0xc108807e <lockdep_init+17>:	mov    $0x0,%eax
+
+3983			return;
+3984	
+3985		for (i = 0; i < CLASSHASH_SIZE; i++)
+   0xc1088079 <lockdep_init+12>:	mov    $0x0,%ecx
+
+3986			INIT_LIST_HEAD(classhash_table + i);
+   0xc1088083 <lockdep_init+22>:	lea    -0x3de82e60(,%ecx,8),%edx
+
+End of assembler dump.
+
+$>disassemble /m 0xc108806d,+100                                                  #推荐这个方法阅读反汇编代码.
+---------
+Dump of assembler code from 0xc108806d to 0xc10880d1:
+3973	{
+   0xc108806d <lockdep_init+0>:	push   %ebp
+   0xc108806e <lockdep_init+1>:	mov    %esp,%ebp
+
+3974		int i;
+3975	
+3976		/*
+3977		 * Some architectures have their own start_kernel()
+3978		 * code which calls lockdep_init(), while we also
+3979		 * call lockdep_init() from the start_kernel() itself,
+3980		 * and we want to initialize the hashes only once:
+3981		 */
+3982		if (lockdep_initialized)
+   0xc1088070 <lockdep_init+3>:	cmpl   $0x0,0xc21851a0
+   0xc1088077 <lockdep_init+10>:	jne    0xc10880d0 <lockdep_init+99>
+   0xc108807e <lockdep_init+17>:	mov    $0x0,%eax
+
+3983			return;
+3984	
+3985		for (i = 0; i < CLASSHASH_SIZE; i++)
+   0xc1088079 <lockdep_init+12>:	mov    $0x0,%ecx
+=> 0xc1088094 <lockdep_init+39>:	add    $0x1,%eax                         
+   0xc1088097 <lockdep_init+42>:	mov    %eax,%ecx
+   0xc1088099 <lockdep_init+44>:	cmp    $0x1000,%eax
+   0xc108809e <lockdep_init+49>:	jne    0xc1088083 <lockdep_init+22>
+   0xc10880a5 <lockdep_init+56>:	mov    $0x0,%ax
+
+3986			INIT_LIST_HEAD(classhash_table + i);
+   0xc1088083 <lockdep_init+22>:	lea    -0x3de82e60(,%ecx,8),%edx
+
+3987	
+3988		for (i = 0; i < CHAINHASH_SIZE; i++)
+   0xc10880a0 <lockdep_init+51>:	mov    $0x0,%ecx
+   0xc10880ba <lockdep_init+77>:	add    $0x1,%eax
+   0xc10880bd <lockdep_init+80>:	mov    %eax,%ecx
+   0xc10880bf <lockdep_init+82>:	cmp    $0x4000,%eax
+   0xc10880c4 <lockdep_init+87>:	jne    0xc10880a9 <lockdep_init+60>
+
+3989			INIT_LIST_HEAD(chainhash_table + i);
+   0xc10880a9 <lockdep_init+60>:	lea    -0x3de7ae40(,%ecx,8),%edx
+
+3990	
+3991		lockdep_initialized = 1;
+   0xc10880c6 <lockdep_init+89>:	movl   $0x1,0xc21851a0
+
+3992	}
+   0xc10880d0 <lockdep_init+99>:	pop    %ebp
+   0xc10880d1 <lockdep_init+100>:	ret    
+
+End of assembler dump.
+
+$>p *0xc21851a0
+---------
+$3 = 0
+
+$>p (int)$eax
+---------
+$4 = 3
+
+$>x /wx 0xc21851a0                                                                   #查看内存.
+$>x /8x $esp
+$>x /16x $esp+12
+$>x /16s $esp+12                                                                     #以字符串形式显示指定地址处的数据.
+$>x /16i $esp+12                                                                     #以指令形式显示指定地址处的数据(16条).
+
+$>set $eax 0xc10880bf                                                                #修改寄存器的值.
+$>set {unsigned int}0xc21851a0=0x1                                                   #修改内存值.
+$>watch *(unsigned int *)0xc21851a0 == 0x3
+
+$>p $pc                                                                              #查看当前pc寄存器的值,关注pc值非常重要.
+$>display $pc                                                                        #观察pc寄存器的值.
+
+$>i r                                                                                #查看寄存器.
+$>i r a
+$>i r esp
+$>i r pc
+
+$>info register                                                                      #查看所有寄存器.
+---------
+eax            0x4	4
+ecx            0x4	4
+edx            0xc217d1c0	-1038626368
+ebx            0x800	2048
+esp            0xc19e7fcc	0xc19e7fcc
+ebp            0xc19e7fcc	0xc19e7fcc
+esi            0x20800	133120
+edi            0xc19e9800	-1046571008
+eip            0xc1088094	0xc1088094 <lockdep_init+39>
+eflags         0x200083	[ CF SF ID ]
+cs             0x60	96
+ss             0x68	104
+ds             0x7b	123
+es             0x7b	123
+fs             0xd8	216
+gs             0x0	0
+
+$>info all-registers
+---------
+eax            0x4	4
+ecx            0x4	4
+edx            0xc217d1c0	-1038626368
+ebx            0x800	2048
+esp            0xc19e7fcc	0xc19e7fcc
+ebp            0xc19e7fcc	0xc19e7fcc
+esi            0x20800	133120
+edi            0xc19e9800	-1046571008
+eip            0xc1088094	0xc1088094 <lockdep_init+39>
+eflags         0x200083	[ CF SF ID ]
+cs             0x60	96
+ss             0x68	104
+ds             0x7b	123
+es             0x7b	123
+fs             0xd8	216
+gs             0x0	0
+st0            0	(raw 0x00000000000000000000)
+st1            0	(raw 0x00000000000000000000)
+st2            0	(raw 0x00000000000000000000)
+st3            0	(raw 0x00000000000000000000)
+st4            0	(raw 0x00000000000000000000)
+st5            0	(raw 0x00000000000000000000)
+st6            0	(raw 0x00000000000000000000)
+st7            0	(raw 0x00000000000000000000)
+fctrl          0x37f	895
+fstat          0x0	0
+ftag           0x0	0
+fiseg          0x0	0
+fioff          0x0	0
+foseg          0x0	0
+fooff          0x0	0
+fop            0x0	0
+xmm0           {
+  v4_float =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_double =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v16_int8 =     {[0x0] = 0x0 <repeats 16 times>}, 
+  v8_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}, 
+  v4_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_int64 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  uint128 = 0x00000000000000000000000000000000
+}
+xmm1           {
+  v4_float =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_double =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v16_int8 =     {[0x0] = 0x0 <repeats 16 times>}, 
+  v8_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}, 
+  v4_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_int64 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  uint128 = 0x00000000000000000000000000000000
+}
+xmm2           {
+  v4_float =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_double =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v16_int8 =     {[0x0] = 0x0 <repeats 16 times>}, 
+  v8_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}, 
+  v4_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_int64 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  uint128 = 0x00000000000000000000000000000000
+}
+xmm3           {
+  v4_float =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_double =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v16_int8 =     {[0x0] = 0x0 <repeats 16 times>}, 
+  v8_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}, 
+  v4_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_int64 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  uint128 = 0x00000000000000000000000000000000
+}
+xmm4           {
+  v4_float =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_double =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v16_int8 =     {[0x0] = 0x0 <repeats 16 times>}, 
+  v8_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}, 
+  v4_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_int64 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  uint128 = 0x00000000000000000000000000000000
+}
+xmm5           {
+  v4_float =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_double =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v16_int8 =     {[0x0] = 0x0 <repeats 16 times>}, 
+  v8_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}, 
+  v4_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_int64 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  uint128 = 0x00000000000000000000000000000000
+}
+xmm6           {
+  v4_float =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_double =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v16_int8 =     {[0x0] = 0x0 <repeats 16 times>}, 
+  v8_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}, 
+  v4_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_int64 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  uint128 = 0x00000000000000000000000000000000
+}
+xmm7           {
+  v4_float =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_double =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v16_int8 =     {[0x0] = 0x0 <repeats 16 times>}, 
+  v8_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}, 
+  v4_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v2_int64 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  uint128 = 0x00000000000000000000000000000000
+}
+mxcsr          0x1f80	[ IM DM ZM OM UM PM ]
+mm0            {
+  uint64 = 0x0, 
+  v2_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v4_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v8_int8 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}
+}
+mm1            {
+  uint64 = 0x0, 
+  v2_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v4_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v8_int8 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}
+}
+mm2            {
+  uint64 = 0x0, 
+  v2_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v4_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v8_int8 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}
+}
+mm3            {
+  uint64 = 0x0, 
+  v2_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v4_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v8_int8 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}
+}
+mm4            {
+  uint64 = 0x0, 
+  v2_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v4_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v8_int8 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}
+}
+mm5            {
+  uint64 = 0x0, 
+  v2_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v4_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v8_int8 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}
+}
+mm6            {
+  uint64 = 0x0, 
+  v2_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v4_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v8_int8 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}
+}
+mm7            {
+  uint64 = 0x0, 
+  v2_int32 =     {[0x0] = 0x0,
+    [0x1] = 0x0}, 
+  v4_int16 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0}, 
+  v8_int8 =     {[0x0] = 0x0,
+    [0x1] = 0x0,
+    [0x2] = 0x0,
+    [0x3] = 0x0,
+    [0x4] = 0x0,
+    [0x5] = 0x0,
+    [0x6] = 0x0,
+    [0x7] = 0x0}
+}
+
+注意:调试内核的是无法输出变量值的,使用p打印变量都会出现"$1 = <optimized out>".
+
+printk函数打印
+----------------
+KERN_EMERG                 #紧急事件消息,系统崩溃之前提示.
+KERN_ALERT                 #报告消息,表示立即采取措施.
+KERN_CRIT                  #临界条件,通常涉及严重的硬件或软件操作失败.
+KERN_ERR                   #错误条件,驱动程序常用KERN_ERR报告硬件错误.
+KERN_WARNING               #警告条件.
+KERN_NOTICE                #正常但又重要的信息.
+KERN_INFO                  #提示信息.
+KERN_DEBUG                 #调试级别信息(hacking模式下才显示).
+
+注意:内核代码开始研究前,最佳入手方法应该从init/main.c,init/do_mounts.c开始.
+
+分析内核中断系统调用
+----------------
+$>make i386_defconfig      #step.1
+$>make menuconfig          #step.2,并进行"Kernel hacking  --->"设置;最后根据"调试内核必须的选项"检查是否都设置了.
+$>make                     #step.3
+
+$>vi times.c
+-------------
+#include <stdio.h>
+#include <time.h>
+
+int main(int argc,char **argv)
+{
+    time_t times;
+    struct tm *t;
+
+    times=time(0);
+    t=localtime(&times);
+
+    printf("%d:%d:%d %d:%d:%d\n", t->tm_year + 1900, t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+    return 0;
+}
+
+$>gcc times.c -o rootfs/init -m32 -static -lpthread
+
+$>vi times-asm.c
+-------------
+#include <stdio.h>
+#include <time.h>
+
+int main(int argc,char **argv)
+{
+    time_t times;
+    struct tm *t;
+
+    asm volatile                       //触发0xd(13)系统调用.
+    (
+        "mov $0,%%ebx\n\t"
+        "mov $0xd,%%eax\n\t"
+        "int $0x80\n\t"
+        "mov %%eax,%0\n\t"
+        : "=m" (times)
+    );
+
+    t=localtime(&times);
+    printf("%d:%d:%d %d:%d:%d\n", t->tm_year + 1900, t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+    return 0;
+}
+
+$>gcc times-asm.c -o times-asm -m32 -static -lpthread
+
+$>vi forks.c
+-------------
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+
+int main(int argc,char **argv)
+{
+    int pid;
+
+    pid=fork();
+    if (pid<0) 
+    {
+        fprintf(stderr,"Fork failed!");
+        exit(-1);
+    }
+    else if(pid==0)
+    {
+        printf("This is child process!\n");
+    }
+    else
+    {
+        printf("This is parent process!\n");
+        wait(0);
+        printf("Child complete!\n");
+    }
+    return 0;
+}
+
+$>gcc forks.c -o forks -m32 -static -lpthread
+以上代码写完后制作rootfs并不能直接运行,需要继续下面的操作.
+
+$>vi execute.c
+-------------
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+
+int main(int argc,char **argv)
+{
+	int pid;
+
+	pid=fork();
+	if(pid<0)
+	{
+		fprintf(stderr,"Fork Failed!");
+		exit(-1);
+	}
+	else if(pid==0)
+	{
+		printf("This is Child Process!\n");
+		execlp("/xx-name","xx-name",NULL);    //跟踪"execve"系统调用.
+	}
+	else
+	{
+		printf("This is Parent Process!\n");
+	}
+	return 0;
+}
+
+$>gcc execute.c -o execute -m32 -static -lpthread
+
+$>vi xx-name.c
+-------------
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+
+int main(int argc,char **argv)
+{
+	printf("Hello World!\n");
+	return 0;
+}
+
+$>gcc xx-name.c -o xx-name -m32 -static -lpthread
+
+vi linktable.c
+-------------
+#include<stdio.h>
+#include<stdlib.h>
+#include <pthread.h>
+#include"linktable.h"
+
+/*
+ * LinkTable Type
+ */
+struct LinkTable
+{
+    tLinkTableNode *pHead;
+    tLinkTableNode *pTail;
+    int	            SumOfNode;
+    pthread_mutex_t mutex;
+
+};
+
+/*
+ * Create a LinkTable
+ */
+tLinkTable * CreateLinkTable()
+{
+    tLinkTable * pLinkTable = (tLinkTable *)malloc(sizeof(tLinkTable));
+    if(pLinkTable == NULL)
+    {
+        return NULL;
+    }
+    pLinkTable->pHead = NULL;
+    pLinkTable->pTail = NULL;
+    pLinkTable->SumOfNode = 0;
+    pthread_mutex_init(&(pLinkTable->mutex), NULL);
+    return pLinkTable;
+}
+
+/*
+ * Delete a LinkTable
+ */
+int DeleteLinkTable(tLinkTable *pLinkTable)
+{
+    if(pLinkTable == NULL)
+    {
+        return FAILURE;
+    }
+    while(pLinkTable->pHead != NULL)
+    {
+        tLinkTableNode * p = pLinkTable->pHead;
+        pthread_mutex_lock(&(pLinkTable->mutex));
+        pLinkTable->pHead = pLinkTable->pHead->pNext;
+        pLinkTable->SumOfNode -= 1 ;
+        pthread_mutex_unlock(&(pLinkTable->mutex));
+        free(p);
+    }
+    pLinkTable->pHead = NULL;
+    pLinkTable->pTail = NULL;
+    pLinkTable->SumOfNode = 0;
+    pthread_mutex_destroy(&(pLinkTable->mutex));
+    free(pLinkTable);
+    return SUCCESS;		
+}
+
+/*
+ * Add a LinkTableNode to LinkTable
+ */
+int AddLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode)
+{
+    if(pLinkTable == NULL || pNode == NULL)
+    {
+        return FAILURE;
+    }
+    pNode->pNext = NULL;
+    pthread_mutex_lock(&(pLinkTable->mutex));
+    if(pLinkTable->pHead == NULL)
+    {
+        pLinkTable->pHead = pNode;
+    }
+    if(pLinkTable->pTail == NULL)
+    {
+        pLinkTable->pTail = pNode;
+    }
+    else
+    {
+        pLinkTable->pTail->pNext = pNode;
+        pLinkTable->pTail = pNode;
+    }
+    pLinkTable->SumOfNode += 1 ;
+    pthread_mutex_unlock(&(pLinkTable->mutex));
+    return SUCCESS;		
+}
+
+/*
+ * Delete a LinkTableNode from LinkTable
+ */
+int DelLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode)
+{
+    if(pLinkTable == NULL || pNode == NULL)
+    {
+        return FAILURE;
+    }
+    pthread_mutex_lock(&(pLinkTable->mutex));
+    if(pLinkTable->pHead == pNode)
+    {
+        pLinkTable->pHead = pLinkTable->pHead->pNext;
+        pLinkTable->SumOfNode -= 1 ;
+        if(pLinkTable->SumOfNode == 0)
+        {
+            pLinkTable->pTail = NULL;	
+        }
+        pthread_mutex_unlock(&(pLinkTable->mutex));
+        return SUCCESS;
+    }
+    tLinkTableNode * pTempNode = pLinkTable->pHead;
+    while(pTempNode != NULL)
+    {    
+        if(pTempNode->pNext == pNode)
+        {
+            pTempNode->pNext = pTempNode->pNext->pNext;
+            pLinkTable->SumOfNode -= 1 ;
+            if(pLinkTable->SumOfNode == 0)
+            {
+                pLinkTable->pTail = NULL;	
+            }
+            pthread_mutex_unlock(&(pLinkTable->mutex));
+            return SUCCESS;				    
+        }
+        pTempNode = pTempNode->pNext;
+    }
+    pthread_mutex_unlock(&(pLinkTable->mutex));
+    return FAILURE;		
+}
+
+/*
+ * Search a LinkTableNode from LinkTable
+ * int Conditon(tLinkTableNode * pNode);
+ */
+tLinkTableNode * SearchLinkTableNode(tLinkTable *pLinkTable, int Conditon(tLinkTableNode * pNode, void * args), void * args)
+{
+    if(pLinkTable == NULL || Conditon == NULL)
+    {
+        return NULL;
+    }
+    tLinkTableNode * pNode = pLinkTable->pHead;
+    while(pNode != NULL)
+    {    
+        if(Conditon(pNode,args) == SUCCESS)
+        {
+            return pNode;				    
+        }
+        pNode = pNode->pNext;
+    }
+    return NULL;
+}
+
+/*
+ * get LinkTableHead
+ */
+tLinkTableNode * GetLinkTableHead(tLinkTable *pLinkTable)
+{
+    if(pLinkTable == NULL)
+    {
+        return NULL;
+    }    
+    return pLinkTable->pHead;
+}
+
+/*
+ * get next LinkTableNode
+ */
+tLinkTableNode * GetNextLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode)
+{
+    if(pLinkTable == NULL || pNode == NULL)
+    {
+        return NULL;
+    }
+    tLinkTableNode * pTempNode = pLinkTable->pHead;
+    while(pTempNode != NULL)
+    {    
+        if(pTempNode == pNode)
+        {
+            return pTempNode->pNext;				    
+        }
+        pTempNode = pTempNode->pNext;
+    }
+    return NULL;
+}
+
+$>vi linktable.h
+-------------
+#ifndef _LINK_TABLE_H_
+#define _LINK_TABLE_H_
+
+#include <pthread.h>
+
+#define SUCCESS 0
+#define FAILURE (-1)
+
+/*
+ * LinkTable Node Type
+ */
+typedef struct LinkTableNode
+{
+    struct LinkTableNode * pNext;
+}tLinkTableNode;
+
+/*
+ * LinkTable Type
+ */
+typedef struct LinkTable tLinkTable;
+
+/*
+ * Create a LinkTable
+ */
+tLinkTable * CreateLinkTable();
+/*
+ * Delete a LinkTable
+ */
+int DeleteLinkTable(tLinkTable *pLinkTable);
+/*
+ * Add a LinkTableNode to LinkTable
+ */
+int AddLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode);
+/*
+ * Delete a LinkTableNode from LinkTable
+ */
+int DelLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode);
+/*
+ * Search a LinkTableNode from LinkTable
+ * int Conditon(tLinkTableNode * pNode,void * args);
+ */
+tLinkTableNode * SearchLinkTableNode(tLinkTable *pLinkTable, int Conditon(tLinkTableNode * pNode, void * args), void * args);
+/*
+ * get LinkTableHead
+ */
+tLinkTableNode * GetLinkTableHead(tLinkTable *pLinkTable);
+/*
+ * get next LinkTableNode
+ */
+tLinkTableNode * GetNextLinkTableNode(tLinkTable *pLinkTable,tLinkTableNode * pNode);
+
+#endif /* _LINK_TABLE_H_ */
+
+$>vi menu.c
+-------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "linktable.h"
+#include "menu.h"
+
+tLinkTable * head = NULL;
+int Help();
+int Quit();
+
+#define CMD_MAX_LEN 		1024
+#define CMD_MAX_ARGV_NUM 	32
+#define DESC_LEN    		1024
+#define CMD_NUM     		10
+
+char prompt[CMD_MAX_LEN] = "Input Cmd >";
+
+/* data struct and its operations */
+
+typedef struct DataNode
+{
+    tLinkTableNode * pNext;
+    char*   cmd;
+    char*   desc;
+    int     (*handler)(int argc, char *argv[]);
+} tDataNode;
+
+int SearchConditon(tLinkTableNode * pLinkTableNode,void * arg)
+{
+    char * cmd = (char*)arg;
+    tDataNode * pNode = (tDataNode *)pLinkTableNode;
+    if(strcmp(pNode->cmd, cmd) == 0)
+    {
+        return  SUCCESS;  
+    }
+    return FAILURE;	       
+}
+/* find a cmd in the linklist and return the datanode pointer */
+tDataNode* FindCmd(tLinkTable * head, char * cmd)
+{
+    tDataNode * pNode = (tDataNode*)GetLinkTableHead(head);
+    while(pNode != NULL)
+    {
+        if(!strcmp(pNode->cmd, cmd))
+        {
+            return  pNode;  
+        }
+        pNode = (tDataNode*)GetNextLinkTableNode(head,(tLinkTableNode *)pNode);
+    }
+    return NULL;
+}
+
+/* show all cmd in listlist */
+int ShowAllCmd(tLinkTable * head)
+{
+    tDataNode * pNode = (tDataNode*)GetLinkTableHead(head);
+    while(pNode != NULL)
+    {
+        printf("%s - %s\n", pNode->cmd, pNode->desc);
+        pNode = (tDataNode*)GetNextLinkTableNode(head,(tLinkTableNode *)pNode);
+    }
+    return 0;
+}
+
+int Help(int argc, char *argv[])
+{
+    ShowAllCmd(head);
+    return 0; 
+}
+
+int SetPrompt(char * p)
+{
+    if (p == NULL)
+    {
+        return 0;
+    }
+    strcpy(prompt,p);
+    return 0;
+}
+/* add cmd to menu */
+int MenuConfig(char * cmd, char * desc, int (*handler)())
+{
+    tDataNode* pNode = NULL;
+    if ( head == NULL)
+    {
+        head = CreateLinkTable();
+        pNode = (tDataNode*)malloc(sizeof(tDataNode));
+        pNode->cmd = "help";
+        pNode->desc = "Menu List:";
+        pNode->handler = Help;
+        AddLinkTableNode(head,(tLinkTableNode *)pNode);
+    }
+    pNode = (tDataNode*)malloc(sizeof(tDataNode));
+    pNode->cmd = cmd;
+    pNode->desc = desc;
+    pNode->handler = handler; 
+    AddLinkTableNode(head,(tLinkTableNode *)pNode);
+    return 0; 
+}
+
+/* Menu Engine Execute */
+int ExecuteMenu()
+{
+   /* cmd line begins */
+    while(1)
+    {
+		int argc = 0;
+		char *argv[CMD_MAX_ARGV_NUM];
+        char cmd[CMD_MAX_LEN];
+		char *pcmd = NULL;
+        printf("%s",prompt);
+        /* scanf("%s", cmd); */
+		pcmd = fgets(cmd, CMD_MAX_LEN, stdin);
+		if(pcmd == NULL)
+		{
+			continue;
+		}
+        /* convert cmd to argc/argv */
+		pcmd = strtok(pcmd," ");
+		while(pcmd != NULL && argc < CMD_MAX_ARGV_NUM)
+		{
+			argv[argc] = pcmd;
+			argc++;
+			pcmd = strtok(NULL," ");
+		}
+        if(argc == 1)
+        {
+            int len = strlen(argv[0]);
+            *(argv[0] + len - 1) = '\0';
+        }
+        tDataNode *p = (tDataNode*)SearchLinkTableNode(head,SearchConditon,(void*)argv[0]);
+        if( p == NULL)
+        {
+            printf("This is a wrong cmd!\n ");
+            continue;
+        }
+        
+        if(p->handler != NULL) 
+        { 
+            p->handler(argc, argv);
+        }
+    }
+} 
+
+$>vi menu.h
+-------------
+/* Set Input Prompt */
+int SetPrompt(char * p);
+/* add cmd to menu */
+int MenuConfig(char * cmd, char * desc, int (*handler)());
+
+/* Menu Engine Execute */
+int ExecuteMenu();
+
+$>vi test.c
+-------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+#include "menu.h"
+
+#define FONTSIZE 10
+int PrintMenuOS()
+{
+    int i, j;
+    char data_M[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "  *    *  ",
+        " ***  *** ",
+        " * *  * * ",
+        " * *  * * ",
+        " *  **  * ",
+        " *      * ",
+        " *      * ",
+        " *      * ",
+        "          "
+    };
+    char data_e[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "          ",
+        "    **    ",
+        "   *  *   ",
+        "  *    *  ",
+        "  ******  ",
+        "  *       ",
+        "   *      ",
+        "    ***   ",
+        "          "
+    };
+    char data_n[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "          ",
+        "    **    ",
+        "   *  *   ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "          "
+    };
+    char data_u[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "          ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "  *    *  ",
+        "   *  **  ",
+        "    **  * ",
+        "          "
+    };
+    char data_O[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "   ****   ",
+        "  *    *  ",
+        " *      * ",
+        " *      * ",
+        " *      * ",
+        " *      * ",
+        "  *    *  ",
+        "   ****   ",
+        "          "
+    };
+    char data_S[FONTSIZE][FONTSIZE] =
+    {
+        "          ",
+        "    ****  ",
+        "   **     ",
+        "  **      ",
+        "   ***    ",
+        "     **   ",
+        "      **  ",
+        "     **   ",
+        "  ****    ",
+        "          "
+    };
+
+    for(i=0; i<FONTSIZE; i++)
+    {
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_M[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_e[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_n[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_u[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_O[i][j]);
+        }
+        for(j=0; j<FONTSIZE; j++)
+        {
+            printf("%c", data_S[i][j]);
+        }
+        printf("\n");
+    }
+    return 0;
+}
+
+int Quit(int argc, char *argv[])
+{
+    /* add XXX clean ops */
+    exit(0);
+}
+
+int times(int argc, char *argv[])
+{
+  time_t times;
+  struct tm *t;
+
+  times=time(0);
+  t=localtime(&times);
+
+  printf("%d:%d:%d %d:%d:%d\n", t->tm_year + 1900, t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+  return 0;
+}
+
+int times_asm(int argc, char *argv[])
+{
+  time_t times;
+  struct tm *t;
+
+  asm volatile                        //触发0xd(13)系统调用.
+  (
+      "mov $0,%%ebx\n\t"
+      "mov $0xd,%%eax\n\t"
+      "int $0x80\n\t"
+      "mov %%eax,%0\n\t"
+      : "=m" (times)
+  );
+
+  t=localtime(&times);
+  printf("%d:%d:%d %d:%d:%d\n", t->tm_year + 1900, t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+  return 0;
+}
+
+int forks(int argc,char **argv)
+{
+    int pid;
+
+    pid=fork();
+    if (pid<0) 
+    {
+        fprintf(stderr,"Fork failed!");
+        exit(-1);
+    }
+    else if(pid==0)
+    {
+        printf("This is child process!\n");
+    }
+    else
+    {
+        printf("This is parent process!\n");
+        wait(0);
+        printf("Child complete!\n");
+    }
+    return 0;
+}
+
+int executes(int argc,char **argv)
+{
+	int pid;
+
+	pid=fork();
+	if(pid<0)
+	{
+		fprintf(stderr,"Fork Failed!");
+		exit(-1);
+	}
+	else if(pid==0)
+	{
+		printf("This is Child Process!\n");
+		execlp("/xx-name","xx-name",NULL);    //跟踪"execve"系统调用.
+	}
+	else
+	{
+		printf("This is Parent Process!\n");
+	}
+	return 0;
+}
+
+int main()
+{
+    PrintMenuOS();
+    SetPrompt("MenuOS>>");
+    MenuConfig("version","XXX V1.0(Menu program v1.0 inside)",NULL);
+    MenuConfig("times","show system times.",times);
+    MenuConfig("times-asm","show system times by asm.",times_asm);
+    MenuConfig("forks","forks.",forks);
+    MenuConfig("executes","executes.",executes);
+    MenuConfig("quit","Quit from XXX",Quit);
+    ExecuteMenu();
+}
+
+$>vi Makefile
+-------------
+CC_PTHREAD_FLAGS        = -lpthread
+CC_FLAGS                = -c 
+CC_OUTPUT_FLAGS         = -o
+CC                      = gcc
+RM                      = rm
+RM_FLAGS                = -f
+
+TARGET  =   test
+OBJS    =   linktable.o  menu.o test.o
+
+all:	$(OBJS)
+	$(CC) $(CC_OUTPUT_FLAGS) $(TARGET) $(OBJS) 
+rootfs:
+	gcc -o init linktable.c menu.c test.c -m32 -static -lpthread
+	mkdir -p ../rootfs/ && cp init ../rootfs/
+	find ../rootfs/ | cpio -o -Hnewc |gzip -9 > ../rootfs.img
+	qemu -kernel /path/linux-x.y.z/arch/x86/boot/bzImage -initrd /path/rootfs.img
+.c.o:
+	$(CC) $(CC_FLAGS) $<
+
+clean:
+	$(RM) $(RM_FLAGS)  $(OBJS) $(TARGET) *.bak
+
+注意:必须编译i386内核.
+
+通用寄存器
+----------------
+31        16 15(16bit-高8bit)8 7(16bit-低8bit)0     16-bit   32-bit     
+              --------------    -------------
+                    AH               AL              AX        EAX      #累加器(accumulator)
+                    BH               BL              BX        EBX      #基地址寄存器(base register)
+                    CH               CL              CX        ECX      #计数寄存器(count register)
+                    DH               DL              DX        EDX      #数据寄存器(data register)
+              -----------------------------                                             
+                            BP                                 EBP      #堆栈基指针(base pointer)
+                            SI                                 ESI      #变址寄存器(index register)
+                            DI                                 EDI      #变址寄存器(index register)
+                            SP                                 ESP      #堆栈顶指针(stack pointer)
+                            
+段寄存器
+----------------
+CS        #代码段寄存器(code segment register),代码段的段值.
+DS        #数据段寄存器(data segment register),数据段的段值.
+SS        #堆栈段寄存器(stack segment register),堆栈段的段值.
+ES        #附加段寄存器(extra segment register),附加段的段值.
+FS        #附加段寄存器(extra segment register),附加段的段值.
+GS        #附加段寄存器(extra segment register),附加段的段值.
+
+标识寄存器(eflags register)
+----------------
+31  30  29  28  27  26  25  24  23  22  21  20  19  18  17  16  15  14  13    12   11    10    9    8    7    6  5  4  3  2  1  0
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --------   --    --    --   --   --   -- -- -- -- -- -- --     
+0   0   0   0   0   0   0   0   0   0   ID  VIP VIF AC  VM  RF  0   NT    IOPL     OF    DF    IF   TF   SF   ZF 0  AF 0  PF 1  CF      
+
+ID Flag                                  ID
+Virtual Interrupt Pending                VIP
+Virtual Interrupt Flag                   VIF
+Alignment Check                          VC
+Virtual-8086 Mode                        VM
+Resume Flag                              RF
+Nested Task                              NT
+I/O Privilege Level                      IOPL
+Overflow Flag                            OF
+Direction Flag                           DF
+Interrupt Enable Flag                    IF
+Trap Flag                                TF
+Sign Flag                                SF
+Zero Flag                                ZF
+Auxiliary Carry Flag                     AF
+Parity Flag                              PF
+Carry Flag                               CF
+
+X86_64 Registers
+----------------
+General-Purpose Registers(GPRs)            64-bit Media and Floating-Point Registers      128-bit Media Registers
+63     ~      0                                63     ~      0                             127      ~       0
+------- ------- RAX                            --------------- MMX0/FPR0                    -------- ------- XMM0
+------- ------- RBX                            --------------- MMX1/FPR1                    -------- ------- XMM1
+------- ------- RCX                            --------------- MMX2/FPR2                    -------- ------- XMM2
+------- ------- RDX                            --------------- MMX3/FPR3                    -------- ------- XMM3
+------- ------- RBP                            --------------- MMX4/FPR4                    -------- ------- XMM4
+------- ------- RSI                            --------------- MMX5/FPR5                    -------- ------- XMM5
+------- ------- RDI                            --------------- MMX6/FPR6                    -------- ------- XMM6
+------- ------- PSP                            --------------- MMX7/FPR7                    -------- ------- XMM7
+--------------- R8                                                                          ---------------- XMM8
+--------------- R9                            Flags Register                                ---------------- XMM9
+--------------- R10                            63     ~      0                              ---------------- XMM10
+--------------- R11                           -------- EFLAGS   RFLAGS                      ---------------- XMM11
+--------------- R12                                                                         ---------------- XMM12
+--------------- R13                           Instruction Pointer                           ---------------- XMM13
+--------------- R14                            63     ~      0                              ---------------- XMM14
+--------------- R15                           ---------  EIP      RIP                       ---------------- XMM15
+
+mov指令以及寻址方式
+----------------
+movb         #8bit.
+movw         #16bit.
+movl         #32bit.
+movq         #64bit.
+
+eg.
+movl %eax,%edx                    => edx=eax;                            #寄存器寻址(register mode).   
+movl $0x123,%edx                  => edx=0x123;                          #立即寻址(immediate).
+movl 0x123,%edx                   => edx=*(int32_t*)0x123;               #直接寻址(direct).
+movl (%ebx),%edx                  => edx=*(int32_t*)ebx;                 #间接寻址(indirect).
+movl 4(%ebx),%edx                 => edx=*(int32_t*)(ebx+4);             #变址寻址(displaced).
+
+注意:b,w,l,q指的是:8bit,16bit,32bit,64bit.
+
+汇编指令(push)
+----------------
+eg.
+pushl %eax       => subl $4,%esp
+                    movl %eax,(%esp)
+                 
+pushq %eax       => subq $8,%esp        #esp,eax这里假设是64bit寄存器.
+                    movq %eax,(%esp)
+
+注意:b,w,l,q指的是:8bit,16bit,32bit,64bit.
+
+汇编指令(pop)
+----------------
+eg.
+popl %eax        =>movl (%esp),%eax 
+                   addl $4,%esp
+                   
+注意:b,w,l,q指的是:8bit,16bit,32bit,64bit.                   
+
+汇编指令(call)
+----------------
+eg.
+call 0x12345     =>pushl %eip(*)
+                   movl $0x12345,%eip(*)
+                   
+注意:(*)代表程序员不能直接修改(eip).
+                    
+汇编指令(ret)
+----------------
+eg.
+ret              =>popl %eip(*)
+
+注意:(*)代表程序员不能直接修改(eip).
+
+汇编例子
+----------------
+eg.
+...
+pushl $8
+movl %esp,%ebp
+subl $4,%esp
+movl $8,(%esp)
+...
+
+...
+pushl $8
+movl %esp,%ebp
+pushl $8
+...
+
+
+...
+pushl $8
+movl %esp,%ebp
+pushl %esp
+pushl $8
+addl $4,%esp
+popl %esp
+...
+
+汇编实操
+----------------
+$>vi main.c
+-------------
+int main(int argc,char **argv)
+{
+
+    return 0;
+}
+
+$>gcc -S -o main.s main.c -m32
+$>cat main.s
+-------------
+	.file	"main.c"
+	.text
+	.globl	main
+	.type	main, @function
+main:
+.LFB0:
+	.cfi_startproc
+	pushl	%ebp
+	.cfi_def_cfa_offset 8
+	.cfi_offset 5, -8
+	movl	%esp, %ebp
+	.cfi_def_cfa_register 5
+	movl	$0, %eax
+	popl	%ebp
+	.cfi_restore 5
+	.cfi_def_cfa 4, 4
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	main, .-main
+	.ident	"GCC: (Debian 4.7.2-5) 4.7.2"
+	.section	.note.GNU-stack,"",@progbits
+	
+	==>
+main:
+	pushl	%ebp
+	movl	%esp, %ebp
+	movl	$0, %eax
+	popl	%ebp
+	ret
+	
+注意:所以以"."开头的指令他们都是用于链接的辅助信息,在分析汇编时可以将其去掉.
+
+$>vi hexdump.c
+-------------
+void v_hexdump(unsigned char *v_first_address, unsigned long v_length) {
+    unsigned long i,j,k;
+    unsigned char v_binstr[256];
+
+    /**
+     * 多行.
+     */
+    for ( i = 0l; i<v_length; i++ ) {
+        if ( 0 == ( i%16 ) ) {                             //行首.            
+            sprintf(v_binstr,"%p -",i+v_first_address);    //sprintf(v_binstr,"0x%012x -",i+v_first_address);                                   
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);                  
+        } 
+        else if ( 15 == ( i%16 ) ) {                       //在"0x000000000000 - 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"后面输出字符.     
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);                 
+            sprintf(v_binstr,"%s  ",v_binstr);                                                               
+
+            for ( j = i-15; j <= i; j++ ) {                                                      
+                sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.'); 
+            }
+            printf("%s\n",v_binstr);                       //换行并打印字符                               
+        } else {
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);
+        }
+    }
+
+    /*
+    *单行或者最后一行.
+    */
+    if ( 0 != ( i%16 ) ) {
+        k = 16 - ( i%16 );
+
+        for ( j = 0; j < k; j++ ) {
+            sprintf(v_binstr,"%s   ",v_binstr);
+        }
+
+        sprintf(v_binstr,"%s  ",v_binstr);
+        k = 16 - k;
+
+        for ( j = i - k; j < i; j++ ) {
+            sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.');
+        }
+        printf("%s\n",v_binstr);                           //换行并打印字符
+    }
+}
+
+$>gcc -S -o hexdump.s hexdump.c -m32
+$>cat hexdump.s
+-------------
+	.file	"hexdump.c"
+	.section	.rodata
+.LC0:
+	.string	"%p -"
+.LC1:
+	.string	"%s %02x"
+.LC2:
+	.string	"%s  "
+.LC3:
+	.string	"%s%c"
+.LC4:
+	.string	"%s   "
+	.text
+	.globl	v_hexdump
+	.type	v_hexdump, @function
+v_hexdump:
+.LFB0:
+	.cfi_startproc
+	pushl	%ebp
+	.cfi_def_cfa_offset 8
+	.cfi_offset 5, -8
+	movl	%esp, %ebp
+	.cfi_def_cfa_register 5
+	subl	$296, %esp
+	movl	$0, -12(%ebp)
+	jmp	.L2
+.L10:
+	movl	-12(%ebp), %eax
+	andl	$15, %eax
+	testl	%eax, %eax
+	jne	.L3
+	movl	-12(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC0, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	movl	-12(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC1, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	jmp	.L4
+.L3:
+	movl	-12(%ebp), %eax
+	andl	$15, %eax
+	cmpl	$15, %eax
+	jne	.L5
+	movl	-12(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC1, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC2, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	movl	-12(%ebp), %eax
+	subl	$15, %eax
+	movl	%eax, -16(%ebp)
+	jmp	.L6
+.L9:
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	cmpb	$33, %al
+	jbe	.L7
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	cmpb	$126, %al
+	ja	.L7
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	jmp	.L8
+.L7:
+	movl	$46, %eax
+.L8:
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC3, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	addl	$1, -16(%ebp)
+.L6:
+	movl	-16(%ebp), %eax
+	cmpl	-12(%ebp), %eax
+	jbe	.L9
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	puts
+	jmp	.L4
+.L5:
+	movl	-12(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC1, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+.L4:
+	addl	$1, -12(%ebp)
+.L2:
+	movl	-12(%ebp), %eax
+	cmpl	12(%ebp), %eax
+	jb	.L10
+	movl	-12(%ebp), %eax
+	andl	$15, %eax
+	testl	%eax, %eax
+	je	.L1
+	movl	-12(%ebp), %eax
+	movl	%eax, %edx
+	andl	$15, %edx
+	movl	$16, %eax
+	subl	%edx, %eax
+	movl	%eax, -20(%ebp)
+	movl	$0, -16(%ebp)
+	jmp	.L12
+.L13:
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC4, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	addl	$1, -16(%ebp)
+.L12:
+	movl	-16(%ebp), %eax
+	cmpl	-20(%ebp), %eax
+	jb	.L13
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC2, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	movl	$16, %eax
+	subl	-20(%ebp), %eax
+	movl	%eax, -20(%ebp)
+	movl	-20(%ebp), %eax
+	movl	-12(%ebp), %edx
+	movl	%edx, %ecx
+	subl	%eax, %ecx
+	movl	%ecx, %eax
+	movl	%eax, -16(%ebp)
+	jmp	.L14
+.L17:
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	cmpb	$33, %al
+	jbe	.L15
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	cmpb	$126, %al
+	ja	.L15
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	jmp	.L16
+.L15:
+	movl	$46, %eax
+.L16:
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC3, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	addl	$1, -16(%ebp)
+.L14:
+	movl	-16(%ebp), %eax
+	cmpl	-12(%ebp), %eax
+	jb	.L17
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	puts
+.L1:
+	leave
+	.cfi_restore 5
+	.cfi_def_cfa 4, 4
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	v_hexdump, .-v_hexdump
+	.ident	"GCC: (Debian 4.7.2-5) 4.7.2"
+	.section	.note.GNU-stack,"",@progbits
+
+$>vi hexdump.c
+-------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void v_hexdump(unsigned char *v_first_address, unsigned long v_length) {
+    unsigned long i,j,k;
+    unsigned char v_binstr[256];
+
+    /**
+     * 多行.
+     */
+    for ( i = 0l; i<v_length; i++ ) {
+        if ( 0 == ( i%16 ) ) {                             //行首.            
+            sprintf(v_binstr,"%p -",i+v_first_address);    //sprintf(v_binstr,"0x%012x -",i+v_first_address);                                   
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);                  
+        } 
+        else if ( 15 == ( i%16 ) ) {                       //在"0x000000000000 - 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"后面输出字符.     
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);                 
+            sprintf(v_binstr,"%s  ",v_binstr);                                                               
+
+            for ( j = i-15; j <= i; j++ ) {                                                      
+                sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.'); 
+            }
+            printf("%s\n",v_binstr);                       //换行并打印字符                               
+        } else {
+            sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);
+        }
+    }
+
+    /*
+    *单行或者最后一行.
+    */
+    if ( 0 != ( i%16 ) ) {
+        k = 16 - ( i%16 );
+
+        for ( j = 0; j < k; j++ ) {
+            sprintf(v_binstr,"%s   ",v_binstr);
+        }
+
+        sprintf(v_binstr,"%s  ",v_binstr);
+        k = 16 - k;
+
+        for ( j = i - k; j < i; j++ ) {
+            sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.');
+        }
+        printf("%s\n",v_binstr);                           //换行并打印字符
+    }
+}
+
+int main(int argc,char **argv)
+{
+    unsigned int i=0;
+    v_hexdump((char *)&i,sizeof(i));
+    return 0;
+}
+
+$>gcc -S -o hexdump.s hexdump.c -m32
+$>cat hexdump.s
+-------------
+	.file	"hexdump.c"
+	.section	.rodata
+.LC0:
+	.string	"%p -"
+.LC1:
+	.string	"%s %02x"
+.LC2:
+	.string	"%s  "
+.LC3:
+	.string	"%s%c"
+.LC4:
+	.string	"%s   "
+	.text
+	.globl	v_hexdump
+	.type	v_hexdump, @function
+v_hexdump:
+.LFB0:
+	.cfi_startproc
+	pushl	%ebp
+	.cfi_def_cfa_offset 8
+	.cfi_offset 5, -8
+	movl	%esp, %ebp
+	.cfi_def_cfa_register 5
+	subl	$296, %esp
+	movl	$0, -12(%ebp)
+	jmp	.L2
+.L10:
+	movl	-12(%ebp), %eax
+	andl	$15, %eax
+	testl	%eax, %eax
+	jne	.L3
+	movl	-12(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC0, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	movl	-12(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC1, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	jmp	.L4
+.L3:
+	movl	-12(%ebp), %eax
+	andl	$15, %eax
+	cmpl	$15, %eax
+	jne	.L5
+	movl	-12(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC1, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC2, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	movl	-12(%ebp), %eax
+	subl	$15, %eax
+	movl	%eax, -16(%ebp)
+	jmp	.L6
+.L9:
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	cmpb	$33, %al
+	jbe	.L7
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	cmpb	$126, %al
+	ja	.L7
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	jmp	.L8
+.L7:
+	movl	$46, %eax
+.L8:
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC3, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	addl	$1, -16(%ebp)
+.L6:
+	movl	-16(%ebp), %eax
+	cmpl	-12(%ebp), %eax
+	jbe	.L9
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	puts
+	jmp	.L4
+.L5:
+	movl	-12(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC1, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+.L4:
+	addl	$1, -12(%ebp)
+.L2:
+	movl	-12(%ebp), %eax
+	cmpl	12(%ebp), %eax
+	jb	.L10
+	movl	-12(%ebp), %eax
+	andl	$15, %eax
+	testl	%eax, %eax
+	je	.L1
+	movl	-12(%ebp), %eax
+	movl	%eax, %edx
+	andl	$15, %edx
+	movl	$16, %eax
+	subl	%edx, %eax
+	movl	%eax, -20(%ebp)
+	movl	$0, -16(%ebp)
+	jmp	.L12
+.L13:
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC4, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	addl	$1, -16(%ebp)
+.L12:
+	movl	-16(%ebp), %eax
+	cmpl	-20(%ebp), %eax
+	jb	.L13
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC2, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	movl	$16, %eax
+	subl	-20(%ebp), %eax
+	movl	%eax, -20(%ebp)
+	movl	-20(%ebp), %eax
+	movl	-12(%ebp), %edx
+	movl	%edx, %ecx
+	subl	%eax, %ecx
+	movl	%ecx, %eax
+	movl	%eax, -16(%ebp)
+	jmp	.L14
+.L17:
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	cmpb	$33, %al
+	jbe	.L15
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	cmpb	$126, %al
+	ja	.L15
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	addl	%edx, %eax
+	movzbl	(%eax), %eax
+	movzbl	%al, %eax
+	jmp	.L16
+.L15:
+	movl	$46, %eax
+.L16:
+	movl	%eax, 12(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$.LC3, 4(%esp)
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	sprintf
+	addl	$1, -16(%ebp)
+.L14:
+	movl	-16(%ebp), %eax
+	cmpl	-12(%ebp), %eax
+	jb	.L17
+	leal	-276(%ebp), %eax
+	movl	%eax, (%esp)
+	call	puts
+.L1:
+	leave
+	.cfi_restore 5
+	.cfi_def_cfa 4, 4
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	v_hexdump, .-v_hexdump
+	.globl	main
+	.type	main, @function
+main:
+.LFB1:
+	.cfi_startproc
+	pushl	%ebp
+	.cfi_def_cfa_offset 8
+	.cfi_offset 5, -8
+	movl	%esp, %ebp
+	.cfi_def_cfa_register 5
+	andl	$-16, %esp
+	subl	$32, %esp
+	movl	$0, 28(%esp)
+	movl	$4, 4(%esp)
+	leal	28(%esp), %eax
+	movl	%eax, (%esp)
+	call	v_hexdump
+	movl	$0, %eax
+	leave
+	.cfi_restore 5
+	.cfi_def_cfa 4, 4
+	ret
+	.cfi_endproc
+.LFE1:
+	.size	main, .-main
+	.ident	"GCC: (Debian 4.7.2-5) 4.7.2"
+	.section	.note.GNU-stack,"",@progbits
+
+sys_time系统调用
+----------------
+b sys_time 
+b system_call
+
+fork系统调用
+----------------
+b sys_clone
+b do_fork                    #gdb调试的时候会停在这.
+b dup_task_struct
+b copy_process               #创建进程内容的主要代码.
+b copy_thread                #"/path/linux-x.y.z/kernel/process_32.c".
+b ret_from_fork
+
+注意:主要代码在"/path/linux-x.y.z/kernel/fork.c".
+
+execve系统调用
+----------------
+b sys_execve
+b do_execve
+b do_execve_common
+b do_open_exec               #加载执行文件.
+b exec_binprm                #关键地方,可执行文件的处理过程.
+b search_binary_handler      #寻找可执行文件的处理函数.
+b list_for_each_entry
+b load_elf_binary            #"/path/linux-x.y.z/fs/binfmt_elf.c".
+b load_elf_library
+b schedule                   #选择一个新的进程来运行,"/path/linux-x.y.z/kernel/sched/core.c".
+b pick_next_task             #进程调度算法都封装在这个函数的内部.
+b context_switch
+b switch_to                  #"/path/linux-x.y.z/arch/x86/include/asm/switch_to.h".
+
+注意:ELF可执行文件总是被默认映射到0x8048000这个地址上.
+
+寄存器结构名称
+----------------
+struct pt_regs{
+  ...
+}
+
+系统调用的总控程序
+----------------
+entry_32.S
+or
+entry_64.S
+
+内核操作系统的三大功能
+----------------
+1.进程管理(核心)
+2.内存管理
+3.文件系统
+
+注意:进程控制块(PCB),结构体(struct task_struct);位置在"/path/linux-x.y.z/include/linux/sched.h".
+
+执行文件生成过程
+----------------
+$>gcc -E -o xx-name.cpp xx-name.c -m32               #预处理,step.1.
+$>gcc -x cpp-output -S -o xx-name.s xx-name.cpp -m32 #step.2.
+$>gcc -x assembler -c xx-name.s -o xx-name.o -m32    #step.3.
+$>gcc -o xx-name xx-name.o -m32                      #step.4.
+$>gcc -o xx-name.static xx-name.o -m32 -static       #step.4.
+
+内核Makefile
+----------------
+$>make ARCH=x86_64        #实质上是"/path/linux-x.y.z/arch/x86/configs/x86_64_defconfig"文件.
+$>make ARCH=x86           #实质上是"/path/linux-x.y.z/arch/x86/configs/i386_defconfig"文件.
+
+交叉编译内核
+----------------
+$>make -jn ARCH=arm64/arm/x86_64/x86 CROSS_COMPILE=xxx-gnu- deconfig    #step.1
+$>make -jn ARCH=arm64/arm/x86_64/x86 CROSS_COMPILE=xxx-gnu-             #step.2
+$>sudo make headers_install                          
+$>sudo make modules_install
+
+在(qemu)虚拟机中运行新的内核
+----------------
+$>mkdir -p /path/initrd && cp /home/vsftpd/busybox-1.20.0.zip /path/initrd                                                                                           #step.1,构建内存文件.
+$>cd /path/initrd && unzip busybox-1.20.0.zip
+$>cd  /path/initrd/busybox-1.20.0
+
+$>make menuconfig                                                                                                                                                    #必须选中"Build BusyBox as a static binary (no shared libs) ",Busybox Settings--->Build Options--->[*] Build BusyBox as a static binary (no shared libs). 
+$>make -j4 && make install
+$>cd .. && mkdir -p initramfs
+or
+$>make install CONFIG_PREFIX=/path/initrd/initramfs
+
+$>cd initramfs && mkdir -pv {bin,sbin,etc,tmp,dev,proc,sys,usr/{bin,sbin}}
+$>cp -av ../busybox-1.20.0/_install/* .
+$>mknod dev/console c 5 1
+$>mknod dev/null c 1 3
+$>vi init
+-------------
+#!/bin/sh 
+
+mount -t proc proc /proc 
+mount -t sysfs proc /sys
+
+$>chmod +x init
+$>sudo chown -R root:root *
+$>find . -print0 | cpio --null -ov --format=newc | gzip -9 > /path/initrd_$(ARCH).gz
+or
+$>find ./initramfs/ | cpio -o -Hnewc |gzip -9 > /path/initrd_$(ARCH).gz
+
+$>date -s 20180630                                                                                                                                                     #step.2,这里必须进行设置否则会导致编译不了.
+
+$>make ARCH=x86 allyesconfig                                                                                                                                           #step.3,编译内核.
+$>make ARCH=x86 -j4
+or
+$>make -j4 i386_defconfig
+$>make -j4
+or
+$>make -j4 x86_64_defconfig
+$>make -j4
+
+$>qemu-system-x86_64 -m 512M -serial stdio -kernel /path/linux-x.y.z/arch/x86/boot/bzImage -initrd /path/initrd_$(ARCH).gz -append "init=/bin/sh ignore_loglevel"      #step.4,运行.
+
+注意:以上内容实验没有成功,但是具有参考意义.
+
+内核编译
+----------------
+inst 
+------------
+$>apt-get install git fakeroot build-essential ncurses-dev xz-utils libssl-dev bc flex libelf-dev bison qemu 
+
+编译与调试
+------------
+编译内核的步骤
+----------
+$>make x86_64_defconfig                                                                                 #step.1
+
+注意:每次执行这条命令时都会重新生成"linux-x.y.z/.config",".config"的生成在"linux-x.y.z/Makefile"中的["config/%config"]标记中生成的(config-targets=1);实际上对应的是"linux-x.y.z\arch\$x\configs\$y_defconfig"下的配置文件.
+
+$>vi linux-x.y.z/.config                                                                                #step.2
+----------
+CONFIG_DEBUG_INFO=y
+CONFIG_FRAME_POINTER=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_DEBUG_FS=y
+CONFIG_SLUB_DEBUG_ON=y
+CONFIG_DMA_API_DEBUG=y
+
+注意:为了避免每次都修改.config配置文件，可以直接修改"linux-x.y.z\arch\$x\configs\$y_defconfig";将以上内容直接粘贴到"linux-x.y.z\arch\$x\configs\$y_defconfig"即可.["CONFIG_FRAME_POINTER"]还是需要修改"linux-x.y.z/.config"进行手动添加;经过测试通过,不用每次都修改该文件.
+
+$>vi linux-x.y.z/Makefile                                                                               #step.3
+----------
+KBUILD_HOSTCFLAGS   = -v -g -Wall -Wmissing-prototypes -Wstrict-prototypes -O0 -fomit-frame-pointer
+KBUILD_HOSTCXXFLAGS = -v -g -O0
+...
+ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+KBUILD_CFLAGS	+= -O0 $(call cc-disable-warning,maybe-uninitialized,)
+else
+ifdef CONFIG_PROFILE_ALL_BRANCHES
+KBUILD_CFLAGS	+= -O0 $(call cc-disable-warning,maybe-uninitialized,)
+else
+KBUILD_CFLAGS   += -O0
+endif
+endif
+...
+
+$>/usr/bin/qemu-system-x86_64 -no-quit -S -s -curses -kernel /path/linux-x.y.z/arch/x86/boot/bzImage     #step.4
+$>cd /path/linux-x.y.z && gdb vmlinux                                                                    #step.5
+gdb>target remote 127.0.0.1:1234
+gdb>b start_kernel                                                                                       #将断点打在start_kernel.
+gdb>b ...                                                                                                #打断点.
+gdb>set args ...                                                                                         #设置运行参数.
+gdb>c or s                                                                                               #继续(continue)运行.
+gdb>bt  
+
+内核调试脚本
+----------
+$>mkdir /path/bin
+$>vi ~/.bashrc
+--------
+export PATH=$PATH:/path/bin
+
+$>vi /path/bin/kterminal.sh                                                                              #step.1
+--------
+#!/bin/bash
+
+KDIR=/path/linux-x.y.z
+#####打开一个终端,一个qemu窗口#####
+cd $KDIR && gnome-terminal --hide-menubar  --title="Terminal" --geometry=100X85+85+85 &
+/usr/bin/qemu-system-x86_64 -no-quit -S -s -curses -kernel $KDIR/arch/x86/boot/bzImage 
+
+$>vi /path/bin/r.sh                                                                                      #step.2
+--------
+#!/bin/bash
+
+/usr/bin/qemu-system-x86_64 -no-quit -S -s -curses -kernel /path/linux-x.y.z/arch/x86/boot/bzImage 
+
+$>vi /path/bin/kdebug.sh                                                                                 #step.3
+--------
+#!/bin/bash
+
+#####启动gdb的shell脚本文件#####
+mkdir -p /path/debug
+touch /path/debug/khistory
+touch /path/debug/kcfg
+touch /path/debug/log.txt
+touch /path/debug/breakpoints
+
+gdb -x /path/debug/kcfg /path/linux-x.y.z/vmlinux                                                        #注意这里必须使用绝对路径.
+
+$>vi /path/debug/kcfg
+--------
+#####gdb配置文件#####
+set confirm off
+set pagination off
+set print elements 0
+set print array-indexes on
+set print pretty on
+set history filename /path/debug/khistory                   #注意这里必须使用绝对路径.
+set history save on
+set logging file /path/debug/log.txt                        #注意这里必须使用绝对路径.
+set logging on
+set logging overwrite on
+
+source /path/debug/breakpoints                              #注意这里必须使用绝对路径.
+python sys.path.append("/usr/share/gcc-4.7/python/");
+target remote 127.0.0.1:1234
+
+#breakpoints
+b start_kernel
+display $pc
+display /x $cs
+
+define rr
+  target remote 127.0.0.1:1234
+  c
+end
+
+define xx-cmd                                                #自定义命令.
+  ...
+  yy-context
+  ...
+end
+
+查看依赖关系
+----------------
+$>cd /lib/modules/<kernel-version>/
+$>cat modules.dep | grep -niE "e1000e"
+$>cat modules.dep | grep -niE "e100"
+$>modprobe e1000e
+$>modprobe e100
+
+生成依赖关系
+----------------
+$>depmod                     #depmod会生成/lib/modules/<kernel-version>/modules.dep
+$>cat modules.dep | grep -niE "e1000e"
+$>modprobe e1000e            #modprobe的模块名称来源于/lib/modules/<kernel-version>/modules.dep同时会自动解析模块的依赖关系并自动加载.
+

@@ -1,0 +1,334 @@
+$>vi include/linux/syscalls.h
+$>cat include/uapi/asm-generic/unistd.h    #这个头文件只是起参考的作用没有任何实质作用因为定义如下内容:
+#ifndef __SYSCALL
+#define __SYSCALL(x, y)
+#endif
+例如:
+#define __NR_setxattr 5                    #调用号,这个是有实际作用的.
+__SYSCALL(__NR_setxattr, sys_setxattr)     #由此可以看出__SYSCALL定义的内容是没啥意义的,可以起到参考的作用;可以通过搜索sys_setxattr找到相关定义.
+
+$>vi kernel/sys_ni.c
+$>vi arch/x86/entry/syscalls/syscall_64.tbl 
+
+#define __stringify_1(x...)     #x
+#define __stringify(x...)       __stringify_1(x)
+#define cond_syscall(x) asm(                            \
+        ".weak " __stringify(x) "\n\t"                  \
+        ".set  " __stringify(x) ","                     \
+                 __stringify(sys_ni_syscall))
+#define COND_SYSCALL(name) cond_syscall(__x64_sys_##name)
+
+#define SYSCALL_TRACE_ENTER_EVENT(sname)                                \       
+        static struct syscall_metadata __syscall_meta_##sname;          \       
+        static struct trace_event_call __used                           \       
+          event_enter_##sname = {                                       \       
+                .class                  = &event_class_syscall_enter,   \
+                {                                                       \       
+                        .name                   = "sys_enter"#sname,    \
+                },                                                      \       
+                .event.funcs            = &enter_syscall_print_funcs,   \
+                .data                   = (void *)&__syscall_meta_##sname,\
+                .flags                  = TRACE_EVENT_FL_CAP_ANY,       \       
+        };                                                              \       
+        static struct trace_event_call __used __attribute__((section("_ftrace_events"))) *__event_enter_##sname = &event_enter_##sname;
+
+#define SYSCALL_TRACE_EXIT_EVENT(sname)                                 \       
+        static struct syscall_metadata __syscall_meta_##sname;          \       
+        static struct trace_event_call __used                           \       
+          event_exit_##sname = {                                        \       
+                .class                  = &event_class_syscall_exit,    \
+                {                                                       \       
+                        .name                   = "sys_exit"#sname,     \
+                },                                                      \       
+                .event.funcs            = &exit_syscall_print_funcs,    \
+                .data                   = (void *)&__syscall_meta_##sname,\
+                .flags                  = TRACE_EVENT_FL_CAP_ANY,       \       
+        };                                                              \       
+        static struct trace_event_call __used  __attribute__((section("_ftrace_events"))) *__event_exit_##sname = &event_exit_##sname;
+
+#define SYSCALL_METADATA(sname, 6, ...)                        \
+        static const char *types_##sname[] = {                  \
+            __MAP6(m,t,a,...) m(t,a), __MAP5(m,__VA_ARGS__)            \
+        };                                                      \
+        static const char *args_##sname[] = {                   \
+            __MAP6(m,t,a,...) m(t,a), __MAP5(m,__VA_ARGS__)            \
+        };                                                      \
+        SYSCALL_TRACE_ENTER_EVENT(sname);                       \
+        SYSCALL_TRACE_EXIT_EVENT(sname);                        \
+        static struct syscall_metadata __used                   \
+          __syscall_meta_##sname = {                            \
+                .name           = "sys"#sname,                  \
+                .syscall_nr     = -1,   /* Filled in at boot */ \
+                .nb_args        = 6,                           \
+                .types          = 6 ? types_##sname : NULL,    \
+                .args           = 6 ? args_##sname : NULL,     \
+                .enter_event    = &event_enter_##sname,         \
+                .exit_event     = &event_exit_##sname,          \
+                .enter_fields   = LIST_HEAD_INIT(__syscall_meta_##sname.enter_fields), \
+        };                                                      \
+        static struct syscall_metadata __used __attribute__((section("__syscalls_metadata"))) *__p_syscall_meta_##sname = &__syscall_meta_##sname;
+
+#define SYSCALL_DEFINEx(x, sname, ...)                          \
+        SYSCALL_METADATA(sname, x, __VA_ARGS__)                 \
+        __SYSCALL_DEFINEx(x, sname, __VA_ARGS__)
+
+#define SYSCALL_DEFINE6(name, ...) SYSCALL_DEFINEx(6, _##name, __VA_ARGS__)  #解析如下:
+ SYSCALL_METADATA(sname, x, __VA_ARGS__)
+ __SYSCALL_DEFINEx(x, sname, __VA_ARGS__)
+
+Linux系统调用断点
+--------------
+SYSCALL_DEFINEx 
+{
+    SYSCALL_METADATA
+    {
+        p __syscall_meta_< 函数名,eg._fork >
+        p __p_syscall_meta_< 函数名,eg._fork >
+        p types_< 函数名,eg._fork >
+        p event_enter_< 函数名,eg._fork >
+        p __event_enter_< 函数名,eg._fork >
+        p event_exit_< 函数名,eg._fork >
+        p __event_exit_< 函数名,eg._fork >
+    }
+
+    __SYSCALL_DEFINEx
+    {
+        p _eil_addr_< 函数名,eg.__x64_sys_fork >    #这里的名称与 asmlinkage long sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))  __attribute__((alias(__stringify(__se_sys##name)))); 有关并非看到的__se_sys< 函数名,eg._fork >这样子.
+        b __do_sys_< 函数名,eg.__x64_sys_fork >
+    }
+}
+
+syscall_metadata
+----------------
+struct list_head {
+    struct list_head *next, *prev;
+};
+
+struct syscall_metadata {
+        const char      *name;
+        int             syscall_nr;
+        int             nb_args;
+        const char      **types;
+        const char      **args;
+        struct list_head enter_fields;
+
+        struct trace_event_call *enter_event;
+        struct trace_event_call *exit_event;
+};
+
+trace 
+----------------
+struct list_head {
+    struct list_head *next, *prev;
+};
+
+struct hlist_node {
+        struct hlist_node *next, **pprev;
+};
+
+struct hlist_head {
+        struct hlist_node *first;
+};
+
+struct trace_event_class {
+        const char              *system;
+        void                    *probe;
+#ifdef CONFIG_PERF_EVENTS
+        void                    *perf_probe;
+#endif
+        int                     (*reg)(struct trace_event_call *event,enum trace_reg type, void *data);
+        int                     (*define_fields)(struct trace_event_call *);
+        struct list_head        *(*get_fields)(struct trace_event_call *);
+        struct list_head        fields;
+        int                     (*raw_init)(struct trace_event_call *);
+};
+
+struct tracepoint_func {
+        void *func;
+        void *data;
+        int prio;
+};
+
+struct tracepoint {
+        const char *name;               /* Tracepoint name */
+        struct static_key key;
+        int (*regfunc)(void);
+        void (*unregfunc)(void);
+        struct tracepoint_func __rcu *funcs;
+};
+
+typedef enum print_line_t (*trace_print_func)(struct trace_iterator *iter,int flags, struct trace_event *event);
+
+struct trace_event_functions {
+        trace_print_func        trace;
+        trace_print_func        raw;
+        trace_print_func        hex;
+        trace_print_func        binary;
+};
+
+struct trace_event {
+        struct hlist_node               node;
+        struct list_head                list;
+        int                             type;
+        struct trace_event_functions    *funcs;
+};
+
+typedef int (*regex_match_func)(char *str, struct regex *r, int len);
+
+struct regex {
+        char                    pattern[MAX_FILTER_STR_VAL];
+        int                     len;
+        int                     field_len;
+        regex_match_func        match;
+};
+
+struct ftrace_event_field {
+        struct list_head        link;
+        const char              *name;
+        const char              *type;
+        int                     filter_type;
+        int                     offset;
+        int                     size;
+        int                     is_signed;
+};
+
+typedef int (*filter_pred_fn_t) (struct filter_pred *pred, void *event);
+
+struct filter_pred {
+        filter_pred_fn_t        fn;
+        u64                     val;
+        struct regex            regex;
+        unsigned short          *ops;
+        struct ftrace_event_field *field;
+        int                     offset;
+        int                     not;
+        int                     op;
+};
+
+struct prog_entry {
+        int                     target;
+        int                     when_to_branch;
+        struct filter_pred      *pred;
+};
+
+struct event_filter {
+        struct prog_entry __rcu *prog;
+        char                    *filter_string;
+};
+
+struct bpf_prog {
+        u16                     pages;          /* Number of allocated pages */
+        u16                     jited:1,        /* Is our filter JIT'ed? */
+                                jit_requested:1,/* archs need to JIT the prog */
+                                undo_set_mem:1, /* Passed set_memory_ro() checkpoint */
+                                gpl_compatible:1, /* Is filter GPL compatible? */
+                                cb_access:1,    /* Is control block accessed? */
+                                dst_needed:1,   /* Do we need dst entry? */
+                                blinded:1,      /* Was blinded */
+                                is_func:1,      /* program is a bpf function */
+                                kprobe_override:1, /* Do we override a kprobe? */
+                                has_callchain_buf:1; /* callchain buffer allocated? */
+        enum bpf_prog_type      type;           /* Type of BPF program */
+        enum bpf_attach_type    expected_attach_type; /* For some prog types */
+        u32                     len;            /* Number of filter blocks */
+        u32                     jited_len;      /* Size of jited insns in bytes */
+        u8                      tag[BPF_TAG_SIZE];
+        struct bpf_prog_aux     *aux;           /* Auxiliary fields */
+        struct sock_fprog_kern  *orig_prog;     /* Original BPF program */
+        unsigned int            (*bpf_func)(const void *ctx, const struct bpf_insn *insn);
+        /* Instructions for interpreter */
+        union {
+                struct sock_filter      insns[0];
+                struct bpf_insn         insnsi[0];
+        };
+};
+
+struct bpf_storage_buffer {
+        struct rcu_head rcu;
+        char data[0];
+};
+
+struct bpf_cgroup_storage_map {
+        struct bpf_map map;
+
+        spinlock_t lock;
+        struct bpf_prog *prog;
+        struct rb_root root;
+        struct list_head list;
+};
+
+struct bpf_cgroup_storage_key {
+        __u64   cgroup_inode_id;        /* cgroup inode id */
+        __u32   attach_type;            /* program attach type */
+};
+
+struct bpf_cgroup_storage {
+        struct bpf_storage_buffer *buf;
+        struct bpf_cgroup_storage_map *map;
+        struct bpf_cgroup_storage_key key;
+        struct list_head list;
+        struct rb_node node;
+        struct rcu_head rcu;
+};
+
+struct bpf_prog_array_item {
+        struct bpf_prog *prog;
+        struct bpf_cgroup_storage *cgroup_storage;
+};
+
+struct bpf_prog_array {
+        struct rcu_head rcu;
+        struct bpf_prog_array_item items[0];
+};
+
+truct trace_event_call {
+        struct list_head        list;
+        struct trace_event_class *class;
+        union {
+                char                    *name;
+                /* Set TRACE_EVENT_FL_TRACEPOINT flag when using "tp" */
+                struct tracepoint       *tp;
+        };
+        struct trace_event      event;
+        char                    *print_fmt;
+        struct event_filter     *filter;
+        void                    *mod;
+        void                    *data;
+        /*
+         *   bit 0:             filter_active
+         *   bit 1:             allow trace by non root (cap any)
+         *   bit 2:             failed to apply filter
+         *   bit 3:             trace internal event (do not enable)
+         *   bit 4:             Event was enabled by module
+         *   bit 5:             use call filter rather than file filter
+         *   bit 6:             Event is a tracepoint
+         */
+        int                     flags; /* static flags of different events */
+
+#ifdef CONFIG_PERF_EVENTS
+        int                             perf_refcount;
+        struct hlist_head __percpu      *perf_events;
+        struct bpf_prog_array __rcu     *prog_array;
+
+        int     (*perf_perm)(struct trace_event_call *, struct perf_event *);
+#endif
+};
+
+COMPAT_SYSCALL_DEFINEx
+--------------
+#define COMPAT_SYSCALL_DEFINEx(x, name, ...)					\
+	__diag_push();								\
+	__diag_ignore(GCC, 8, "-Wattribute-alias","Type aliasing is used to sanitize syscall arguments");\
+	asmlinkage long compat_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__));	\
+	asmlinkage long compat_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__)) __attribute__((alias(__stringify(__se_compat_sys##name))));	\
+	ALLOW_ERROR_INJECTION(compat_sys##name, ERRNO);				\
+	static inline long __do_compat_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__));\
+	asmlinkage long __se_compat_sys##name(__MAP(x,__SC_LONG,__VA_ARGS__));	\
+	asmlinkage long __se_compat_sys##name(__MAP(x,__SC_LONG,__VA_ARGS__))	\
+	{									\
+		long ret = __do_compat_sys##name(__MAP(x,__SC_DELOUSE,__VA_ARGS__));\
+		__MAP(x,__SC_TEST,__VA_ARGS__);					\
+		return ret;							\
+	}									\
+	__diag_pop();								\
+	static inline long __do_compat_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))

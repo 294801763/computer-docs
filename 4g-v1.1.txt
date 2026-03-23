@@ -1,0 +1,149 @@
+GobiNet模式下循环获取IP
+--
+$>dmesg -wH                                          #监控dmesg日志信息
+$>dhclient <GobiNet网络接口名> -d -q -nw
+
+串口功能
+--
+ttyUSB0 - DM Port              - RMNET
+ttyUSB1 - GNSS Port            - ECM
+ttyUSB2 - AT Port              - MBIM
+ttyUSB3 - PPP Port or AT Port  - RNDIS 
+ttyUSB5                        - NCM
+
+>AT+QCFG="USBNET",<0/1/2/3/5>,重启生效
+
+查看USB
+--
+$>apt-get install usbutils udhcpc net-tools make gcc ppp
+$>lsusb -t 
+
+拨号
+--
+step.1 
+-
+AT+QCFG="USBNET",1
+
+step.2 
+-
+step.1 编译安装 Quectel_Linux_USB_Serial_Option_Driver_20220902.tgz
+step.2 编译安装 Quectel_Linux&Android_QMI_WWAN_Driver_V1.2.0.22.zip
+step.3 编译安装 Quectel_QConnectManager_Linux_V2.0.tar.xz
+step.4 - run 
+-
+$>chmod 777 Quectel_QConnectManager_Linux_V2.0.0/default.script
+$>cp -afv Quectel_QConnectManager_Linux_V2.0.0/default.script /etc/udhcpc/
+$>dos2unix /etc/udhcpc/default.script
+$>./quectel-CM --help
+$>./quectel-CM 
+or 
+$>./quectel-CM &
+
+一键拨号 - 依赖GobiNet驱动
+--
+step.1 - dri
+-
+编译安装 Quectel_Linux_USB_Serial_Option_Driver_20220902.tgz
+编译安装 Quectel_Linux&Android_GobiNet_Driver_V1.6.3.zip
+
+step.2 - run
+-
+$>./quectel-CM &
+
+拨号模式 - ppp - 方法1
+--
+step.1 - 设置 
+-
+AT+QCFG="USBNET",1
+
+step.2 - ppp 
+-
+$>unzip linux-ppp-scripts_V1.2.zip
+$>cp -afv linux-ppp-scripts_V1.2/linux-ppp-scripts/quectel-chat-connect /etc/ppp/peers/
+$>cp -afv linux-ppp-scripts_V1.2/linux-ppp-scripts/quectel-chat-disconnect /etc/ppp/peers/
+$>cp -afv linux-ppp-scripts_V1.2/linux-ppp-scripts/quectel-ppp /etc/ppp/peers/
+$>nano /etc/ppp/peers/quectel-ppp
+-
+...
+/dev/ttyUSBx 115200
+user "name" password "passwd"
+...
+
+$>nano /etc/ppp/peers/quectel-ppp
+-
+OK AT+CGDCONT=1,"IP","APN名称",,0,0
+OK ATD*<填写运营商号码>#
+
+$>pppd call quectel-ppp &
+
+拨号模式 - ppp - 方法2
+--
+$>quectel-pppd.sh <串口设备名,eg./dev/ttyUSBx> APN username passwd 
+
+开启/禁用网卡
+--
+AT+QCFG="ETHERNET"              #查询当前配置 
+AT+QCFG="ETHERNET",0            #关闭ethernet网卡
+AT+QCFG="ETHERNET",1            #开启ethernet网卡
+
+拨号模式 - RNDIS
+--
+$>nano drivers/usb/serial/option.c
+-
+...
+static const struct usb_device_id option_ids[] = {
+	<添加一条内容,参考Quectel_UMTS_LTE_5G_Linux_USB_Driver_User_Guide_CN_V1.1.pdf手册 -> Linux USB驱动移植->USB转串口驱动->添加VID和PID>
+};
+...
+
+step.2 - AT command
+-
+ATE1                            #开启回显
+ATI
+AT+QENG="SERVINGCELL"
+AT+QCFG="USBNET",3              #设置为RNDIS拨号模式
+AT+QCFG="NAT",0                 #网卡模式,usb0网卡不能获取到IP
+or
+AT+QCFG="NAT",1                 #路由模式,usb0网卡能获取到IP
+AT+QCFG="NAT",2                 #网桥模式
+AT+QCFG="NAT"                   #查询当前配置
+
+AT+QNETDEVCTL=1,3,1             #开机自动拨号
+AT+CFUN=1,1                     #重启
+
+AT+CGDCONT?                     #查询IP地址
+AT+QICSGP=1                     #查询APN
+
+AT+QNETDEVSTATUS=1
+
+查找AT口
+--
+$>echo -e "ati\r\n" > /dev/ttyUSB0 & cat /dev/ttyUSB0
+$>echo -e "ati\r\n" > /dev/ttyUSB1 & cat /dev/ttyUSB1
+$>echo -e "ati\r\n" > /dev/ttyUSB2 & cat /dev/ttyUSB2
+$>echo -e "ati\r\n" > /dev/ttyUSB3 & cat /dev/ttyUSB3
+
+抓日志 - 本地
+--
+./QLog -f conf/xx.cfg
+
+AT+QCFG="DEBUGCTL",0
+AT+QCFG="DBGCTL",0
+AT+CFUN=0
+AT+CFUN=1
+
+抓日志 - 局域网
+--
+step.1 - 开启日志服务
+-
+$>./QLog -s 9000          #开启局域网QLog服务
+
+step.2 查看日志
+-
+借助QWinLog windows程序存储日志
+
+烧录
+--
+$>./QFirehose -h 
+$>./QFirehose -f <固件目录>
+

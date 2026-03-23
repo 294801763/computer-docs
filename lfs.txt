@@ -1,0 +1,238 @@
+设置时间
+--------------
+date -s "2023-01-23 10:00"
+hwclock -w
+
+ENV
+--------------
+step.1
+--------
+export LFS=/mnt/lfs
+mkdir -pv $LFS/{bin,etc,lib,sbin,usr,var} $LFS/tools $LFS/sources
+case $(uname -m) in
+ x86_64) mkdir -pv $LFS/lib64 ;;
+esac
+chmod -v a+wt $LFS/sources
+
+step.2
+--------
+groupadd lfs
+useradd -s /bin/bash -g lfs -m -k /dev/null lfs
+passwd lfs
+
+step.3
+--------
+chown -v lfs $LFS/{usr,lib,var,etc,bin,sbin,tools} $LFS/sources
+case $(uname -m) in
+ x86_64) chown -v lfs $LFS/lib64 ;;
+esac
+
+step.4
+--------
+chown -v lfs $LFS/sources
+
+step.5
+--------
+cat > ~/.bashrc << "EOF"
+export LFS=/mnt/lfs
+EOF
+
+step.6
+--------
+su - lfs
+
+step.7
+--------
+cat > ~/.bash_profile << "EOF"
+exec env -i HOME=$HOME TERM=$TERM PS1='\u:\w\$ ' /bin/bash
+EOF
+
+cat > ~/.bashrc << "EOF"
+set +h
+umask 022
+LFS=/mnt/lfs
+LC_ALL=POSIX
+LFS_TGT=$(uname -m)-lfs-linux-gnu
+PATH=/usr/bin
+if [ ! -L /bin ]; then PATH=/bin:$PATH; fi
+PATH=$LFS/tools/bin:$PATH
+CONFIG_SITE=$LFS/usr/share/config.site
+export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
+export MAKEFLAGS='-j4'
+EOF
+
+编译
+--------------
+5.3. GCC-10.4.0 - Pass 1
+--------
+$>cd gcc-10.4.0/mpfr
+$>autoreconf -fv
+
+$>cd gcc-10.4.0/isl/
+$>autoreconf -fv
+
+5.4. Linux-4.19.198 API Headers
+--------
+make headers_check
+
+LFS属主
+--------------
+export LFS=/mnt/lfs
+chown -R lfs:lfs $LFS/{usr,lib,var,etc,bin,sbin,tools}
+case $(uname -m) in
+  x86_64) chown -R lfs:lfs $LFS/lib64 ;;
+esac
+
+ROOT属主
+--------------
+export LFS=/mnt/lfs
+chown -R root:root $LFS/{usr,lib,var,etc,bin,sbin,tools}
+case $(uname -m) in
+  x86_64) chown -R root:root $LFS/lib64 ;;
+esac
+
+备份
+--------------
+cd $LFS && tar -cJpfv $HOME/lfs-temp-tools-10.1.tar.xz .
+
+还原
+--------------
+cd $LFS && rm -rf ./* && tar -xpfv $HOME/lfs-temp-tools-10.1.tar.xz
+
+注意:参考"LFS-BOOK-10.1.tar.xz","LFS-BOOK-10.1.pdf".
+
+CHROOT
+--------------
+export LFS=/mnt/lfs
+mkdir -pv $LFS/{dev,proc,sys,run}
+mount -v --bind /dev $LFS/dev
+mount -v --bind /dev/pts $LFS/dev/pts
+mount -vt proc proc $LFS/proc
+mount -vt sysfs sysfs $LFS/sys
+mount -vt tmpfs tmpfs $LFS/run
+if [ -h $LFS/dev/shm ]; then
+  mkdir -pv $LFS/$(readlink $LFS/dev/shm)
+fi
+chroot "$LFS" /usr/bin/env -i   \
+    HOME=/root                  \
+    TERM="$TERM"                \
+    PS1='(lfs chroot) \u:\w\$ ' \
+    PATH=/bin:/usr/bin:/sbin:/usr/sbin \
+    /bin/bash --login +h
+
+EXIT
+--------------
+logout
+
+export LFS=/mnt/lfs
+chroot "$LFS" /usr/bin/env -i \
+ HOME=/root TERM="$TERM" \
+ PS1='(lfs chroot) \u:\w\$ ' \
+ PATH=/bin:/usr/bin:/sbin:/usr/sbin \
+ /bin/bash --login
+
+find /usr/lib /usr/libexec -name \*.la -delete
+find /usr -depth -name $(uname -m)-lfs-linux-gnu\* | xargs rm -rf
+rm -rf /tools
+userdel -r tester
+exit
+
+umount $LFS/dev{/pts,}
+umount $LFS/{sys,proc,run}
+
+X11
+--------------
+$>mkdir -pv /opt/x11
+$>vi /root/.bashrc 
+--------
+XORG_PREFIX=/opt/x11
+XORG_PREFIX="$XORG_PREFIX"
+XORG_CONFIG="--prefix=\$XORG_PREFIX --sysconfdir=/etc --localstatedir=/var --disable-static"
+
+PATH=$XORG_PREFIX/bin:$PATH
+PKG_CONFIG_PATH=$XORG_PREFIX/lib/pkgconfig:$XORG_PREFIX/share/pkgconfig:$PKG_CONFIG_PATH
+LIBRARY_PATH=$XORG_PREFIX/lib:$LIBRARY_PATH
+C_INCLUDE_PATH=$XORG_PREFIX/include:$C_INCLUDE_PATH
+CPLUS_INCLUDE_PATH=$XORG_PREFIX/include:$CPLUS_INCLUDE_PATH
+
+ACLOCAL="aclocal -I $XORG_PREFIX/share/aclocal"
+
+ln -svf $XORG_PREFIX/share/X11 /usr/share/X11
+ln -svf $XORG_PREFIX /usr/X11R6
+
+export XORG_PREFIX XORG_CONFIG PATH PKG_CONFIG_PATH ACLOCAL LIBRARY_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH
+
+$>source /root/.bashrc 
+
+内核图形配置
+--------------
+Bus options (PCI etc.)  ---> 
+ [*] Mark VGA/VBE/EFI FB as generic system framebuffer
+Device Drivers  --->
+ [*] Virtio drivers  --->
+  <*>   PCI driver for virtio devices
+  [*]     Support for legacy virtio draft 0.9.X and older devices
+  <*>   Virtio balloon driver
+  <*>   Virtio input driver
+  <*>   Platform bus driver for memory mapped virtio devices
+ Input device support  ---> 
+  [*]   Keyboards  --->
+   <*>   AT keyboard
+  [*]   Mice  --->
+   <*>   PS/2 mouse
+   [*]     ALPS PS/2 mouse protocol extension
+   [*]     BYD PS/2 mouse protocol extension
+   [*]     Logitech PS/2++ mouse protocol extension
+   [*]     Synaptics PS/2 mouse protocol extension
+   [*]     Synaptics PS/2 SMbus companion
+   [*]     Cypress PS/2 mouse protocol extension
+   [*]     Fujitsu Lifebook PS/2 mouse protocol extension
+   [*]     IBM Trackpoint PS/2 mouse protocol extension
+   [*]     Elantech PS/2 protocol extension
+   [*]       Elantech PS/2 SMbus companion
+   [*]     Sentelic Finger Sensing Pad PS/2 protocol extension
+   [*]     FocalTech PS/2 mouse protocol extension
+   [*]     Virtual mouse (vmmouse)
+   [*]     Enable I2C support
+   [*]     Enable SMbus support
+ Graphics support  --->
+  <*> /dev/agpgart (AGP Support)  --->
+  [*] Laptop Hybrid Graphics - GPU switching support
+  <*> Direct Rendering Manager (XFree86 4.1.0 and higher DRI support)  --->
+   [*]   DRM DP AUX Interface
+   [*]   Enable legacy fbdev support for your modesetting driver
+   [*]   Allow to specify an EDID data set instead of probing for it
+  [*] Enable DisplayPort CEC-Tunneling-over-AUX HDMI support
+  <*> AMD GPU
+  [*]   Enable amdgpu support for SI parts
+  [*]   Enable amdgpu support for CIK parts
+  [*]   Always enable userptr write support
+  <*> Nouveau (NVIDIA) cards
+  [*]   Nouveau legacy context support
+  [*]   Support for backlight control
+  <*> Intel 8xx/9xx/G3x/G4x/HD Graphics
+  [*]   Enable capturing GPU state following a hang
+  [*]     Compress GPU error state
+  [*]   Always enable userptr support
+  <*> DRM driver for VMware Virtual GPU
+  [*]   Enable framebuffer console under vmwgfx by default
+  <*> Intel GMA5/600 KMS Framebuffer
+  [*]   Intel GMA600 support (Experimental)
+  [*]   Intel GMA3600/3650 support (Experimental)
+  <*> Virtio GPU driver
+  [*] DRM Support for Xen guest OS
+  [*] Enable legacy drivers (DANGEROUS)  --->
+  Frame buffer Devices  ---> 
+   -*- Support for frame buffer devices  --->
+    [*]   Enable firmware EDID
+	-*-   Enable Video Mode Handling Helpers
+	-*-   Enable Tile Blitting Support
+	[*]   VESA VGA graphics support
+	[*]   EFI-based Framebuffer Support
+	[*]   Simple framebuffer support
+  -*- Backlight & LCD device support  --->
+  Console display driver support  ---> 
+   [*] VGA text console
+   [*] Framebuffer Console support
+   -*-   Map the console to the primary display device
+   [*]   Framebuffer Console Rotation

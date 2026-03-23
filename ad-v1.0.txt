@@ -1,0 +1,192 @@
+添加库
+---------------
+Commpents->File-based Libraries Preferences..
+
+放大或缩小
+---------------
+Page up / Page up 
+
+库制作
+---------------
+快捷键                                                      步骤/描述
+vgs                                          --   视图->栅格->设置捕捉栅格/设置单元格大小
+tab                                          --   在绘制的状态下可以对属性进行更改
+按住SHIFT + 拖动                             --   复制模型
+框选 + 鼠标移动/CTRL + 方向键                --   移动模型
+鼠标右键 / m + s                             --   整体移动
+ctrl + shift + t / a + t                     --   选择模型,上对齐
+ctrl + shift + b / a + b                     --   下对齐
+ctrl + shift + l / a + l                     --    左对齐
+ctrl + shift + r / a + r                     --    右对齐
+ctrl + shift + h                             --    水平方向上的等距
+ctrl + shift + v                             --    垂直方向上的等距
+e + d                                        --    删除
+t + p                                        --    系统参数设置
+p + l                                        --    放置线
+p + r                                        --    放置矩形
+s +                                          --    选择 
+t + d                                        --    设置文档属性
+
+库制作-批量修改pin脚信息
+---------------
+1.不要选中任何内容
+2.在属性->Pins->点击铅笔图标即可批量修改
+
+画原理图/库-回归原点
+---------------
+e + j + o                                    --  回归原点
+
+旋转原理图器件
+--------------
+双击器件,在悬停期间按x,y可以x,y轴镜像
+x                                            --  x轴镜像
+y                                            --  y轴镜像
+
+元器件自动编号
+--------------
+t + a + a                                    --   更新更改列表->接收更改(创建ECO)->执行变更
+
+原理图标号
+--------------
+t + a + t                                    --   原理图图纸编号自动编号
+
+层次原理图设计
+--------------
+1.自下而上的设计方式
+-------
+
+
+2.自上而下的设计方式
+-------
+
+画PCB封装库-回归中心点 
+---------------
+e + f + c                                    -- 回归中心点 
+e + j + r                                    -- 回归参考点
+
+画PCB时切换mil/mm单位
+---------------
+q                                            -- 切换mil/mm 
+
+PCB-层
+---------------
+Top Layer                                    -- 顶层,有铜箔,能导电
+Bottom Layer                                 -- 底层 
+Mechanical 1                                 -- 物理机械层,板子的尺寸,勾画板子的边框,内部较大的镂空或者异形镗孔
+Mechaincal 13                                -- AD默认用于描述器件的物理外形,也用于绘制三维实体
+Mechaincal 15                                -- AD默认用于描述器件的占位尺寸
+Top Overlay                                  -- 顶层丝印层
+Bottom Overlay                               -- 底下丝印层
+Keep-Out Layer                               -- 禁止布线层,作为铺地边界
+
+注意:标尺不能在Keep-Out Layer层,其他层都可以标注
+
+PCB-快速选择
+----------------
+1.切换到Keep-Out Layer
+2.s + y 
+3.d + s + d
+
+PCB-设置最大走线宽度
+----------------
+d + r                              --  Routing->Width->最大宽度,这样在画走线的时候tab修改线宽即可及时生效.
+d + r                              --  Electrical->Clearance->约束->最小间距:0.025mm,这样就设置就不会导致走线接不上的问题.
+
+PCB-设置翻转角度
+----------------
+t + p                              -- PCB Editor->General->其他->旋转步进:15
+t + p                              -- PCB Editor->General->其他->光标类型:Large 90
+
+PCB-翻转 
+----------------
+Space
+
+PCB翻转器件
+----------------
+选中需要旋转的器件,鼠标左键后不放并移动元器件,同时按下键盘空格space.
+
+PCB-把器件放到其他层
+----------------
+1.选中器件
+2.快捷键(l)
+
+PCB-快速换层
+----------------
+CTRL + SHIFT + 鼠标滚轮
+
+PCB-过孔的画法
+----------------
+1.切换到Top Layer层
+2.画走线到合适位置之后CTRL + SHIFT + 鼠标滚轮切换到Buttom Layer层,在合适位置打个过孔然后继续走线即可.
+
+PCB-放大或缩小 
+----------------
+Page Up / Page Down 
+
+PCB-添加滴泪
+----------------
+t + e                              -- 工作模式:添加,对象:所有,勾选:过孔/通孔,贴片焊盘,走线,T型连接
+
+PCB-覆铜
+----------------
+实心铜
+-------
+1.切换到Top Overlay
+2.p + g   tab                        -- Net:GND,Layer:Top layer,勾选:Remove Dead Copper,Optimal void Rotation,选择:Pour Over All Same Net Objects,Solid
+3.d + r                              --  Electrical->Clearance->约束->最小间距:0.254mm,这样就设置就不会导致走线接不上的问题;在覆铜的时候"Electrical->Clearance->约束->最小间距"最好设置大一点防止毛刺或短路.
+4.然后选择整块板子的面积即可.
+
+网格铜
+-------
+1.切换到Bottom Overlay 
+2.p + g   tab                        -- Net:GND,Layer:Top layer,勾选:Remove Dead Copper,Optimal void Rotation,选择:Pour Over All Same Net Objects,Hatched:45 Degree
+3.d + r                              --  Electrical->Clearance->约束->最小间距:0.254mm,这样就设置就不会导致走线接不上的问题;在覆铜的时候"Electrical->Clearance->约束->最小间距"最好设置大一点防止毛刺或短路.
+4.然后选择整块板子的面积即可.
+
+注意:Top Layer,Bottom Overlay都可以覆铜.
+
+PCB-覆铜挖空
+----------------
+1.切换到Top Layer/Bottom Layer层
+2.p + 多边形铺铜挖空 
+3.鼠标右键->铺铜操作->所有铺铜重铺
+
+PCB-开窗 
+----------------
+1.切换到Top Solder/Buttom Solder层
+2.p + f(填充)
+
+PCB-挖空
+----------------
+1.切换到Top Layer层
+2.p + 多边形铺铜挖空 
+3.鼠标右键->铺铜操作->所有铺铜重铺
+4.切换到Bottom Layer层
+5.p + 多边形铺铜挖空 
+6.鼠标右键->铺铜操作->所有铺铜重铺
+7.切换到Mechainical 1层
+8.p + 矩形
+9.t + 转换 ->以选中的元素创建板切割槽
+9.Page Up放大,选中矩形中间区域
+10.修改属性->Properties->Kind:Board Cutout,其他属性根据具体情况进行选择.
+11.消除告警(t + m)
+
+PCB-添加丝印 
+----------------
+1.切换到Top Overlay
+2.p + s        tab                   -- FontType:Adobe 宋体 Std L,Properties->Text:<中文字体>,Text Height:80mil
+
+PCB-定位孔
+----------------
+1.切换到Top Overlay
+2.p + p       tab                    -- Properties->Designator:1,Layer:Multi-Layer,Pad Stack->Simple,Shape:Rectangular,X/Y:4mm,4mm,Round,Hole Size:3mm
+
+PCB-消除告警
+----------------
+t + m 
+
+参考例子
+---------------
+6层板设计 LPC32X0核心板 SCH+PCB          -- 可以重新建立工程练习PCB
+
+注意:以上参考-哔哩哔哩-"FPC"-[学习资料]Altium Designer 20(AD20)详细教程视频.

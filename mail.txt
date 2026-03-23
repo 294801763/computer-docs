@@ -1,0 +1,206 @@
+协议名称 协议类型  端口号
+-----------------------
+smtp    tcp      25
+pop3    tcp      110
+smtps   tcp      465
+pop3s   tcp      995 
+imap    tcp      143 
+imaps   tcp      993
+
+用户
+$>useradd -u 2000 -d /var/vmail -m -s /sbin/nologin vmail
+
+USAGE
+-------------------------------
+http://www.example.org/postfixadmin/setup.php  #postfixadmin安装密码:123456(在添加管理员的时候是需要的).
+http://www.example.org/postfixadmin/           #postfix 管理平台,LOGIN/PASSWD:root@example.org/123456,hy@example.org/123456,administrator@example.org/123456
+http://www.example.org/webmail                 #网页邮件
+ 
+POP3-telnet 测试
+------------------------------
+$>telnet localhost 25                          #发送邮件的基本功能测试.
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+220 mail.example.org ESMTP Postfix
+ehlo test
+250-mail.example.org
+250-PIPELINING
+250-SIZE 10240000
+250-VRFY
+250-ETRN
+250-AUTH PLAIN LOGIN CRAM-MD5
+250-AUTH=PLAIN LOGIN CRAM-MD5
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250 DSN
+quit
+221 2.0.0 Bye
+Connection closed by foreign host.
+
+$telnet localhost 25                           #发送邮件的功能测试.
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+220 mail.example.org ESMTP Postfix
+ehlo mail.example.org
+250-mail.example.org
+250-PIPELINING
+250-SIZE 10240000
+250-VRFY
+250-ETRN
+250-AUTH PLAIN LOGIN CRAM-MD5
+250-AUTH=PLAIN LOGIN CRAM-MD5
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250 DSN
+mail from:postfix@example.org
+250 2.1.0 Ok
+rcpt to:hh@example.org
+250 2.1.5 Ok
+data
+354 End data with <CR><LF>.<CR><LF>
+subject: a test mail.
+this is a test mail!!!
+.
+250 2.0.0 Ok: queued as 6097D40B1EB
+quit
+221 2.0.0 Bye
+Connection closed by foreign host.
+
+POP3-telnet 测试
+------------------------------
+$>telnet localhost 110                         #接收邮件基本测试.
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
++OK Dovecot ready.
+user postfix@example.org
++OK
+pass 123456
++OK Logged in.
+quit
++OK Logging out.
+Connection closed by foreign host.
+
+$>telnet localhost 110                         #接收邮件list,retr测试.
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
++OK Dovecot ready.
+user postfix@example.org
++OK
+pass 123456
++OK Logged in.
+list
++OK 1 messages:
+1 1008
+.
+retr 1
++OK 1008 octets
+Return-Path: <hh@example.org>
+Delivered-To: postfix@example.org
+Received: from localhost (localhost [127.0.0.1])
+	by mail.example.org (Postfix) with ESMTP id 738D940B30F
+	for <postfix@example.org>; Sat, 18 Feb 2017 09:54:03 +0800 (CST)
+Received: from mail.example.org ([127.0.0.1])
+	by localhost (DEBIAN.ORG [127.0.0.1]) (amavisd-new, port 10024)
+	with ESMTP id pPJ3F3nwJL6g for <postfix@example.org>;
+	Sat, 18 Feb 2017 09:54:03 +0800 (CST)
+Received: from www.example.org (localhost [127.0.0.1])
+	by mail.example.org (Postfix) with ESMTP id 493F540B308
+	for <postfix@example.org>; Sat, 18 Feb 2017 09:54:03 +0800 (CST)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sat, 18 Feb 2017 09:54:03 +0800
+From: hh@example.org
+To: postfix@example.org
+Subject: this is a test mail.
+Message-ID: <21ec4ab21298681f13b3d52851a30404@example.org>
+X-Sender: hh@example.org
+User-Agent: Roundcube Webmail/1.2.1
+
+this is a test mail.
+.
+quit
++OK Logging out.
+Connection closed by foreign host.
+
+IMAP-telnet 测试
+------------------------------
+$>telnet localhost 143
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+* OK [CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE STARTTLS AUTH=PLAIN AUTH=LOGIN AUTH=CRAM-MD5] Dovecot ready.
+A01 LOGIN postfix@example.org 123456           #用户登录
+A01 OK [CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES THREAD=REFS MULTIAPPEND UNSELECT CHILDREN NAMESPACE UIDPLUS LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS SPECIAL-USE QUOTA] Logged in
+A02 LIST "" *                                  #列出所有信箱列表
+* LIST (\HasNoChildren \Sent) "." "Sent"
+* LIST (\HasNoChildren \Trash) "." "Trash"
+* LIST (\HasNoChildren \Junk) "." "Junk"
+* LIST (\HasNoChildren) "." "INBOX"
+A02 OK List completed.
+A03 Select INBOX                               #选择收件箱
+* FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+* OK [PERMANENTFLAGS (\Answered \Flagged \Deleted \Seen \Draft \*)] Flags permitted.
+* 1 EXISTS
+* 0 RECENT
+* OK [UIDVALIDITY 1487171196] UIDs valid
+* OK [UIDNEXT 3] Predicted next UID
+* OK [NOMODSEQ] No permanent modsequences
+A03 OK [READ-WRITE] Select completed.
+A04 Search ALL                                 #查询收件箱所有邮件
+* SEARCH 1
+A04 OK Search completed (0.000 secs).
+A05 Search new                                 #查询收件箱所有新邮件
+* SEARCH
+A05 OK Search completed (0.000 secs).
+A06 Fetch 1 full                               #获取第1封邮件的邮件头
+* 1 FETCH (FLAGS (\Seen) INTERNALDATE "18-Feb-2017 09:54:03 +0800" RFC822.SIZE 1008 ENVELOPE ("Sat, 18 Feb 2017 09:54:03 +0800" "this is a test mail." ((NIL NIL "hh" "example.org")) ((NIL NIL "hh" "example.org")) ((NIL NIL "hh" "example.org")) ((NIL NIL "postfix" "example.org")) NIL NIL NIL "<21ec4ab21298681f13b3d52851a30404@example.org>") BODY ("text" "plain" ("charset" "US-ASCII" "format" "flowed") NIL NIL "7bit" 22 1))
+A06 OK Fetch completed.
+A07 Fetch 1 rfc822                             #获取第1封邮件
+* 1 FETCH (RFC822 {1008}
+Return-Path: <hh@example.org>
+Delivered-To: postfix@example.org
+Received: from localhost (localhost [127.0.0.1])
+	by mail.example.org (Postfix) with ESMTP id 738D940B30F
+	for <postfix@example.org>; Sat, 18 Feb 2017 09:54:03 +0800 (CST)
+Received: from mail.example.org ([127.0.0.1])
+	by localhost (DEBIAN.ORG [127.0.0.1]) (amavisd-new, port 10024)
+	with ESMTP id pPJ3F3nwJL6g for <postfix@example.org>;
+	Sat, 18 Feb 2017 09:54:03 +0800 (CST)
+Received: from www.example.org (localhost [127.0.0.1])
+	by mail.example.org (Postfix) with ESMTP id 493F540B308
+	for <postfix@example.org>; Sat, 18 Feb 2017 09:54:03 +0800 (CST)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sat, 18 Feb 2017 09:54:03 +0800
+From: hh@example.org
+To: postfix@example.org
+Subject: this is a test mail.
+Message-ID: <21ec4ab21298681f13b3d52851a30404@example.org>
+X-Sender: hh@example.org
+User-Agent: Roundcube Webmail/1.2.1
+
+this is a test mail.
+)
+A07 OK Fetch completed.
+A08 Fetch 1 flags                              #获取第一封邮件的标志位
+* 1 FETCH (FLAGS (\Seen))
+A08 OK Fetch completed.
+A09 Store 1 +flags.silent (\deleted)           #设置标识位为删除
+A09 OK Store completed.
+A10 Expunge                                    #永久删除当前邮箱INBOX中所有设置了\delete标识的邮件.
+* 1 EXPUNGE
+A10 OK Expunge completed.
+A11 noop                                       #空语句
+A11 OK NOOP completed.
+A20 LOGOUT                                     #退出
+* BYE Logging out
+A20 OK Logout completed.
+Connection closed by foreign host.

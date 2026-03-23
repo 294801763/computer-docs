@@ -1,0 +1,49 @@
+Android-termux
+--------------
+查看用户名
+--------
+$>whoami
+
+创建Public Key 
+--------
+Tools->Create Public Key ...->                #一直点击下一步即可.
+Tools->Manage Agent Keys->Add...              #选择Identity
+将Identity.pub拷贝到Android手机的/data/data/com.termux/files/home/downloads/目录下.
+
+导入Public Key到Android设备
+--------
+$>cd ~
+$>cat ./downloads/Identity.pub >> .ssh/authorized_keys 
+
+SSH登陆 
+--------
+$>sshd 
+$>ssh -p 8022 <执行 whoami 的用户名>@<Android 设备IP地址>
+
+修改镜像源
+--------
+$>rsync -e 'ssh -p 8022' -avzHP /vsftpd/android/apt <执行 whoami 的用户名>@<Android 设备IP地址>:~/
+$>rm -rf ../usr/etc/apt/sources.list.d/*
+$>vi ../usr/etc/apt/sources.list 
+-----
+deb file:////data/data/com.termux/files/home/apt/termux-main/ stable main 
+deb file:////data/data/com.termux/files/home/apt/termux-games/ games stable 
+deb file:////data/data/com.termux/files/home/apt/termux-science science stable 
+
+安装包
+--------
+$>apt-get install ttyrec tree rsync build-essential fish git gdb cscope unrar nmap python2 python3 tmux qemu-utils qemu-common qemu-system-x86-64-headless 
+
+包管理器
+--------
+$>pkg list-all                 #列出可供安装的所有包.
+$>pkg list-installed           #列出已经安装的包.
+
+开启存储
+--------
+$>termux-setup-storage         #开启termux访问手机存储的权限.
+
+设置默认shell 
+--------
+$>chsh -s fish                 #更改默认shell为fish.
+

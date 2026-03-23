@@ -1,0 +1,86 @@
+void x_hexdump(const void *pdata, int len)
+{
+  int i, j, k, l;
+  const char *data = (const char*)pdata;
+  char buf[256], str[64], t[] = "0123456789ABCDEF";
+  for (i = j = k = 0; i < len; i++)
+  {
+    if (0 == i % 16)
+      j += sprintf(buf + j, "%04xh: ", i);
+    buf[j++] = t[0x0f & (data[i] >> 4)];
+    buf[j++] = t[0x0f & data[i]];
+    buf[j++] = ' ';
+    str[k++] = isprint(data[i]) ? data[i] : '.';
+    if (0 == (i + 1) % 16)
+    {
+      str[k] = 0;
+      j += sprintf(buf + j, "; %s\n", str);
+      printf("%s", buf);
+      j = k = buf[0] = str[0] = 0;
+    }
+  }
+  str[k] = 0;
+  if (k)
+  {
+    for (l = 0; l < 3 * (16 - k); l++)
+      buf[j++] = ' ';
+    j += sprintf(buf + j, "; %s\n", str);
+  }
+  if (buf[0]) printf("%s", buf);
+}
+
+void v_hexdump(unsigned char *v_first_address, unsigned long v_length)
+{
+  unsigned long i,j,k;
+  unsigned char v_binstr[256];
+
+  /**
+   * 多行.
+   */
+  for ( i = 0l; i<v_length; i++ )
+  {
+    if ( 0 == ( i%16 ) )                               //行首.
+    {
+      sprintf(v_binstr,"%p -",i+v_first_address);    //sprintf(v_binstr,"0x%012x -",i+v_first_address);
+      sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);
+    }
+    else if ( 15 == ( i%16 ) )                         //在"0x000000000000 - 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"后面输出字符.
+    {
+      sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);
+      sprintf(v_binstr,"%s  ",v_binstr);
+
+      for ( j = i-15; j <= i; j++ )
+      {
+        sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.');
+      }
+      printf("%s\n",v_binstr);                       //换行并打印字符
+    }
+    else
+    {
+      sprintf(v_binstr,"%s %02x",v_binstr,(unsigned char)v_first_address[i]);
+    }
+  }
+
+  /*
+  *单行或者最后一行.
+  */
+  if ( 0 != ( i%16 ) )
+  {
+    k = 16 - ( i%16 );
+
+    for ( j = 0; j < k; j++ )
+    {
+      sprintf(v_binstr,"%s   ",v_binstr);
+    }
+
+    sprintf(v_binstr,"%s  ",v_binstr);
+    k = 16 - k;
+
+    for ( j = i - k; j < i; j++ )
+    {
+      sprintf(v_binstr,"%s%c",v_binstr,('!'<v_first_address[j]&&v_first_address[j]<='~')?v_first_address[j]:'.');
+    }
+    printf("%s\n",v_binstr);                           //换行并打印字符
+  }
+}
+

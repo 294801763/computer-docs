@@ -1,0 +1,51 @@
+CPP多返回值
+----------------
+std::pair
+--
+#include <utility> // for std::pair
+ 
+std::pair<int, double> func() {
+    int i = 10;
+    double d = 20.5;
+    return std::make_pair(i, d);
+}
+
+int main() {
+    auto [a, b] = func();
+    // a 是 int 类型，b 是 double 类型
+}
+
+std::tuple
+--
+#include <tuple> // for std::tuple
+ 
+std::tuple<int, double, std::string> func() {
+    int i = 10;
+    double d = 20.5;
+    std::string s = "hello";
+    return std::make_tuple(i, d, s);
+}
+ 
+int main() {
+    auto [a, b, c] = func();
+    // a 是 int 类型，b 是 double 类型，c 是 std::string 类型
+}
+
+结构体
+--
+struct Result {
+    int value1;
+    double value2;
+};
+ 
+Result func() {
+    Result r;
+    r.value1 = 10;
+    r.value2 = 20.5;
+    return r;
+}
+ 
+int main() {
+    auto result = func();
+    // result.value1 和 result.value2
+}

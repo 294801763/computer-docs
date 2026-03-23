@@ -1,0 +1,79 @@
+$>apt-get install net-tools sshfs make gdb unzip unrar build-essential ethtool growisofs libssl-dev libjpeg-dev libncurses-dev libncurses5-dev 
+$>sshfs -o allow_other root@[$srv_ip]:/[$x]/[$y]/[$z] /mnt/
+$>apt-get install bison flex bc iperf libelf-dev
+$>vi /etc/apt/sources.list
+-------
+deb file:///mnt/ buster main contrib non-free
+
+$>xz -cd linux-4.19.108.tar.xz | tar xvf -     #解压内核.
+$>xz -cd ../patch-x.y.xz | patch -p1           #xz -cd ../patch-4.19.xz | patch -p1,打内核补丁.
+$>cd linux-4.19.108 && make mrproper
+$>mkdir -p ~/build && cp /boot/config-`uname -r` ~/build/.config
+$>make O=~/build/ menuconfig
+---------
+CONFIG_ANDROID                    #禁用.
+CONFIG_SYSTEM_TRUSTED_KEYS        #清空证书.
+CONFIG_BLK_DEV_RAM                #使能.
+CONFIG_EXT4_FS                    #使能.
+CONFIG_DEBUG_VM                   #使能.
+CONFIG_DEBUG_INFO                 #使能.
+CONFIG_DEBUG_DRIVER               #使能.
+CONFIG_DEBUG_DEVRES               #使能.
+CONFIG_BLK_DEV_RAM_COUNT=64       #修改.
+
+$>make O=~/build V=1 -j`nproc` 2>&1 | tee build.log
+$>make O=~/build modules_install install  
+$>reboot
+
+$>tar -xvf openvswitch-2.5.9.tar.gz
+$>./configure --with-debug --enable-static --prefix=/ --with-linux=/lib/modules/`uname -r`/build
+$>make && make install
+$>modinfo datapath/linux/openvswitch.ko
+---------
+...
+depends:        nf_conntrack,nf_nat,udp_tunnel,nf_conncount,libcrc32c,nf_nat_ipv6,nf_nat_ipv4,nf_defrag_ipv6
+...
+
+$>modprobe nf_conntrack && modprobe nf_nat && modprobe udp_tunnel && modprobe nf_conncount && modprobe libcrc32c && modprobe nf_nat_ipv6 && modprobe nf_nat_ipv4 && modprobe nf_defrag_ipv6
+$>insmod datapath/linux/openvswitch.ko
+$>lsmod | grep -i openvswitch
+$>/usr/bin/ovsdb-tool create /etc/openvswitch/conf.db /share/openvswitch/vswitch.ovsschema
+$>/usr/bin/mkdir -p /var/run/openvswitch/
+$>/usr/sbin/ovsdb-server --remote=punix:/var/run/openvswitch/db.sock --detach
+$>/usr/bin/ovs-vsctl --no-wait init
+$>/usr/sbin/ovs-vswitchd --pidfile --detach --log-file
+$>/usr/bin/ovs-vsctl add-br br0
+$>/usr/bin/ovs-vsctl add-port br0 [$ehx]
+$>/usr/bin/ovs-vsctl add-port br0 [$ehy]
+$>/usr/sbin/ifconfig [$ehx] up
+$>/usr/sbin/ifconfig [$ehy] up
+$>/usr/sbin/ifconfig br0 192.168.10.1 netmask 255.255.255.0 up 
+$>/usr/sbin/route add default gw 192.168.10.1
+$>/usr/bin/ovs-vsctl show
+
+注意:"openvswitch-2.12.0"必须使用"linux-4.19.x.tar.xz"内核;否则会提示版本不匹配的问题.
+
+网络打流测试
+----------
+$>iperf -u -s                    #主机A.
+--------
+------------------------------------------------------------
+Server listening on UDP port 5001
+Receiving 1470 byte datagrams
+UDP buffer size:  208 KByte (default)
+------------------------------------------------------------
+[  3] local 192.168.10.33 port 5001 connected with 192.168.10.66 port 38460
+[ ID] Interval       Transfer     Bandwidth        Jitter   Lost/Total Datagrams
+[  3]  0.0-10.0 sec  11.9 MBytes  10.0 Mbits/sec   0.039 ms 2147466639/2147475144 (1e+02%)
+
+$>iperf -u -c [$A-ip] -b 10M     #10M速率测试物理网络.
+--------
+Client connecting to 192.168.10.33, UDP port 5001
+Sending 1470 byte datagrams
+UDP buffer size:  208 KByte (default)
+------------------------------------------------------------
+[  3] local 192.168.10.66 port 38460 connected with 192.168.10.33 port 5001
+[ ID] Interval       Transfer     Bandwidth
+[  3]  0.0-10.0 sec  11.9 MBytes  10.0 Mbits/sec
+[  3] Sent 8505 datagrams
+

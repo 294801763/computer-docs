@@ -1,0 +1,80 @@
+Linux上运行NextCloud
+-------------------
+mkdir -pv /opt/nextcloud
+cp -afv Nextcloud-3.16.5-x86_64.AppImage /opt/nextcloud/Nextcloud-3.16.5-x86_64.AppImage
+chmod a+x /opt/nextcloud/Nextcloud-3.16.5-x86_64.AppImage
+nano /usr/bin/xc
+--
+#!/bin/bash
+
+killall AppRun.wrapped >/dev/null 2>&1&
+/opt/nextcloud/Nextcloud-3.16.5-x86_64.AppImage >/dev/null 2>&1&
+
+安装Apache,PHP和MariaDB
+-------------------
+apt install -y apache2 mariadb-server php php-{gd,curl,zip,xml,mbstring,json,intl,mysql,cli,imagick,ldap} libapache2-mod-php
+
+配置MariaDB
+-------------------
+mysql_secure_installation
+
+apache2 + php8.2 + nextcloud
+-------------------
+a2dismod mpm_event
+a2enmod mpm_prefork
+a2enmod php8.2
+systemctl restart apache2
+systemctl status apache2
+
+注意:参考"nextcloud-v1.0.txt",debian12上适用.
+
+解压并移动到Apache目录
+-------------------
+unzip nextcloud-X.X.X.zip
+mv nextcloud /var/www/html/
+chown -R www-data:www-data /var/www/html/nextcloud
+
+配置Apache - 创建虚拟主机配置文件
+-------------------
+nano /etc/apache2/ports.conf
+--
+Listen 8088
+
+<IfModule ssl_module>
+	Listen 443
+</IfModule>
+
+<IfModule mod_gnutls.c>
+	Listen 443
+</IfModule>
+
+nano /etc/apache2/sites-available/nextcloud.conf
+--
+<VirtualHost *:8088>
+    ServerAdmin root@localhost
+    ServerName localhost
+    DocumentRoot /var/www/html/nextcloud
+    <Directory /var/www/html/nextcloud>
+        Options +FollowSymlinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+
+配置Apache - 启用虚拟主机和重写模块
+-------------------
+a2ensite nextcloud.conf
+systemctl reload apache2
+a2enmod rewrite
+systemctl restart apache2
+
+完成Nextcloud安装
+-------------------
+访问Nextcloud打开浏览器,访问http://192.168.10.22:8088,按照向导完成安装:
+数据库类型：  MySQL/MariaDB
+数据库名：    nextcloud
+数据库用户：  nextcloud
+用户名和密码: root/123456
+数据库密码：  你在上一步设置的密码

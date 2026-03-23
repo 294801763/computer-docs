@@ -1,0 +1,566 @@
+第一部分 PCB布局
+---------------
+名词
+---------------
+Active         -       激活
+SubClass       -       子类
+Geometry       -       几何
+Cutout         -       剪切
+OutLine        -       轮廓,外框
+Silkscreen     -       丝印
+Bottom         -       底部,底层
+Manufacturing  -       制造
+Package        -       组件
+Bound          -       边界
+Pin            -       引脚/焊盘
+Keepin         -       保持
+Ref Des        -       位号
+Class          -       类
+Board          -       板
+Assembly       -       装配
+Design         -       设计
+Dimension      -       尺寸
+Top            -       顶部,顶层
+Etch           -       蚀刻,线路层
+NC Drill       -       数控钻孔
+Pastemask      -       助焊层(钢网层)
+Soldrmask      -       阻焊层
+Via            -       过孔
+Keepout        -       保持,在外面
+Route          -       布线
+Board Geometry -> Design outline            -       板外形
+Board Geometry -> Dimension                 -       尺寸标注
+Board Geometry -> Silkscreen_top/bottom     -       Top/Bottom层的丝印
+Etch -> Top/Bottom/...                      -       对应层的电气走线和覆铜
+Pack -> Assembly_top/bottom                 -       Top/Bottom/层的装配图
+Pack -> Paste_top/bottom                    -       Top/Bottom/层的助焊层
+Pack -> Pin_Number                          -       引脚序号
+Pack -> Place_Bound_top/bottom              -       Top/Bottom/层的元件边界
+Pack -> Silkscreen_top/bottom               -       Top/Bottom/层的丝印
+
+关闭丝印
+---------------
+Display->Color/Visibility...->Board geometry->Silkscreen_Top          #把勾选的去掉即可
+Display->Color/Visibility...->Board geometry->Silkscreen_Bottom       #把勾选的去掉即可
+
+关闭组件丝印
+---------------
+Display->Color/Visibility...->Components->Silkscreen_Top              #把勾选的去掉即可
+                                        ->Silkscreen_Bottom           #把勾选的去掉即可
+
+常用层
+---------------
+Display->Color/Visibility...->Board geometry->Design_Outline
+                                            ->Dimension 
+											->Silkscreen_Top
+											->Silkscreen_Bottom
+Display->Color/Visibility...->Package geometry->Assembly_Top 
+                                              ->Assembly_Bottom
+											  ->Pastemask_Top 
+											  ->Pastemask_Bottom
+											  ->Pin_Number 
+											  ->Place_Bound_Top
+											  ->Place_Bound_Bottom 
+											  ->Soldermask_top 
+											  ->Soldermask_bottom 
+Display->Color/Visibility...->Components->Silkscreen_Top
+                                        ->Silkscreen_Bottom
+
+电气走线
+---------------
+                  subclass:top      subclass:inner      subclass:bottom       subclass:all             备注  
+class:anti etch       有                  有                  有                  有              对覆铜切割时用到的class/分割带
+class:etch            有                  有                  有                  有              画具有电气属性Clines或Shapes时用到的class/走线/覆铜
+class:package keepin                                                              有              允许摆放元件区域
+class:package keepout 有                                      有                  有              禁止摆放元件区域
+class:route keepin                                                                有              允许布线区 
+class:route keepout   有                  有                  有                  有              禁止布线区
+class:via keepout     有                  有                  有                  有              禁止过孔区
+
+工艺装配
+---------------
+                                 (顶层阻焊层)                   (底层阻焊层)       (顶层丝印层,用于添加元件序号,外框)    (底层丝印层,用于添加元件序号,外框)      (顶层助焊层,用于表贴焊盘接前涂布锡膏)     (底层助焊层,用于表贴焊盘接前涂布锡膏)        (元件实体,高度)                     (元件实体,高度)              (board边框)              (顶层装配层)                 (底层装配层)
+                          subclass:soldermask_top      subclass:soldermask_bottom      subclass:silkscreen_top              subclass:silkscreen_bottom                    subclass:pastermask_top                subclass:pastermask_bottom          subclass:place_bound_top         subclass:place_bound_bottom      subclass:outline       subclass:assembly_top      subclass:assembly_bottom          
+class:board geometry                 有                             有                           有                               有                                                                                                                                                                                           有                                 
+class:package geometry               有                             有                           有                               有                                             有                                       有                                  有                                   有                                             有                            有                    
+class:ref des                                                                                    有                               有                                                                                                                                                                                                              有                            有                     
+
+器件移动,旋转,镜像,对齐,等间距
+---------------
+Edit->Move                  移动 
+
+options含义
+-----
+Ripup etch                 移动对象时去除所连走线,过孔
+Slide etch                 移动对象时保留所连走线,过孔,走线随着对象平滑移动
+Stretch etch               移动对象时保留所连走线,过孔,走线随着对象以任意角度移动
+当以上三项都不勾选时,表示仅移动对象,不能影响其他走线,过孔 
+
+Type                       以相对坐标或绝对坐标的方式旋转,一般选相对坐标
+Angle                      旋转的角度设置,根据实际需要选择,一般90度
+Point                      设置旋转时的基准点,有以下几种方式,根据实际情况进行选择
+ Sym origin                以元器件封装原点为基准点,软件默认该选项
+ Body center               以元器件place_bound几何中心为基准,常用于元器件原地旋转
+ User pick                 以鼠标单击选择点为基准,常用多个元器件的整体旋转
+ Sym pin                   以元器件引脚编号为基准点,常用于元器件结构定位
+Dynamic Alignment          点击Preferences进入User Preferences进行设置勾选,可以在移动器件时与其它器件进行对齐操作
+
+旋转
+-----
+Edit->Spin                 spin命令,当PCB右下角显示了spin时表示正在执行命令,此时同样可以在find面板和option面板中进行相关设置,参数设置与移动命令设置完全一样
+rotate                     rotate命令,不能单独使用,需要先执行move命令,选中器件之后,点击鼠标右键选择rotate命令进行旋转,同样可以在find面板和option面板中进行相关设置参数设置与移动命令设置完全一样
+
+镜像
+-----
+Edit->Mirror               在布局的时候,需要将顶层器件布局至底层时就需要用到mirror命令,当pcb界面右下角显示mirror时表示正在执行命令,同时在find面板上勾选Symbol或者Groups,然后单击一下器件就完成操作,也可以在移动器件命令菜单下,点击鼠标右键选择镜像命令进行操作
+
+对齐和等间距
+-----
+1.1 Setup->Placement Edit 
+1.2 Find->All Off
+    ->勾选:Symbols 
+1.3 框选器件,鼠标右键"Align components"
+
+器件的锁定与解锁
+---------------
+选定器件,点击工具栏的"图书钉"的图标即可
+查看锁定属性,选定器件,Edit->Properties 
+解锁所有锁定属性,点击工具栏解锁命令,在PCB编辑区鼠标右键选择"Unfix All"即可
+
+相同模块的复用 
+-----------------
+1.1 Setup->Placement Edit 
+1.2 Find->All Off
+    ->勾选:Symbols 
+1.3 框选器件,鼠标右键"Place replicate create",完成后鼠标右键"done"
+1.4 选择一个坐标(一般选择模块内部一个点作为坐标),会弹出另存为的对话框,文件名(name).mdd
+1.5 框选需要使用复用的器件,鼠标右键"Place replicate apply-><name>.mdd",没有匹配上的选择"Match->去掉Device name和Value"选项
+
+测量和查询
+-------------
+测量时的双单位显示,Setup->User Preferences...->Display->Element->showmeasure_altunits:millimeters
+Display->Measure(标尺)
+Display->Element(查询)
+
+常见单位换算
+---------------
+1英寸  = 2.54cm,25.4mm
+1英寸  = 1000mil
+1.0mil = 0.0254mm
+4.0mil = 0.1016mm 
+8.0mil = 0.2032mm
+1.0mm  = 39.37mil 
+4.0mm  = 157.48mil 
+
+常用面板
+---------------
+options面板
+find面板
+visibility面板
+
+十字光标
+---------------
+Setup->User Preferences...->Display->Cursor:pcb_cursor:infinite(无穷大)
+
+关闭起始页 
+---------------
+Setup->User Preferences...->UI->Startpage->allegro_no_startpage(勾选即可)
+
+开启Logic 
+---------------
+Setup->User Preferences...->Logic->logic_edit_enable:true
+
+更改主题
+---------------
+Setup->User Preferences...->UI->allegro_theme:light           
+
+复位工具栏
+---------------
+View->UI Settings...->Reset UI to All Toolbars...
+
+修改当前的设计参数
+---------------
+Step->Design Parameters...->Display->Connect point size(连接点大小)
+                                   ->Ratsnest geometry(飞线显示方式)
+								   ->Ratsnest point(飞线连接点)
+
+Step->Design Parameters...->Display net names->Clines(走线)
+                                             ->Shapes(铜皮)
+											 ->Pins(焊盘)
+											 
+Step->Design Parameters...->Enhanced display modes->Plated holes(钻孔孔径的显示)
+                                                  ->Backdrill holes(背钻/背面过孔)
+                                                  ->Non-plated holes()
+                                                  ->Padless holes()
+                                                  ->Connect points()
+                                                  ->Filled pads()
+                                                  ->Connect points()
+                                                  ->Filled pads() 
+                                                  ->Connect line endcaps() 
+                                                  ->Thermal pads()
+                                                  ->Bus rats()
+                                                  ->Waived DRCs()
+                                                  ->Drill labels()
+                                                  ->Design origin()
+                                                  ->Diffpair driver pins()
+                                                  ->Use secondary step models in the 3D Canvas()
+
+Step->Design Parameters...->Design->Command parameters->Size->User units(设计单位):Mils
+                                                            ->Accuracy(精度):1 decimal places
+															->Long name size:255
+															->Pad flash mode:
+
+Step->Design Parameters...->Design->Command parameters->Line lock->Lock direction:
+                                                                 ->Lock mode:
+																 ->Minimum radius:
+																 ->Fixed 45 Length:
+																 ->Fixed radius:
+																 ->Tangent:
+																 
+Step->Design Parameters...->Design->Command parameters->Extents->Left X:
+                                                               ->Lower Y:
+                                                               ->Width: 
+                                                               ->Height:															   
+
+Step->Design Parameters...->Design->Command parameters->Move origin->X:
+                                                                   ->Y:
+																   
+Step->Design Parameters...->Design->Command parameters->Symbol options->Type:
+
+Step->Design Parameters...->Design->Command parameters->Symbol->Mirror:
+                                                              ->Angle:
+                                                              ->Default symbol height:															  
+
+快捷键 
+---------------
+F4                 #显示DRC errors
+a                  #缩小                
+s                  #放大
+
+注意:区分大小写,可以用大小写定义更多的快捷键
+
+Capture与PCB Editor同步网表与错误解析
+---------------
+设置设计单位,Step->Design Parameters...->Design->Command parameters->Size->User units(设计单位):Mils
+
+step.1 创建网表
+-----
+1.1 选择<name>.dsn,Tools->Create Netlist->PCB Footprint:PCB Footprint,Create PCB Editor Netlist->Options->Netlist Files:<填写路径>\allegro->OK/确定
+网表的常见错误:1.管脚不匹配<多适用于第一方网表(Cadence)>,2.找不到Device文件<多适用于第三方网表>,3.没有Flash文件
+
+step.2 网表的使用
+-----
+2.1 指定封装库,Setup->User Preferences...->Paths->Library->padpath:<.pad文件路径>,psmpath:<.psm文件路径>
+2.2 创建PCB工程,File->New...->Drawing Name:<name>,Drawing Type:Board->OK/确定 
+2.3 导入网表,File->Import->Logic/Netlist...->Cadence->Import logic type->Design Entry CIS(Capture)                    
+                                           ->Place changed component->Always
+									       ->Import directory:<选择上面生成的网表路径即可>
+
+导入网表之后,PCB编辑区域并没有任何内容.
+Display->Status...->Symbols and nets[重点关注<Unplaced symbols,Unrouted nets,Unrouted connections>]
+
+2.4 放置元器件,Place->Quickplace...->Place by property/value
+                                   ->Placement position->By user pick  
+								   ->Board layer:Top 
+								   ->Place(放置)
+
+2.5 显示/关闭飞线 
+Display->Show Rats->All(打开飞线)
+Display->Blank Rats->All(关闭飞线)
+
+Display->Status...->Symbols and nets[重点关注<Unplaced symbols,Unrouted nets,Unrouted connections>]
+
+2.6 放置单个器件
+Logic->Part Logic...->Part Selection Area-><器件列表>-><选择一个并更改其位号>->Part Modification Area->Refdes:<填一个唯一的名称即可>->Add 
+Place->Quickplace...->Place by property/value
+                                   ->Placement position->By user pick  
+								   ->Board layer:Top 
+								   ->Place(放置)
+
+2.7 分配网络
+Logic->Net Logic
+Options->Net:<选择网络名称>
+接下来选择器件的Pin(焊盘)即可
+
+2.8 器件的删除 
+Find->All Off
+    ->勾选:Symbols 
+选择器件->Edit->Delete
+Display->Status...->Symbols and nets[重点关注<Unplaced symbols,Unrouted nets,Unrouted connections>]
+Logic->Part Logic...->Part Selection Area-><器件列表>-><选择一个并删除其他位号>->Part Modification Area->Refdes:<保留要删除的名称即可>->Delete  
+
+创建/导入板框
+---------------
+1.1 设置设计单位,Step->Design Parameters...->Design->Command parameters->Size->User units(设计单位):Millimeter(毫米/mm)
+1.2 修改可视面积,Step->Design Parameters...->Design->Command parameters->Extents->Left X:-1000(mm)
+                                                                                ->Lower Y:-1000(mm)
+                                                                                ->Width:25400(mm)
+                                                                                ->Height:24500(mm)	
+															   
+1.3 找到板框的层,Display->Color/Visibility...->Geometry->Board geometry->Outline(兼容17.4以前的板框层)
+                                                                       ->Design_Outline(兼容17.4以后的板框层)
+
+1.4 增加板框,Add->Rectangle
+Options->Active Class and Subclass:Board Geometry
+                                  :Design_Outline
+         Line font:Solid 
+		 Rectangle Creation->选择Draw Rectangle
+
+1.5 删除板框
+Find->All Off
+    ->勾选:Shapes(铜皮) 
+选择板框,Edit->Delete
+
+1.6 指定板框位置和大小
+Options->Active Class and Subclass:Board Geometry
+                                  :Design_Outline
+         Line font:Solid 
+		 Rectangle Creation->选择Place Rectangle
+		                     ->Width:<填写宽度,单位mm>
+							 ->Height:<填写高度,单位mm>         
+Command:x 0 0 
+
+1.7 绘制圆形板框,Shape->Circular
+Options->Active Class and Subclass:Board Geometry
+                                  :Design_Outline
+       ->Circle Shape Creation->Place Circle->Radius:100mm	
+Command:x 0 0 
+
+1.8 导入dxf后缀的板框(.dxf是cad另存为的格式)
+File->Import->DxF...->DXF file:<选择.dxf后缀的文件路径,路径中不要有中文或非法字符>
+                    ->DXF units:MILS/MM
+					->勾选Incremental addition(在当前的PCB文件以增加的方式导入,默认(Use default text table)是新建PCB并导入)
+					->Edit/View layers...
+DXF In Edit/View Layers->Map selected items->勾选Select all 
+                                           ->Class:BOARD GEOMETRY 
+                                           ->Subclass->New subclass:dxf_v1.0
+										   ->Class->Map 
+					   ->OK
+File->Import->DxF...->Import
+Display->Color/Visibility...->Geometry->Board geometry->Dxf_v1.0-><颜色改成洋红色>
+Find->All Off
+    ->勾选:Shapes(铜皮) 
+选择导入的板框
+Edit->Change
+Options->Class:Board Geometry
+       ->勾选New subclass
+       ->New subclass:Design_Outline
+
+1.9 移动板框 
+Find->All Off
+    ->勾选:Lines 
+    ->勾选:Shapes 
+Edit->Move 
+
+PCB软件精准定位与坐标定位
+---------------
+1.精准定位
+-----
+Find->All Off
+    ->勾选:Symbols 
+1.0.选择并移动器件到定位的位置,在移动过程中可以对器件进行旋转(在移动状态鼠标右键<Rotate - 旋转>,<Mirror - 镜像>),Edit->Move
+Options->Rotation:Angle:0/45/90/135/180/225/270/315
+
+Find->All Off
+    ->勾选:Symbols 
+	->勾选:Bond wires 
+1.1 Options->Rotation:Angle:45,并旋转或镜像器件到合适角度
+1.1.选择并移动器件,鼠标定位到定位孔的圆弧边缘然后鼠标右键Options->Rotation:Angle:45
+                                                                ->Point:Sym Origin 
+                                                         Snap pick to->Arc/Circle Center(圆弧/圆的圆心) -- 此处选择这个
+                                                                     ->Segment Vertex(线段的端点)
+																	 ->Segment Midpoint(线段的中点)
+																	 ->Segment(线段)
+																	 ->Bond Wire Vertex(金手指)
+																	 ->Bond Wire Midpoint(金手指)
+																	 ->Bond Wire(金手指) 
+																	 ->Shap Center(铜皮圆心)
+																	 ->Symbol Origin(元器件的原点)
+																	 ->Symbol Center(元器件的中心)
+																	 ->Pin(焊盘)
+																	 ->Finger(金手指)
+																	 ->Via(过孔)
+																	 ->Figure(金手指) 
+或者
+1.1.选择并进入移动命令状态,Options->Rotation:Angle:45
+                                  ->Point:User Pick 
+	在需要对齐的器件上鼠标右键Snap pick to->->Segment Vertex,选择器件(Symbol)线段的起点(此时会器件会悬停在鼠标上并随鼠标一起移动)
+	选择需要对齐线段的起点(注意:千万不要点击线段),然后鼠标右键Snap pick to->->Segment Vertex
+或者
+1.1.选择并进入移动命令状态,Options->Rotation:Angle:45
+                                  ->Point:User Pick 
+	在需要对齐的器件上鼠标右键Snap pick to->->Segment Midpoint,选择器件(Symbol)线段的中点(此时会器件会悬停在鼠标上并随鼠标一起移动)
+	选择需要对齐线段的中点(注意:千万不要点击线段),然后鼠标右键Snap pick to->->Segment Vertex
+或者
+1.1.选择并进入移动命令状态,Options->Rotation:Angle:45
+                                  ->Point:User Pick 
+	在需要对齐的器件上鼠标右键Snap pick to->->Segment,选择器件(Symbol)线段(此时会器件会悬停在鼠标上并随鼠标一起移动)
+	选择需要对齐线段(注意:千万不要点击线段),然后鼠标右键Snap pick to->->Segment
+或者
+1.1.选择并进入移动命令状态,Options->Rotation:Angle:45
+                                  ->Point:User Pick 
+	在需要对齐的器件上鼠标右键Snap pick to->->Pin,选择器件的焊盘(此时会器件会悬停在鼠标上并随鼠标一起移动)
+	移动鼠标选择需要对齐的位置即可
+
+1.2 移动 
+Find->All Off
+    ->勾选:Symbols 
+	->勾选:Bond wires
+    ->勾选:Lines
+    ->勾选:Text 	
+
+2.坐标定位
+-----
+2.1 Options->Rotation:Angle:45,并旋转或镜像器件到合适角度
+Find->All Off
+    ->勾选:Symbols 
+	->勾选:Bond wires
+    ->勾选:Lines 	
+2.2 选择板框的线段,Display->Element-><记录xy坐标>    
+Find->All Off
+    ->勾选:Pins 
+2.3 选择器件的焊盘,Display->Element-><记录xy坐标>  	
+Find->All Off
+    ->勾选:Symbols 
+移动命令状态,Options->Rotation:Angle:45
+                    ->Point:User Pick 
+选择需要定位的器件
+Command:x <定位器件坐标x y>
+Command:x <板框对齐的定位坐标x y>
+
+交互式布局与模块化(Capture与PCB Editor相互结合)
+---------------					
+1.1 打开Capture并加载工程文件,Preferences...->Miscellaneous->Intertool Communication->勾选Enable Intertool Communication
+
+1.2 进入PCB Editor 
+Find->All Off
+    ->勾选:Symbols 
+框选相应的器件,切换到Capture进行观察
+或者 
+1.2 进入Capture
+选择相应的原理图器件,切换到PCB Editor进行观察 
+
+1.3 进入PCB Editor 
+Find->All Off
+    ->勾选:Symbols 
+进入移动命令
+切换到Capture
+框选对应的原理图模块
+
+1.4 进入PCB Editor 
+Find->All Off
+    ->勾选:Nets
+切换到Capture
+选择对应的PCB NET,进入Capture观察
+
+注意:在进行交互式布局之前建议都把软件重启一次.
+
+PCB Editor软件网络飞线常规处理 
+---------------	
+1.1 关闭飞线,Display->Blank Rats->All(关闭飞线)
+1.2 Find->All Off
+    ->勾选:Nets
+1.3 显示网络飞线,Display->Show Rats->Net,然后选择焊盘上的网络名即可
+1.4 关闭飞线,,Display->Blank Rats->All(关闭飞线)
+1.5 显示网络飞线,Display->Show Rats->Net,然后选择焊盘上的网络名即可
+1.6 关闭飞线,,Display->Blank Rats->All(关闭飞线)
+
+注意:周而复始即可
+
+1.7 Find->All Off
+    ->勾选:Nets
+1.8 编辑GND的属性,隐藏GND飞线,Edit->Properties然后选择焊盘上的NET(GND)在打开的对话框中选择"Voltage","Value":0,应用(Apply)之后再打开飞线就可以看到GND的飞线被隐藏了
+1.9 编辑VCC 3_3V的属性,隐藏VCC 3_3V飞线,Edit->Properties然后选择焊盘上的NET(VCC 3_3V)在打开的对话框中选择"Voltage","Value":3.3,应用(Apply)之后再打开飞线就可以看到VCC 3_3V的飞线被隐藏了
+1.10 编辑GND的属性,显示GND飞线,Edit->Properties然后选择焊盘上的NET(GND)在打开的对话框中选择"Voltage",勾选Delete->Voltage,应用(Apply)之后再打开飞线就可以看到GND的飞线被隐藏了
+1.11 编辑VCC 3_3V的属性,显示VCC 3_3V飞线,Edit->Properties然后选择焊盘上的NET(VCC 3_3V)在打开的对话框中选择"Voltage",勾选Delete->Voltage,应用(Apply)之后再打开飞线就可以看到VCC 3_3V的飞线被隐藏了
+
+3D View 
+-------------
+鼠标中键            --   移动板子 
+SHIFT + 鼠标中键    --   旋转板子
+
+快捷键
+---------------
+# 所有快捷键
+alias F2 FORM mini acon_line_width 8
+alias F3 FORM mini acon_line_width 10
+alias F4 FORM mini acon_line_width 15
+alias F5 FORM mini acon_line_width 20
+alias F6 FORM mini acon_line_width 30
+alias F7 next
+alias F8 oops
+alias F10 grid toggle
+alias F11 zoom in
+alias F12 zoom out
+alias SF2 property edit
+alias SF3 slide
+alias SF4 show measure
+alias SF5 copy
+alias SF6 move 
+alias SF7 dehilight all
+alias SF8 hilight pick
+alias SF9 vertex
+alias SF10 save_as temp
+alias SF11 zoom previous
+alias SF12 zoom world
+alias CF2 next
+alias CF5 color192
+alias CF6 layer priority
+alias CSF5 status
+funckey 1 'pop bbdrill;pop swap;subclass top'
+funckey 2 'pop bbdrill;pop swap;subclass top;+'
+funckey 3 'pop bbdrill;pop swap;subclass top;+;+'
+funckey 4 'pop bbdrill;pop swap;subclass top;+;+;+' 
+funckey 5 'pop bbdrill;pop swap;subclass bottom'
+funckey 6 show element
+funckey 7 show measure
+funckey 8 define grid
+funckey 9 add rect
+funckey 0 text edit
+funckey a slide
+funckey b mirror
+funckey c cancel
+funckey d delete
+funckey e copy
+funckey f move
+funckey g rotate
+funckey h change
+funckey i island delete
+funckey j fix
+funckey k unfix
+funckey l next
+funckey o opps
+funckey p add line
+funckey q done
+funckey rr shape select
+funckey rf pop net list
+funckey ry shape add
+funckey rt shape edit boundary
+funckey u shape merge shapes
+funckey v delay tune
+funckey w add connect
+funckey x oops
+funckey t 'settoggle pcb_cursor infinite cross;redraw'
+funckey z zcopy shape
+funckey sa "prepopup; pop dyn_option_select 'Snap pick to@:@Arc/Circle Center'"
+funckey sc swap components
+funckey sd "prepopup; pop dyn_option_select 'Snap pick to@:@Pin'"
+funckey sf unrats component
+funckey sg shape void delete
+funckey sr rats component
+funckey ss "prepopup; pop dyn_option_select 'Snap pick to@:@Segment Vertex'"
+funckey st status
+funckey su skill axlShapeDynamicUpdate( nil t )
+funckey sw "prepopup; pop dyn_option_select 'Snap pick to@:@Via'"
+funckey sy color -globvis off
+funckey sz "prepopup; pop dyn_option_select 'Snap pick to@:@Segment Midpoint'"
+alias F9 'settoggle  no_etch_shape_display;redraw'
+funckey " " toggle
+alias ~N new
+alias ~O open
+alias ~S save
+alias ~D delete
+alias ~Z undo
+funckey + subclass -+
+funckey - subclass --
+funckey m shape add

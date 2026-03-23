@@ -1,0 +1,46 @@
+qemu编译
+----------------
+$>./configure --help
+$>./configure --prefix=/opt/qemu --enable-debug --target-list=x86_64-softmmu,x86_64-linux-user
+$>make -j$x 
+$>make install
+$>/opt/qemu/bin/qemu-system-x86_64 -cpu help 
+
+注意:“QEMU-4.1.0”需要GCC 4.8以上的版本. 
+
+新版qemu调试内核会存在断无效的问题,下面是解决办法:
+-------------------
+$>/usr/bin/qemu-system-x86_64 -append nokaslr -no-quit -S -s -curses -kernel /path/linux-x.y.z/arch/x86/boot/bzImage
+$>/usr/bin/qemu-system-x86_64 -append nokaslr -nographic -vga qxl -device qxl -S -s -curses -kernel /path/linux-x.y.z/arch/x86/boot/bzImage
+
+注意:增加"-append nokaslr"启动参数.
+
+$>vi /dir/linux-4.19.67/init/main.c 
+-------------
+/**
+ *这里只初始化了cpu,内存,字符显示设备.
+ *详细内容请调试内核代码(linux-4.19.67).
+ */
+asmlinkage __visible void __init start_kernel(void)
+{
+	char *command_line;
+
+	early_boot_irqs_disabled = true;
+	boot_cpu_init();
+	page_address_init();
+	setup_arch(&command_line);
+	boot_init_stack_canary();
+	setup_per_cpu_areas();
+
+	build_all_zonelists(NULL);
+	mm_init();
+	
+	/**
+	 *这里已经开始向终端打印字符内容啦!!!
+	 */
+	console_init(); 
+
+    printk(KERN_NOTICE "--------------------START--------------------- \n");
+    printk(KERN_NOTICE "kernel end !!! \n");
+    printk(KERN_NOTICE "---------------------END--------------------- \n");
+}

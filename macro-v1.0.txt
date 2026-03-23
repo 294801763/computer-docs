@@ -1,0 +1,28 @@
+//指定某一位置1
+#define setbit(x,y) x|=(1<<y)
+
+//指定某一位置0
+#define clrbit(x,y) x&=~(1<<y)
+
+//指定某一位数取反
+#define reversebit(x,y) x^=(1<<y)
+
+//获取某一位的值
+#define getbit(x,y) ((x)>>(y)&1)
+
+#define xprintf(format,args...) printf("==>debug: %s-%d |"format,__FUNCTION__,__LINE__,##args)
+//eg.xprintf("Here,sizeof(x): %d,%d\r\n",sizeof(x),x);
+
+#define xprintf(format,...) printf("==>debug: %s-%d |"format,__FUNCTION__,__LINE__,##__VA_ARGS__)
+//eg.xprintf("Here,sizeof(x): %d,%d\r\n",sizeof(x),x);
+
+#define xprintf(...) printf(__VA_ARGS__)
+//eg.xprintf("%d,%d\r\n",sizeof(x),x);
+
+//需要一个以上的参数才可以,否则会多出来一个","
+#define xprintf(fmt,...) printf(fmt,__VA_ARGS__)
+//eg.xprintf("%d,%d\r\n",sizeof(x),x);
+
+#define xprintf(fmt,args...) printf(fmt,##args)
+//eg.xprintf("%d,%d\r\n",sizeof(x),x);
+

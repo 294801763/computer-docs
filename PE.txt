@@ -1,0 +1,133 @@
+Windows镜像目录
+---------------------
+mount -o loop /home/windows/Windows-v22H2.iso /mnt/
+rsync -av --progress /mnt/* /home/window
+
+环境变量脚本
+---------------------
+C:\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\DandISetEnv.bat
+
+启动
+---------------------
+C:\Windows\system32\cmd.exe /k "C:\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\DandISetEnv.bat" 
+
+本机驱动备份
+---------------------
+md C:\DRV
+dism /online /export-driver /destination:C:\DRV
+
+创建工作文件
+---------------------
+copype.cmd amd64 "C:\Windows Kits\WinPE"
+
+装载映像
+---------------------
+Dism /Mount-Image /ImageFile:"C:\Windows Kits\WinPE\media\sources\boot.wim" /index:1 /MountDir:"C:\Windows Kits\WinPE\mount"
+
+添加程序
+---------------------
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-Fonts-Legacy.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-FontSupport-ZH-CN.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\lp.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-DismCmdlets.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-Dot3Svc.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-EnhancedStorage.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-FMAPI.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-GamingPeripherals.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-HSP-Driver.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-HTA.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-LegacySetup.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-MDAC.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-NetFx.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-PlatformId.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-PmemCmdlets.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-PowerShell.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-PPPoE.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-RNDIS.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-Scripting.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-SecureBootCmdlets.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-SecureStartup.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-StorageWMI.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-WDS-Tools.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-WinReCfg.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\WinPE-WMI.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-DismCmdlets_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-Dot3Svc_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-EnhancedStorage_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-LegacySetup_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-MDAC_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-NetFx_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-PmemCmdlets_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-PowerShell_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-PPPoE_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-Rejuv_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-RNDIS_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-Scripting_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-SecureStartup_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-SRT_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-StorageWMI_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-WDS-Tools_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-WinReCfg_en-us.cab"
+Dism /Add-Package /Image:"C:\Windows Kits\WinPE\mount" /PackagePath:"C:\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs\en-us\WinPE-WMI_en-us.cab"
+
+dism /get-mountedimageinfo
+dism /image:"C:\Windows Kits\WinPE\mount" /get-pesettings
+dism /image:"C:\Windows Kits\WinPE\mount" /get-packages
+notepad "C:\Windows Kits\WinPE\mount\Windows\System32\Startnet.cmd"
+--
+@echo on
+setlocal EnableExtensions EnableDelayedExpansion
+title "Main WinPE Prompt - startnet"
+echo Disabling Quickedit
+reg delete HKCU\Console /v Quickedit /f
+
+:NET
+wpeinit
+wpeutil WaitForRemovableStorage
+wpeutil UpdateBootInfo
+wpeutil InitializeNetwork
+
+:loop
+ping 192.168.10.22 > nul
+netsh interface ipv4 show interfaces
+net use z: \\192.168.10.22\home || goto :loop
+::z:
+::cd window
+::setup.exe
+
+PE添加驱动 
+---------------------
+dism /image:"C:\Windows Kits\WinPE\mount" /get-drivers
+dism /image:"C:\Windows Kits\WinPE\mount" /add-driver /driver:C:\DRV\ /forceunsigned /recurse
+
+卸载
+---------------------
+Dism /Unmount-Image /MountDir:"C:\Windows Kits\WinPE\mount" /commit
+
+制作成ISO
+---------------------
+MakeWinPEMedia.cmd  /iso "C:\Windows Kits\WinPE" "C:\Windows Kits\WinPE.iso"
+
+DOS 
+---------------------
+net use z: \\192.168.10.22\home\
+net use z: /delete
+
+notepad                #编辑器
+regedit                #注册表编辑器
+taskmgr                #任务管理器
+cls                    #清屏
+dir                    #目录和文件
+cd                     #切换目录
+chdir                  #当前目录
+md <dir>               #创建文件夹
+rd <dir>               #删除文件夹
+del <file.xx>          #删除文件 
+copy <src> <dst>       #复制文件
+move <dir> <dst>       #移动文件
+ren  <old> <new>       #重命名
+type <file>            #查看文件
+type <file> | more     #分页显示
+echo                   #回显
+ipconfig /all          #查看网络
+ping                   #网络测试

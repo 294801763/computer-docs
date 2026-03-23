@@ -1,0 +1,59 @@
+简介
+----------------
+hbbs - RustDesk ID注册服务器
+hbbr - RustDesk 中继服务器
+
+启动服务
+----------------
+./hbbs -r <填写服务器IP地址> -k _
+./hbbr -k _
+
+注意:如果要更改key,请删除 id_ed25519 和 id_ed25519.pub 文件并重新启动 hbbs/hbbr,hbbs将会产生新的密钥对.
+
+客户端设置
+----------------
+ID服务器  : <填写服务器IP地址>
+中继服务器: <填写服务器IP地址>
+KEY       : <根据运行的结果填写相应的KEY>
+
+创建数据库目录
+--------------
+$>mkdir -pv /opt/xdesktop/
+
+hbbs
+--------------
+export ENCRYPTED_ONLY=1
+export DB_URL=/opt/xdesktop/db_v2.sqlite3
+
+/opt/glibc-2.17/lib/ld-2.17.so --library-path /opt/glibc-2.17/lib/:/home/vsftpd/shared/gcc-6.4.0/lib64/:/opt/freetype-2.9.1/lib/:/opt/libpng-1.6.35/lib:/usr/local/Qt-5.10.1/lib/:/lib/:/lib32/:/lib64/:/usr/lib/:/usr/lib32/:/usr/lib64/:/lib/x86_64-linux-gnu/:/usr/lib/x86_64-linux-gnu/:/usr/local/lib/:/opt/ffmpeg/lib/ /opt/xdesktop/hbbs -r 0.0.0.0 >/dev/null 2>&1&
+
+hbbr
+--------------
+export ENCRYPTED_ONLY=1
+export DB_URL=/opt/xdesktop/db_v2.sqlite3
+
+/opt/glibc-2.17/lib/ld-2.17.so --library-path /opt/glibc-2.17/lib/:/home/vsftpd/shared/gcc-6.4.0/lib64/:/opt/freetype-2.9.1/lib/:/opt/libpng-1.6.35/lib:/usr/local/Qt-5.10.1/lib/:/lib/:/lib32/:/lib64/:/usr/lib/:/usr/lib32/:/usr/lib64/:/lib/x86_64-linux-gnu/:/usr/lib/x86_64-linux-gnu/:/usr/local/lib/:/opt/ffmpeg/lib/ /opt/xdesktop/hbbr >/dev/null 2>&1&
+
+注意:以上内容适用于WHEEZY版本.
+
+升级Glibc
+--------------
+$>tar -xvf glibc-2.28.tar.gz
+$>cd glibc-2.28 &&mkdir build
+$>../configure -v --prefix=/opt/glibc-2.28
+$>make -j`nproc` && make install 
+
+hbbs
+--------------
+export ENCRYPTED_ONLY=1
+export DB_URL=/opt/xdesktop/db_v2.sqlite3
+
+./hbbs -r 0.0.0.0 >/dev/null 2>&1&
+
+hbbr
+--------------
+export ENCRYPTED_ONLY=1
+export DB_URL=/opt/xdesktop/db_v2.sqlite3
+
+./hbbr >/dev/null 2>&1&
+

@@ -1,0 +1,19 @@
+编译
+-------------------
+$>apt install cmake doxygen libboost-context-dev libboost-dev libboost-system-dev libboost-test-dev libcairo2-dev libcurl4-openssl-dev libgl1-mesa-dev libglew-dev libglm-dev libngspice-dev liboce-foundation-dev liboce-ocaf-dev libssl-dev libwxbase3.0-dev libwxgtk3.0-dev python-dev python-wxgtk3.0-dev swig wx-common
+$>cd <your kicad source mirror>
+$>mkdir -p build/release
+$>mkdir -p build/debug               # Optional for debug build.
+$>cd build/release
+$>cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../../
+$>make
+$>sudo make install
+or 
+$>cd <your kicad source mirror>
+$>mkdir -p build/release
+$>mkdir -p build/debug               # Optional for debug build.
+$>cd build/release
+$>cmake -DCMAKE_BUILD_TYPE=Debug ../../
+$>make
+$>sudo make install
+

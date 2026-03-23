@@ -1,0 +1,115 @@
+禁用网络服务
+-------------------
+systemctl list-unit-files | grep -i network
+systemctl disable NetworkManager
+systemctl disable NetworkManager-dispatcher
+systemctl disable networking
+systemctl disable NetworkManager-wait-online
+
+查看启动失败的服务
+-------------------
+systemctl --failed
+systemctl list-units --failed --all
+
+清除所有失败状态
+-------------------
+systemctl reset-failed
+
+查看详细错误信息 - 诊断 networking.service
+-------------------
+systemctl status networking.service --no-pager -l
+
+忽略命令错误
+-------------------
+[Unit]
+Description=Graphic
+Before=network.target
+
+[Service]
+Type=idle
+ExecStart=-/usr/bin/vnclicense -add 77NVU-D9G5T-79ESS-V9Y6X-JMVGA
+
+[Install]
+WantedBy=multi-user.target
+
+注意:The "-" before /usr/bin/vnclicense tells systemd to treat any exit code (including errors) as success. The service will continue running and show as active even if the command fails.
+
+解决networking.service老是失败的问题<忽略它>
+-------------------
+nano /usr/lib/systemd/system/networking.service
+--
+[Unit]
+Description=Raise network interfaces
+Documentation=man:interfaces(5)
+DefaultDependencies=no
+Requires=ifupdown-pre.service
+Wants=network.target
+After=local-fs.target network-pre.target apparmor.service systemd-sysctl.service systemd-modules-load.service ifupdown-pre.service
+Before=network.target shutdown.target network-online.target
+Conflicts=shutdown.target
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/networking
+#ExecStart=-/sbin/ifup -a --read-environment
+#ExecStop=-/sbin/ifdown -a --read-environment --exclude=lo
+ExecStart=/bin/sh -c '/sbin/ifup -a --read-environment; exit 0'
+ExecStop=/bin/sh -c '/sbin/ifdown -a --read-environment --exclude=lo; exit 0'
+RemainAfterExit=true
+TimeoutStartSec=5s
+SuccessExitStatus=*                     #Add this line to ignore all exit codes
+
+已修复启动失败的服务
+-------------------
+danted.service                     loaded failed failed SOCKS (v4 and v5) proxy daemon (danted)
+srt.service                        loaded failed failed SRT
+vl.service                         loaded failed failed Graphic
+xbindkeys.service                  loaded failed failed Graphic
+networking.service                 loaded failed failed Raise network interfaces   
+NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+
+启动命令行
+-------------------
+nano /etc/default/grub
+--
+#GRUB_CMDLINE_LINUX_DEFAULT="net.ifnames=0 biosdevname=0 ip=192.168.10.11::192.168.10.1:255.255.255.0::eth0:off vt.global_cursor_default=0 acpi=off apm=off text nomodeset loglevel=0"
+GRUB_CMDLINE_LINUX_DEFAULT="net.ifnames=0 biosdevname=0 ip=192.168.10.11::192.168.10.1:255.255.255.0::eth0:off vt.global_cursor_default=0 text nomodeset loglevel=0"
+
+注意:"acpi=off apm=off"启用后会导致bookworm启动不了.
+
+NFS - 修复受损系统
+-------------------
+systemctl disable networking
+nano /boot/grub/grub.cfg 
+--
+linux   /vmlinuz-4.19.0-9-amd64 root=/dev/nfs nfsroot=192.168.10.11:/home/rootfs/v2,vers=3,tcp,nolock rw ip=192.168.10.22::192.168.10.1:255.255.255.0::enp0s3:off text nomodeset loglevel=8  
+
+注意:以上内容通过实践验证了.
+
+添加grub启动项
+-------------------
+nano  /etc/grub.d/40_custom
+--
+submenu "Custom Boot Options" {
+	menuentry "NFS Boot (vmlinuz-4.19.0-9-amd64)" {
+		set root=(hd0,1)                                   #请根据实际分区修改，如 (hd0,gpt1)或(hd1,msdos1)
+		linux /vmlinuz-4.19.0-9-amd64 root=/dev/nfs nfsroot=192.168.10.11:/home/rootfs/v2,vers=3,tcp,nolock rw ip=192.168.10.22::192.168.10.1:255.255.255.0::enp0s3:off text nomodeset loglevel=8
+		initrd /initrd.img-4.19.0-9-amd64  
+	}
+}
+
+nano /etc/grub.d/40_custom
+--
+submenu "Custom Boot Options" {
+	menuentry "NFS Boot (vmlinuz-4.19.0-9-amd64)" {
+	   set root=(hd0,1)                                    #Please modify according to actual partition, e.g. (hd0,gpt1) or (hd1,msdos1)
+	   linux /vmlinuz-4.19.0-9-amd64 root=/dev/nfs nfsroot=192.168.10.11:/home/rootfs/v2,vers=3,tcp,nolock rw ip=192.168.10.22::192.168.10.1:255.255.255.0::enp0s3:off text nomodeset loglevel=8
+	   initrd /initrd.img-4.19.0-9-amd64                   #If there is a corresponding initramfs image, uncomment this line and fill in the correct filename
+	}
+}
+
+update-grub

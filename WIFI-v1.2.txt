@@ -1,0 +1,91 @@
+常用诊断指令
+--
+ATI
+AT+CSQ
+AT+CFUN?
+AT+CPIN?
+AT+ICCID
+AT+CGREG?
+AT+QCFG="band"
+AT+COPS?
+AT+QENG="SERVINGCELL"
+AT+QCFG="nwscanmode"
+AT+CGDCONT?
+AT+CGPADDR
+AT+QPING=1,"1.2.4.8"
+AT+QSIMSTAT=1              #开启热拔插功能
+AT+QNWINFO                 #查询网络状态
+
+4G模块 - AT指令集
+--
+ATI                        - 查询4G模块固件信息
+AT+CPAS                    - 查询工作状态, 0 - 可以接受AT指令, 0 - 不能接受AT指令
+AT+CSQ                     - 查询信号强度
+AT+CNUM                    - 查询电话号码
+AT+CCID                    - 查询电话卡的CCID
+AT+CGSN                    - 查询模块IMEI号
+AT+COPS?                   - 查可用的运营商网络
+AT+CREG?                   - 查询2G网络注册状态
+AT+CEREG?                  - 查询4G网络注册状态
+AT+CGREG?                  - 查询GPRS网络注册状态
+AT+CPIN?                   - 查询模块是否检测到手机卡
+AT+QENG="servingcell"      - 查询信号质量
+AT+QCFG="nwscanmode"       - 查询网络搜索模式
+AT+QCFG="nwscanmode",3     - 只搜索4G-LTE网络
+AT+QCFG="USBNET"           - 查询当前网卡模式
+AT+QICSGP=?
+AT+QICSGP=1,1,"APN名称","用户名","密码"                    - 设置APN
+AT+CGDCONT=1,"IP","CTNET"  - 设置APN
+AT+CFUN=1,1                - 重启模块
+
+AT+COPS
+--
+中国电信4G-LTE网络  ；+COPS: 0,0,"CHN-CT",7
+中国电信2G-CDMA网络 ；+COPS: 0,0,"CHN-CT",100
+中国联通3G-WCDMA网络；+COPS: 0,0,"CHN-UNICOM",2
+中国联通4G-LTE网络  ；+COPS: 0,0,"CHN-UNICOM",7
+中国移动2G-GSM网络  ；+COPS: 0,0,"CHINA MOBILE",0
+中国移动4G-LTE网络  ；+COPS: 0,0,"CHINA MOBILE",7
+
+信号质量
+--
++QENG: "servingcell","NOCONN","LTE","FDD",460,11,AE7A715,8,2452,5,3,3,7152,<rsrp>,-20,-84,<sinr>,-
+
+信号质量参考表
+--
+sinr                  rsrp
+x        > 22dB       y            > -85dBm          极好
+15dB < x > 20dB       -95dBm   < y > -85dBm          好
+5dB  < x > 10dB        -105dBm < y > -95dBm          一般
+-5dB < x > 10dB       -115dBm  < y > -105dBm         差
+
+网络搜索模式
+--
++QCFG: "nwscanmode",0 (返回结果为自动模式)
++QCFG: "nwscanmode",1 (返回结果为只搜索移动2G-GSM网络）
++QCFG: "nwscanmode",2 (返回结果为只搜索联通3G-WCDMA网络)
++QCFG: "nwscanmode",3 (返回结果为只搜索4G-LTE网络)
++QCFG: "nwscanmode",8 (返回结果为只搜索电信2G-CDMA网络)
++QCFG: "nwscanmode",6 (返回结果为只搜索电信2G-CDMA网络)
+
+设置网络搜索模式
+--
+AT+QCFG="nwscanmode",<num>
+
+APN
+--
+移动：AT+CGDCONT=1,"IP","CMNET"
+联通：AT+CGDCONT=1,"IP","3GNET"
+电信：AT+CGDCONT=1,"IP","CTNET"
+
+拨号
+--
+移动：*99***1# 或 *98*1#
+联通：*99#
+电信：#777
+
+网卡模式
+--
+AT+QCFG="USBNET",0        - 设置网卡为RMNET拨号模式     - 手机网络,对应驱动:Quectel_LTE&5G_Windows_USB_Driver_V2.2.4.zip
+AT+QCFG="USBNET",1        - 设置网卡为ECM拨号模式
+AT+QCFG="USBNET",3        - 设置网卡为RNDIS拨号模式     - 以太网络,对应驱动:Quectel_Windows_USB_Driver_RNDIS_V1.1.zip

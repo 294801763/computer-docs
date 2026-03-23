@@ -1,0 +1,17 @@
+TAR(压缩/解压缩)
+----
+$>tar -czvf <archive>.tar.gz <directory>
+$>tar -cjvf <archive>.tar.bz2 <directory>
+$>tar -cJvf <archive>.tar.xz <directory>
+$>tar -xzvf <archive>.tar.gz
+
+xz(压缩/解压缩)
+----
+$>xz <archive>.<...>             #<archive>.<...>.xz 
+or 
+$>xz -9 <archive>.<...>
+
+$>xz -d <archive>.<...>.xz 
+or 
+$>unxz <archive>.<...>.xz 
+

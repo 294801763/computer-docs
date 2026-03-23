@@ -1,0 +1,110 @@
+快速搭建企业开发环境的方法：
+  使用virtualbox->hostonly方式配置网络，rhel.oracle 开机网段就在192.168.10.100
+  配置其他开发虚拟机 Gcc_tools 只需要修改/etc/network/interface 文件将dhcp改为static添加一下内容：
+  address 192.168.10.102
+  netmask 255.255.255.0
+  
+  centos,redhat(rhel)修改ip方法与debian，ubuntu不同，他们是在：/etc/sysconfig/network-scripts
+  并编辑：vi ifcfg-xxx将dhcp改为static添加一下内容：
+  BOOTPROTO=static
+  BROADCAST=192.168.10.255
+  IPADDR=192.168.10.100
+  NETMASK=255.255.255.0
+  NETWORK=192.168.10.0
+  注意服务之间传输文件使用scp。
+  
+  服务路由设置：
+  1.列印路由表
+     route -n  如果支持命令则可用
+     netstat -rn  这个是通用的。
+  2. 添加删除路由
+    eg. /sbin/ip route add 192.168.0.0/24 via 192.168.10.100（这里需要注意的是：必须是当前主机已有的ip地址，否则无效） 经测试centos 7中可以使用。
+        /sbin/route add -net 192.168.1.0 netmask 255.255.255.0 gw 192.168.10.100
+        /sbin/route add -net 192.168.2.0 netmask 255.255.255.0 dev eth0 经测试centos 7 有效
+        /sbin/ip route add 192.168.0.3/24 via 192.168.10.100 经测试centos 7 有效
+        /sbin/ip route add default via 192.168.10.100 dev eth0
+	/sbin/route delete -net 192.168.1.0 netmask 255.255.255.0  删除路由
+			    注意：rhel需要su登陆后才可以操作这些。
+	
+        sudo /sbin/ip route add 192.168.0.0/24 via 192.168.10.102   debian/ubuntu中有效
+        sudo /sbin/route add -net 192.168.20.0 netmask 255.255.255.0 gw 192.168.10.102
+        sudo /sbin/route add -net 192.168.20.0 netmask 255.255.255.0 dev eth0
+        sudo /sbin/ip route add default via 192.168.10.102 dev eth0
+        sudo /sbin/route delete -net 192.168.20.0 netmask 255.255.255.0  删除路由
+        
+   3.配置额外的 IP 地址
+   eg.
+      /sbin/ifconfig eth0 192.168.50.254 netmask 255.255.255.0       # 第一个 IP
+      /sbin/ifconfig eth0:0 192.168.51.254 netmask 255.255.255.0     # 第二个 IP
+      /sbin/ip addr add 192.168.50.254/24 dev eth0                   # 等价命令
+      /sbin/ip addr add 192.168.51.254/24 dev eth0 label eth0:1
+   注意：rhel使用路由和额外ip后依然能够访问，同样也能使用额外ip访问。
+   
+1.启动企业管理器
+emctl start dbconsole
+2.启动监听
+lsnrctl status
+lsnrctl start/stop
+使用sqlplus登陆，并执行下面内容。
+3.启动数据库   ---------注意：必须登陆sqlplus / as sysdba 之后才能操作。
+启动oracle server：
+------------------
+startup 【nomount|mount|open|force】【pfile=filename】
+--------------
+nomount:只启动实例
+mount:启动实例，并装载数据库
+open:启动实例，装载并打开数据库。
+force:终止实例，并重新启动数据库。
+pfile:指定非默认参数文件名
+-------------------------------------
+停止oracle server
+shutdown 【normal|transactional|immediate|abort】
+------------
+normal:等待用户断开已存在的链接，系统发出检查点，然后同步数据文件，控制文件和重做日志文件后关闭。
+transactional：等待客户端结束事务之后，自动断开用户链接，然后再执行normal。
+immediate:取消当前所有sql语句，回退所有未完成的事务，然后自动断开，在执行normal
+abort:之中所有sql语句，立即终止实例。
+--------------------------------------------
+4.解锁SCOTT并设置密码。
+alter user sys account unlock;
+alter user sys identified by manager;
+
+远程使用sqlplus连接oracle字符串：sqlplus scott/123456@192.168.10.100:1521/rhel
+debian 安装oracle client软件出错不要紧，该有的配置得有：
+export ORACLE_HOME=/home/hy/app/hy/product/11.2.0/client_1
+export PATH=$ORACLE_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+
+注意：sqlplus scott/123456@192.168.10.100:1521/rhel 这个能连接oracle，
+则scott/123456@192.168.10.100:1521/rhel串就能使用再proc中。
+
+经测试通过：在安装了oracle client之后如果是proc编译好的程序可以直接配置这两个环境变量即可：
+export ORACLE_HOME=/home/hy/app/hy/product/11.2.0/client_1
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+但如果要使用sqlplus则必须：
+export PATH=$ORACLE_HOME/bin:$PATH
+
+再开发proc程序难免主机之间需要相互拷贝文件，最好办法是使用scp，
+host:192.168.10.100 向 192.168.10.102拷贝数据
+eg. scp file hy@192.168.10.102:~/Downloads
+    scp -r dir hy@192.168.10.102:~/Downloads
+host:192.168.10.102 向 192.168.10.100拷贝数据
+eg. scp file oracle@192.168.10.100:~/Downloads
+    scp -r dir oracle@192.168.10.100:~/Downloads
+    
+netca配置：
+选择local net service Name configuration->next->填写服务的名称或者数据库的名称(注意：不能随便填写。)->next->填写主机ip或者
+host名称即可。->next->选择测试（例如输入user(用户):scott,pwd(密码):123456）->Net Service Name 随便取个名称即可(经过测试此名称在使用sqlplus
+连接oracle并没有作用。)。
+由此可见：用户/密码@ip:端口号/数据库名称
+
+注意：经过测试：Naming Metods configure 中有没有local naming都没有影响。但是其中必须有个例如：easy connect naming。
+---------------------------------------以上内容都是经过rhel oracle 11g和debian 7.0 测试通过的。
+
+环境与数据库oracle初次接触：
+  1.准备网络环境：两台虚拟机主机都必须在192.168.10.0这个网段上，且互相ping的通。 
+  2.拷贝jdbc驱动到要连接oracle的虚拟主机上 scp /oracle/app/11.2.0/jdbc/lib/ojdbc6.jar hy@192.168.10.101:/home/hy/Downloads
+  3.启动oracle 主机的oracle服务：1>emctl start dbconsole 2>启动监听程序 3>启动数据库
+  4.使用myeclipse连接oracle thin串并适当修改后可以连接oracle数据。 用户：sys as sysdba 密码：123456
+  5.经过测试一切正常。
+ 注意：oracle 数据库安装完成后 ip不允许有任何更改，可以配置额外ip。但是还得注意：oracle 主机内存必须是4G以上不然oracle是启动不起来的额。

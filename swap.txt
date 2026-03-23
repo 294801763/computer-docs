@@ -1,0 +1,34 @@
+增加swap分区 - 4G
+-------------------
+$>dd if=/dev/zero of=/8Gb.swap bs=1M count=4096
+$>mkswap /4Gb.swap
+$>swapon /4Gb.swap
+$>swapoff -a
+
+增加swap分区 - 8G
+-------------------
+$>dd if=/dev/zero of=/8Gb.swap bs=1M count=8192
+$>mkswap /8Gb.swap
+$>swapon /8Gb.swap
+$>swapoff -a
+
+增加swap分区 - 16G
+-------------------
+$>dd if=/dev/zero of=/16Gb.swap bs=1G count=16
+$>mkswap /16Gb.swap
+$>swapon /16Gb.swap
+$>swapoff -a
+
+增加swap分区 - 32G
+-------------------
+$>dd if=/dev/zero of=/32Gb.swap bs=1G count=32
+$>mkswap /32Gb.swap
+$>swapon /32Gb.swap
+$>swapoff -a
+
+增加swap分区 - 64G
+-------------------
+$>dd if=/dev/zero of=/64Gb.swap bs=1G count=64
+$>mkswap /64Gb.swap
+$>swapon /64Gb.swap
+$>swapoff -a

@@ -1,0 +1,105 @@
+搬瓦工账号
+-------------------
+地址: https://bwh88.net/aff.php?aff=74504&pid=44
+用户: 294801763@qq.com
+密码: huhuoyun
+
+自己建立reality节点
+-------------------
+step.1 安装xray
+--
+bash -c "./install" @ install --local
+
+step.2 通过命令生成uuid
+--
+xray uuid > uuid
+
+step.3 生成公和私密钥
+--
+xray x25519 > key
+
+step.4 查看uuid和key
+--
+cat uuid
+cat key
+
+step.5 上传配置文件和修改配置文件
+--
+cd /usr/etc/xray/
+
+step.6 config配置文件模板
+--
+{
+  "inbounds": [
+    {
+      "port": 9999,
+      "protocol": "vless",
+      "tag": "VLESSReality",
+      "settings": {
+        "clients": [
+          {
+            "id": "7c2a730d-9535-431d-8acd-b5e974d7a15e",
+            "email": "HY@example.org",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none",
+        "fallbacks": [
+          {
+            "dest": "31305",
+            "xver": 1
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "www.amazon.com:443",
+          "xver": 0,
+          "serverNames": [
+            "amazon.com",
+            "www.amazon.com"
+          ],
+          "privateKey": "2CPKXBpYAz9OLC4zjbUXFc8aluk60RkQr_uAQ-zhkB0",
+          "publicKey": "2mPfLQFun1nkktzrq25540LV_y4njHyRhXStysONRzk",
+          "maxTimeDiff": 0,
+          "shortIds": [
+            "",
+            "ffffffffffffffff"
+          ]
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "blocked"
+    }
+  ]
+}
+
+注意:UUID可以通过在v2ray客户端来生成即可,必须要修改port,id,privateKey,publicKey等四个参数,其余参数请自行修改.
+
+step.7 清除\r
+--
+dos2unix /etc/xray/config.json
+
+step.8 启动Xray命令
+--
+ufw allow 443
+service xray start
+
+step.9 重启Xray命令
+--
+service xray restart
+
+客户端 - 分享链接
+-------------------
+vless://7c2a730d-9535-431d-8acd-b5e974d7a15e@192.168.10.22:9999?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=2mPfLQFun1nkktzrq25540LV_y4njHyRhXStysONRzk&sid=ffffffffffffffff&spx=%2F&allowInsecure=1&type=tcp&headerType=none#Internet

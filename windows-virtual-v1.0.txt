@@ -1,0 +1,13 @@
+创建虚拟桌面
+-------------------
+Left-Windows + CTRL + D
+
+切换虚拟桌面
+-------------------
+Left-Windows + Tab 
+or
+Left-Windows + CTRL + 左/右箭头
+
+设置
+-------------------
+Left-Windows + I

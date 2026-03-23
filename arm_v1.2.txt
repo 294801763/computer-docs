@@ -1,0 +1,476 @@
+step.0 VM 
+--------------
+vboxmanage createvm --name "Kernel" --ostype "Debian_64" --register
+VBoxManage modifyvm "Kernel" --memory 4096 --cpus 4 --vram 256 --graphicscontroller vmsvga --nic1 bridged --nicpromisc1 allow-all --bridgeadapter1 eth0
+VBoxManage createhd --filename "/mnt/storage.vdi" --size 30000
+VBoxManage storagectl "Kernel" --name "SATA Controller" --add sata --controller IntelAHCI
+VBoxManage storageattach "Kernel" --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "/mnt/Kernel.vmdk"
+VBoxManage storageattach "Kernel" --storagectl "SATA Controller" --port 1 --device 0 --type hdd --medium "/mnt/storage.vdi"
+VBoxManage startvm "Kernel" --type headless          #启动
+VBoxManage controlvm "Kernel" poweroff               #关闭
+
+step.1 SSHD
+--------------
+$>vi /etc/ssh/sshd_config
+--------
+...
+#LoginGraceTime 2m
+PermitRootLogin yes
+StrictModes yes
+...
+
+step.2 APT
+--------------
+$>vi /etc/apt/sources.list
+--------
+deb http://192.168.10.88:81/v1.4 buster main contrib
+deb-src http://192.168.10.88:81/v1.4 buster main contrib
+
+step.3 NETWORK
+--------------
+$>vi /etc/network/interfaces
+--------
+allow-hotplug eth0
+auto eth0
+iface eth0 inet static
+address 192.168.10.10
+netmask 255.255.255.0
+gateway 192.168.10.1
+hwaddress 00:00:00:00:00:01
+dns-nameservers 192.168.10.1
+pre-up ip link set eth0 promisc on
+pre-up echo "1">/proc/sys/net/ipv4/ip_forward
+#pre-up ethtool -s eth0 speed 1000 duplex full autoneg on 
+up route add -net 192.168.10.0/24 gw 192.168.10.1 metric 30
+down route del -net 192.168.10.0/24 gw 192.168.10.1 metric 30
+
+auto eth0:0
+iface eth0:0 inet static
+address 10.10.10.10
+netmask 255.255.255.0 
+
+step.4 GRUB
+--------------
+$>vi /etc/default/grub
+--------
+...
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 console=ttyS0,115200 net.ifnames=0 biosdevname=0 video=efifb:width:1366,height:768 text"
+...
+
+$>export PATH=$PATH:/usr/sbin/:/sbin:/usr/local/sbin
+$>/sbin/update-grub
+
+step.5 INSTALL
+--------------
+$>apt-get install build-essential dh-autoreconf libncurses5-dev tftp-hpa tftpd-hpa xinetd nfs-common nfs-kernel-server samba gcc-multilib g++-multilib gdb-multiarch net-tools pkg-config v4l-utils dh-make libgmp-dev xserver-xorg-core xserver-xorg x11-xserver-utils libxkbcommon-dev libxkbcommon-x11-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-render-util0-dev libxcb-util0-dev libxcb-keysyms1-dev python2.7-dev dpkg-dev xfonts-75dpi xfonts-100dpi xfonts-base ninja-build libguestfs-tools libfdt-dev libssl-dev libglib2.0-dev libpixman-1-dev zlib1g-dev python3-pip qemu-system bridge-utils uml-utilities virtualenv python3 devscripts imagemagick python2 sparse meson netcat bc lzop texinfo bison flex make automake autoconf gdb cscope ctags tree git dos2unix minicom ttyrec cmake unzip astyle indent slurm socat tcpdump ipcalc nmap ffmpeg nano vim gawk screen tmux valgrind autogen ethtool rsync dejagnu  
+
+step.6 NETWORK
+--------------
+$>vi /etc/network/interfaces
+--------
+allow-hotplug eth0
+auto eth0
+iface eth0 inet static
+...
+pre-up ethtool -s eth0 speed 1000 duplex full autoneg on 
+...
+
+注意:virtualbox中设置这一项会导致网络不通.
+
+step.7 NFS
+--------------
+$>mkdir -pv /opt/shared && chmod 777 /opt/shared
+$>nano /etc/exports
+--------
+/opt/shared *(insecure,rw,sync,fsid=0,crossmnt,no_subtree_check,no_root_squash)
+
+$>/etc/init.d/nfs-kernel-server start
+$>exportfs -rv
+
+step.8 TFTPD
+--------------
+$>nano /etc/xinetd.d/tftpd
+--------
+server tftp
+{
+ socket_type  =  dgram
+ protocol     =  udp
+ wait         =  yes
+ user         =  root
+ server       =  /usr/sbin/in.tftpd
+ server_args  =  -s /opt/shared
+ disable      =  no
+ per_source   =  11
+ cps          =  100 2
+ flags        =  IPv4
+}
+
+$>nano /etc/default/tftpd-hpa
+--------
+TFTP_USERNAME="tftp"
+TFTP_DIRECTORY="/opt/shared"
+TFTP_ADDRESS="0.0.0.0:69"
+TFTP_OPTIONS="-l -s -c"
+
+step.9 SAMBA
+--------------
+$>nano /etc/samba/smb.conf
+----------
+[global]
+follow symlinks = yes 
+wide links = yes 
+unix extensions = yes
+
+[shared]
+comment = "shared"
+path = /opt/shared
+public = yes
+only guest = yes
+writeable = yes
+create mask = 2777
+directory mask = 2777
+
+step.10 NETWORK
+--------------
+$>echo "bridge">>/etc/modules
+
+step.11 NETWORK
+--------------
+$>nano /etc/network/interfaces
+--------
+allow-hotplug eth0
+auto eth0
+iface eth0 inet static
+address 192.168.10.10
+netmask 255.255.255.0
+gateway 192.168.10.1
+hwaddress 00:00:00:00:00:01
+dns-nameservers 192.168.10.1
+pre-up ip link set eth0 promisc on
+pre-up echo "1">/proc/sys/net/ipv4/ip_forward
+up route add -net 192.168.10.0/24 gw 192.168.10.1 metric 30
+down route del -net 192.168.10.0/24 gw 192.168.10.1 metric 30
+
+allow-hotplug br0 eth0:0 
+auto br0 eth0:0 
+iface br0 inet static
+address 192.168.8.10
+netmask 255.255.255.0
+gateway 192.168.8.1
+hwaddress 00:00:00:00:00:02
+dns-nameservers 192.168.8.1
+bridge_ports br0 eth0:0 
+
+$>nano /usr/bin/qsa
+---------
+#!/bin/bash 
+
+touch /usr/bin/up && chmod a+x /usr/bin/up
+cat>/usr/bin/up<<EOF
+#!/bin/bash 
+
+ip tuntap add \$1 mode tap user `whoami`
+ip link set \$1 promisc on
+ip link set \$1 up
+/usr/sbin/brctl addif br0 \$1
+EOF
+  
+touch /usr/bin/down && chmod a+x /usr/bin/down
+cat>/usr/bin/down<<EOF
+#!/bin/bash 
+
+/usr/sbin/brctl delif br0 \$1
+EOF
+
+$>up tap0 / down tap0
+$>up qemu / down qemu
+
+注意:此时只有"192.168.8.0/24"段能后互相访问.
+
+step.12 ENV
+--------------
+$>nano /etc/profile
+---------
+...
+export PATH=/opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin:/usr/sbin/:/sbin:/usr/local/sbin:$PATH
+...
+
+$>source /etc/profile
+
+step.13 UBOOT
+--------------
+$>tar -xvf u-boot-2022.10.tar.bz2
+$>cd u-boot-2022.10
+$>vi include/configs/vexpress_common.h +184
+--------
+#define CONFIG_IPADDR 192.168.8.100
+#define CONFIG_GATEWAYIP 192.168.8.1 
+#define CONFIG_NETMASK 255.255.255.0 
+#define CONFIG_SERVERIP 192.168.8.8 
+#define CONFIG_BOOTCOMMAND\
+ "tftp 0x60003000 zImage; tftp 0x60500000 vexpress-v2p-ca9.dtb;\
+ setenv bootargs 'console=tty0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 net.ifnames=0 biosdevname=0\
+ root=/dev/nfs nfsroot=192.168.8.8:/opt/shared/rootfs,proto=tcp,v3,nolock ip=192.168.8.100:192.168.8.8:192.168.8.1:255.255.255.0::eth0:off\
+ init=/init noinitrd debug rw rootwait';\
+ bootz 0x60003000 - 0x60500000;"
+ 
+$>/usr/bin/qemu-system-arm -M vexpress-a9 -k en-us -m 128M -smp `nproc` -boot menu=on,strict=off -display none -serial stdio -kernel ./tmp/u-boot -net nic -net tap,ifname=tap0,script=no,downscript=no
+or 
+#define CONFIG_BOOTCOMMAND\
+ "tftp 0x60003000 zImage; tftp 0x60500000 vexpress-v2p-ca9.dtb;\
+ setenv bootargs 'console=tty0 console=ttyAMA0,115200 kgdboc=ttyAMA1,115200 net.ifnames=0 biosdevname=0\
+ root=/dev/nfs nfsroot=192.168.8.8:/opt/shared/rootfs,proto=tcp,v3,nolock ip=192.168.8.100:192.168.8.8:192.168.8.1:255.255.255.0::eth0:off\
+ init=/init noinitrd debug rw rootwait kgdbwait debug nokaslr';\
+ bootz 0x60003000 - 0x60500000;"
+
+$>socat -d -d pty,raw,echo=0 pty,raw,echo=0
+--------
+2022/12/18 13:50:49 socat[13881] N PTY is /dev/pts/2
+2022/12/18 13:50:49 socat[13881] N PTY is /dev/pts/3
+
+$>socat -d -d /dev/pts/2,raw,nonblock,ignoreeof,cr,echo=0 TCP4-LISTEN:5555,reuseaddr,keepalive >/dev/null 2>&1&
+--------
+2022/12/18 13:55:41 socat[13898] N opening character device "/dev/pts/2" for reading and writing
+2022/12/18 13:55:41 socat[13898] N listening on AF=2 0.0.0.0:5555
+
+$>socat -d -d /dev/pts/2 TCP:192.168.8.10:5555                        #测试"socat -d -d /dev/pts/2,raw,nonblock,ignoreeof,cr,echo=0 TCP4-LISTEN:5555,reuseaddr".
+--------
+2022/12/18 13:58:38 socat[13905] N opening character device "/dev/pts/2" for reading and writing
+2022/12/18 13:58:38 socat[13905] N opening connection to AF=2 192.168.8.10:5555
+2022/12/18 13:58:38 socat[13905] N successfully connected from local address AF=2 192.168.8.10:43700
+2022/12/18 13:58:38 socat[13905] N starting data transfer loop with FDs [5,5] and [6,6]
+
+$>socat -d -d /dev/ttyUSB0,raw,nonblock,ignoreeof,echo=0,icanon=1,b115200,waitlock="/var/run/socat.lock" TCP4-LISTEN:5555,reuseaddr,fork >/dev/null 2>&1&  #物理串口转发,这个在CRT中使用没有任何问题.
+
+注意:在运行QEMU之后"socat -d -d /dev/pts/2 TCP:192.168.8.10:5555"这条语句就不要在执行了,如果执行了测试语句(socat -d -d /dev/pts/2 TCP:192.168.8.10:5555)重新运行"socat -d -d /dev/pts/2,raw,nonblock,ignoreeof,cr,echo=0 TCP4-LISTEN:5555,reuseaddr"就可以了.
+
+$>telnet 192.168.8.10 5555                                            #测试串口的连通性,杀掉"socat -d -d /dev/pts/2,raw,nonblock,ignoreeof,cr,echo=0 TCP4-LISTEN:5555,reuseaddr,keepalive"进程telnet也会随之退出.
+$>/usr/bin/qemu-system-arm -M vexpress-a9 -k en-us -m 128M -smp `nproc` -boot menu=on,strict=off -display none -serial stdio -serial /dev/pts/3 -kernel ./tmp/u-boot -net nic -net tap,ifname=tap0,script=no,downscript=no
+or 
+step.1 开启虚拟终端
+--------
+$>socat -d -d pty,raw,echo=0 pty,raw,echo=0 2>&1 | tee /opt/socat.log &
+--------
+2022/12/18 13:50:49 socat[13881] N PTY is /dev/pts/2
+2022/12/18 13:50:49 socat[13881] N PTY is /dev/pts/3
+
+step.2 使用虚拟终端并启动QEMU
+--------
+$>socat -d -d /dev/pts/2,raw,nonblock,ignoreeof,cr,echo=0 TCP4-LISTEN:5555,reuseaddr,keepalive >/dev/null 2>&1&
+$>/usr/bin/qemu-system-arm -M vexpress-a9 -k en-us -m 128M -smp `nproc` -boot menu=on,strict=off -display none -serial stdio -serial /dev/pts/3 -kernel ./tmp/u-boot -net nic -net tap,ifname=tap0,script=no,downscript=no
+
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp distclean
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp vexpress_ca9x4_defconfig     #./configs/xx_defconfig
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp -j`nproc`
+
+step.14 KERNEL
+--------------
+CONFIG_DEBUG_KERNEL               #使能.
+CONFIG_DEBUG_OBJECTS              #使能.
+CONFIG_DEBUG_VM                   #使能.
+CONFIG_DEBUG_DRIVER               #使能.
+CONFIG_DEBUG_DEVRES               #使能.
+CONFIG_GDB_SCRIPTS                #使能.
+CONFIG_KGDB                       #使能.
+CONFIG_KGDB_SERIAL_CONSOLE        #使能.
+
+$>git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+$>cd linux
+$>git checkout v4.1.5 -fb v4.1.5
+$>cp -fav include/linux/compiler-gcc5.h include/linux/compiler-gcc7.h && cp -fav include/linux/compiler-gcc5.h include/linux/compiler-gcc8.h 
+$>vi arch/arm/include/asm/kgdb.h
+--------
+...
+#define NUMREGBYTES             (GDB_MAX_REGS << 2)
+...
+
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- vexpress_defconfig           #arch/arm/configs  
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- menuconfig                   # 
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage dtbs        #arch/arm/boot,arch/arm/boot/dts 
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- modules_install INSTALL_MOD_PATH=/opt/shared/rootfs/lib/modules/`uname -r`
+
+$>cp -fav ./tmp/arch/arm/boot/zImage /opt/shared/
+$>cp -fav ./tmp/arch/arm/boot/dts/vexpress-v2p-ca9.dtb /opt/shared/
+or
+$>cp -fav ./tmp/arch/arm/boot/zImage /opt/
+$>cp -fav ./tmp/arch/arm/boot/dts/vexpress-v2p-ca9.dtb /opt/
+
+注意:以上便是Uboot运行内核的完整步骤,编译内核和跟文件系统(HOST1),运行Qemu,Uboot(HOST2).
+
+step.15 GDB
+--------------
+$>tar -xvf gdb-12.1.tar.gz 
+$>./configure --with-python --enable-targets=all --prefix=/opt/x
+$>make V=1 -j`nproc` && make install
+
+step.16 BLK
+--------------
+$>mkdir -pv /opt/shared/rootfs/ /opt/shared/rec/ /opt/shared/qcow/
+$>dd if=/dev/zero of=/mnt/512Mb.ext2 bs=1M count=512
+$>losetup /dev/loop1 /mnt/512Mb.ext2                            #挂载512Mb.ext2
+$>mke2fs -m 0 /dev/loop1 512M                                   #格式化512Mb.ext2.
+$>mount -t ext2 /dev/loop1 /opt/shared/rootfs/
+$>umount /opt/shared/rootfs/
+$>losetup -d /dev/loop1 
+
+step.17 BUSYBOX
+--------------
+#Settings  --->    
+# --- Build Options 
+#  [ ] Build static binary (no shared libs)    #使用共享库构建
+#--- Applets
+# Shells  ---> 
+#  [ ]   Job control                           #去掉勾选,为了解决'sh: can't access tty; job control turned off'
+#Linux System Utilities  --->
+# [*] mdev
+#  [*]   Support /etc/mdev.conf
+#  [*]     Support subdirs/symlinks
+#  [*]       Support regular expressions substitutions when renaming device 
+#  [*]     Support command execution at device addition/removal
+#  [*]   Support loading of firmware
+$>cd <交叉编译器目录,eg.gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf>/arm-linux-gnueabihf/lib/
+$>cp *so* *.a /opt/shared/rootfs/lib/ -dv 
+
+$>cd <交叉编译器目录,eg.gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf>/arm-linux-gnueabihf/libc/lib/
+$>cp *so* *.a /opt/shared/rootfs/lib/ -dv
+
+$>cd <交叉编译器目录,eg.gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf>/arm-linux-gnueabihf/libc/usr/lib/
+$>cp *so* *.a /opt/shared/rootfs/usr/lib/ -dv
+
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- defconfig
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc`
+$>make C=2 V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- CONFIG_PREFIX=/opt/shared/rootfs install 
+$>cd /opt/shared/rootfs
+$>mkdir -pv proc/ sys/ etc/ usr/sbin/ usr/bin/ usr/lib/ lib/modules dev/ root/ tmp/ media/ usr/share/alsa etc/init.d/ var/run/wpa/ var/empty/ 
+$>touch init etc/fstab etc/passwd etc/group etc/pointercal etc/init.d/rcS
+$>chmod a+x init etc/init.d/rcS
+$>vi init
+-------
+#!/bin/busybox sh
+
+export PATH=/sbin:/bin:/usr/sbin:usr/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib
+
+export TERM=vt100
+export TERMINFO=/usr/share/terminfo
+
+busybox mount -t proc none /proc
+busybox mount -t sysfs none /sys
+busybox mount -t tmpfs none /dev
+
+busybox mkdir /dev/pts
+busybox mount -t devpts none /dev/pts
+busybox mount -a 
+
+busybox echo "busybox mdev" > /proc/sys/kernel/hotplug
+busybox echo "4 4 1 7" > /proc/sys/kernel/printk
+busybox mdev -s -d
+
+busybox adduser -u 0 -s /bin/sh -h /root root >/dev/null 2>&1&
+busybox echo "root:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox adduser -h /shared -u 1001 -s /bin/sh sshd >/dev/null 2>&1&
+busybox echo "sshd:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox mkdir -pv /lib/modules/`uname -r` >/dev/null 2>&1&
+
+#busybox telnetd >/dev/null 2>&1& 
+#/sbin/sshd >/dev/null 2>&1&
+
+busybox cat <<!
+Boot took $(busybox cut -d' ' -f1 /proc/uptime) seconds
+        _       _     __ _                  
+  /\/\ (_)_ __ (_)   / /(_)_ __  _   ___  __
+ /    \| | '_ \| |  / / | | '_ \| | | \ \/ /
+/ /\/\ \ | | | | | / /__| | | | | |_| |>  < 
+\/    \/_|_| |_|_| \____/_|_| |_|\__,_/_/\_\ 
+
+Welcome to MINI Linux
+!
+
+exec /bin/busybox sh
+
+注意:默认就支持NFS.
+
+step.18 OPENSSH
+--------------
+step.1 zlib 
+--------
+$>cp zlib-1.2.13.tar.gz /opt/shared/
+$>tar -xvzf zlib-1.2.13.tar.gz
+$>cd zlib-1.2.13
+$>CC=arm-linux-gnueabihf-gcc LD=arm-linux-gnueabihf-ld AS=arm-linux-gnueabihf-as ./configure --prefix=/opt/shared/libz-1.2.13
+$>make && make install 
+$>cp -rfav /opt/shared/libz-1.2.13/lib/* /opt/shared/rootfs/lib/ 
+
+step.2 openssl
+--------
+$>cp openssl-1.1.1s.tar.gz /opt/shared/
+$>tar -xvf openssl-1.1.1s.tar.gz
+$>cd openssl-1.1.1s
+$>./Configure CROSS_COMPILE=arm-linux-gnueabihf- linux-armv4 shared no-asm --prefix=/opt/shared/openssl/ 
+$>make && make install 
+$>cp -rfav /opt/shared/openssl/lib/libcrypto.so* /opt/shared/rootfs/lib/                                            #拷贝库到rootfs
+$>cp -rfav /opt/shared/openssl/lib/libssl.so* /opt/shared/rootfs/lib/                                               #拷贝库到rootfs
+
+step.3 openssh 
+--------
+$>cp openssh-9.1.tar.gz /opt/shared/
+$>tar -xvf openssh-9.1.tar.gz
+$>cd openssh-9.1
+$>autoreconf
+$>CC=arm-linux-gnueabihf-gcc AR=arm-linux-gnueabihf-ar ./configure --bindir=/bin --sbindir=/sbin --libexecdir=/bin --sysconfdir=/etc --host=arm-linux-gnueabihf --disable-etc-default-login --with-libs --with-zlib=/opt/shared/libz-1.2.13 --with-ssl-dir=/opt/shared/openssl
+$>make 
+$>cp -rfav scp ssh ssh-add ssh-agent ssh-keygen ssh-keyscan ssh-keysign sftp sftp-server /opt/shared/rootfs/bin/     #拷贝程序到rootfs
+$>cp -rfav sshd /opt/shared/rootfs/sbin/                                                                             #拷贝程序到rootfs
+$>cp -rfav moduli ssh_config sshd_config /opt/shared/rootfs/etc/                                                     #拷贝配置到rootfs
+$>vi /opt/shared/rootfs/etc/sshd_config
+------
+...
+PermitRootLogin yes
+StrictModes yes
+...
+
+$>touch /etc/group                                        #board-cmd
+$>mkdir -pv /var/empty                                    #board-cmd
+$>adduser -u 0 -s /bin/sh -h /root root
+$>passwd root                                             #board-cmd
+$>adduser -h /shared -u 1001 -s /bin/sh sshd              #board-cmd
+
+$>cd /etc/                                                #board-cmd 
+$>ssh-keygen -t rsa -f ssh_host_rsa_key -N ""             #board-cmd 
+$>ssh-keygen -t dsa -f ssh_host_dsa_key -N ""             #board-cmd 
+$>ssh-keygen -t ecdsa -f ssh_host_ecdsa_key -N ""         #board-cmd 
+$>ssh-keygen -t ed25519 -f ssh_host_ed25519_key -N ""     #board-cmd 
+
+$>/sbin/sshd &                                            #board-cmd,启动sshd服务.
+
+$>ssh sshd@<srv_ip>
+$>ssh root@<srv_ip>
+
+step.19 QEMU
+--------------
+$>modprobe nbd max_port=99
+$>qemu-img create -f qcow2 ./512Mb.ext4 512M
+$>qemu-nbd --connect=/dev/nbd0 ./512Mb.ext4 
+$>fdisk -l /dev/nbd0
+$>cat<<END | fdisk /dev/nbd0
+n
+p
+1
+2048
++500M
+w
+END
+$>echo p | fdisk /dev/nbd0
+$>mkfs.ext4 -F /dev/nbd0p1
+$>mount -t ext4 /dev/nbd0p1 /opt/shared/qcow/
+$>rsync -avzHP /opt/shared/rootfs/* /opt/shared/qcow/
+$>umount /opt/shared/qcow/
+$>qemu-nbd --disconnect /dev/nbd0
+$>qemu-img info ./512Mb.ext4 
+$>qemu-system-arm -M vexpress-a9 -k en-us -m 128M -smp 2 -boot menu=on,strict=off -display none -serial stdio -kernel /opt/zImage -dtb /opt/vexpress-v2p-ca9.dtb -drive file=/mnt/512Mb.ext2,if=sd,format=raw -append "console=ttyAMA0,115200 root=/dev/mmcblk0 ip=192.168.8.100:::255.255.255.0::eth0:off init=/init rootfstype=ext2 debug rw nokaslr rootwait" -net nic,model=lan9118 -net user -net tap,ifname=tap0,script=no,downscript=no -S -gdb tcp::8888 2>&1 | tee /opt/shared/rec/run-`date +%Y%m%d-%H.%M.%S`.log
+

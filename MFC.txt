@@ -1,0 +1,3707 @@
+工程创建和修改步骤
+--------------------------
+创建新项目->Windows桌面向导->项目名称:MFC->应用程序类型:桌面应用程序.exe
+                                         ->其他选项:空项目
+MFC项目->属性->高级->字符集:使用多字节字符集
+                   ->MFC的使用:在静态库中使用MFC                     #MFC项目 
+				   
+MFC项目->属性->高级->字符集:使用多字节字符集
+                   ->MFC的使用:使用标准 Windows 库                   #WIN32项目
+
+MFC项目->属性->链接器->所有选项->子系统:控制台 (/SUBSYSTEM:CONSOLE)  #控制台程序
+
+MFC项目->属性->链接器->所有选项->子系统:窗口 (/SUBSYSTEM:WINDOWS)    #Window程序
+		
+注意:vs版本为Vistual Stdio 2022
+
+MFC类向导
+--------------------------
+菜单->项目->类向导(CTRL + SHIFT + X)
+
+命令:资源控件的命令消息处理
+
+消息:标准windows消息
+
+虚函数:子类重写父类虚函数
+
+成员变量:控件ID与控件变量类型类型绑定(值/控件)
+
+方法:编写成员函数
+
+最简单的窗口程序
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+
+class MFCDemo : public CFrameWnd {
+
+};
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept  {
+	
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL,"title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+消息处理
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+
+class MFCDemo : public CFrameWnd {
+	virtual LRESULT WindowProc(UINT msgID, WPARAM wParam, LPARAM lParam) {
+		//处理消息
+		switch (msgID) {
+		case WM_CREATE:
+			AfxMessageBox("WM_CREATE 消息被处理了!!!");
+			break;
+		}
+
+		return CFrameWnd::WindowProc(msgID,wParam,lParam);
+	}
+};
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+消息处理
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+
+class MFCDemo : public CFrameWnd {
+	virtual LRESULT WindowProc(UINT msgID, WPARAM wParam, LPARAM lParam) {
+		//处理消息
+		switch (msgID) {
+		case WM_CREATE:
+			AfxMessageBox("WM_CREATE 消息被处理了!!!");
+			break;
+		case WM_PAINT:    //画图
+			PAINTSTRUCT ps = { 0 };
+			HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+			::TextOut(hdc, 100, 100, "DEMO", 4);
+			::EndPaint(this->m_hWnd,&ps);
+		}
+
+		return CFrameWnd::WindowProc(msgID,wParam,lParam);
+	}
+};
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+消息映射机制
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	LRESULT wCreate(WPARAM wParam,LPARAM lParam)
+	{
+		AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		return 0;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_MESSAGE(WM_CREATE,wCreate)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+消息映射机制
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	LRESULT wCreate(WPARAM wParam,LPARAM lParam)
+	{
+		AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		return 0;
+	}
+	
+	LRESULT wPaint(WPARAM wParam,LPARAM lParam)
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, 100, 100, "DEMO", 4);
+		::EndPaint(this->m_hWnd,&ps);
+		return 0;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_MESSAGE(WM_CREATE,wCreate)
+	ON_MESSAGE(WM_PAINT,wPaint)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+消息分类
+---------------------------
+标准windows消息: ON_WM_<MSG_NAME>()     #返回值和参数请参考手册,eg.ON_WM_CREATE
+自定义消息     : ON_MESSAGE()
+命令消息       : ON_COMMAND()
+
+消息映射机制
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	int m_x;
+	int m_y;
+	
+	int OnCreate(LPCREATESTRUCT pcs)
+	{
+		AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		return CFrameWnd::OnCreate(pcs);
+	}
+	
+	void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, m_x, m_y, "DEMO", 4);
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	void OnMouseMove(UINT nKey, CPoint pt)
+	{
+		m_x = pt.x;
+		m_y = pt.y;
+		
+		::InvalidateRect(this->m_hWnd,NULL,TRUE);
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_WM_MOUSEMOVE()
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+自定义消息
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+
+#define WM_DIY_MESSAGE WM_USER+1001
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	int m_x;
+	int m_y;
+	
+	int OnCreate(LPCREATESTRUCT pcs)
+	{
+		AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		::PostMessageA(this->m_hWnd,WM_DIY_MESSAGE,1,2);   //发送自定消息,wParam:1,lParam:2
+		return CFrameWnd::OnCreate(pcs);
+	}
+	
+	void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, m_x, m_y, "DEMO", 4);
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	void OnMouseMove(UINT nKey, CPoint pt)
+	{
+		m_x = pt.x;
+		m_y = pt.y;
+		
+		::InvalidateRect(this->m_hWnd,NULL,TRUE);
+	}
+	
+	LRESULT ON_DIY_MSG(WPARAM wParam,LPARAM lParam)
+	{
+		CString str;
+
+		str.Format("wParam:%d,lParam:%d", wParam, lParam);
+		AfxMessageBox(str);
+		return TRUE;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_WM_MOUSEMOVE()
+	ON_MESSAGE(WM_DIY_MESSAGE,ON_DIY_MSG)          //自定义消息
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+菜单-命令消息(利用pFrame调用Create函数时传递参数)
+---------------------------
+/**
+step.1 添加项目rc资源文件(.rc)
+   1.1 资源文件->右键->新建项->资源->资源文件(.rc)
+   1.2 资源视图->添加资源->Menu
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+#define WM_DIY_MESSAGE WM_USER+1001
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	int m_x;
+	int m_y;
+	
+	int OnCreate(LPCREATESTRUCT pcs)
+	{
+		AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		::PostMessageA(this->m_hWnd,WM_DIY_MESSAGE,1,2);   //发送自定消息,wParam:1,lParam:2
+		return CFrameWnd::OnCreate(pcs);
+	}
+	
+	void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, m_x, m_y, "DEMO", 4);
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	void OnMouseMove(UINT nKey, CPoint pt)
+	{
+		m_x = pt.x;
+		m_y = pt.y;
+		
+		::InvalidateRect(this->m_hWnd,NULL,TRUE);
+	}
+	
+	LRESULT ON_DIY_MSG(WPARAM wParam,LPARAM lParam)
+	{
+		CString str;
+
+		str.Format("wParam:%d,lParam:%d", wParam, lParam);
+		AfxMessageBox(str);
+		return TRUE;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_WM_MOUSEMOVE()
+	ON_MESSAGE(WM_DIY_MESSAGE,ON_DIY_MSG)          //自定义消息
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title",WS_OVERLAPPEDWINDOW,CFrameWnd::rectDefault,NULL,(CHAR*)IDR_MENU1);
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+菜单-命令消息(在处理框架窗口的WM_CREATE消息时加载菜单)
+---------------------------
+/**
+step.1 添加项目rc资源文件(.rc)
+   1.1 资源文件->右键->新建项->资源->资源文件(.rc)
+   1.2 资源视图->添加资源->Menu
+   
+   注意事项:命令消息的处理顺序,框架类->应用程序类;如果框架类中没有实现OnNew,则会去应用程序类中去寻找.
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+#define WM_DIY_MESSAGE WM_USER+1001
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	int m_x;
+	int m_y;
+	
+	//Objects
+	CMenu menu;
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		menu.LoadMenu(IDR_MENU1);
+		this->SetMenu(&menu);
+		//or
+		//::SetMenu(this->m_hWnd,menu.m_hMenu);
+		//AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		::PostMessageA(this->m_hWnd,WM_DIY_MESSAGE,1,2);   //发送自定消息,wParam:1,lParam:2
+		return CFrameWnd::OnCreate(pcs);
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, m_x, m_y, "DEMO", 4);
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg void OnMouseMove(UINT nKey, CPoint pt)
+	{
+		m_x = pt.x;
+		m_y = pt.y;
+		
+		::InvalidateRect(this->m_hWnd,NULL,TRUE);
+	}
+	
+	afx_msg LRESULT ON_DIY_MSG(WPARAM wParam,LPARAM lParam)
+	{
+		CString str;
+
+		str.Format("wParam:%d,lParam:%d", wParam, lParam);
+		AfxMessageBox(str);
+		return TRUE;
+	}
+	
+	//设置菜单项的勾选状态
+	afx_msg void OnInitMenuPopup(CMenu *pPopup, UINT nPos, BOOL v)
+	{
+		pPopup->CheckMenuItem(ID_NEW,MF_CHECKED);
+		//or 
+		//::CheckMenuItem(pPopup->m_hMenu,ID_NEW,MF_CHECKED);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("框架类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_WM_MOUSEMOVE()
+	ON_WM_INITMENUPOPUP()
+	ON_MESSAGE(WM_DIY_MESSAGE,ON_DIY_MSG)          //自定义消息
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("应用程序类-消息处理!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+右键菜单-命令消息(在处理框架窗口的WM_CREATE消息时加载菜单)
+---------------------------
+/**
+step.1 添加项目rc资源文件(.rc)
+   1.1 资源文件->右键->新建项->资源->资源文件(.rc)
+   1.2 资源视图->添加资源->Menu
+   
+   注意事项:命令消息的处理顺序,框架类->应用程序类;如果框架类中没有实现OnNew,则会去应用程序类中去寻找.
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+#define WM_DIY_MESSAGE WM_USER+1001
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	int m_x;
+	int m_y;
+	
+	//Objects
+	CMenu menu;
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		menu.LoadMenu(IDR_MENU1);
+		this->SetMenu(&menu);
+		//or
+		//::SetMenu(this->m_hWnd,menu.m_hMenu);
+		//AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		::PostMessageA(this->m_hWnd,WM_DIY_MESSAGE,1,2);   //发送自定消息,wParam:1,lParam:2
+		return CFrameWnd::OnCreate(pcs);
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, m_x, m_y, "DEMO", 4);
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg void OnMouseMove(UINT nKey, CPoint pt)
+	{
+		m_x = pt.x;
+		m_y = pt.y;
+		
+		::InvalidateRect(this->m_hWnd,NULL,TRUE);
+	}
+	
+	afx_msg LRESULT ON_DIY_MSG(WPARAM wParam,LPARAM lParam)
+	{
+		CString str;
+
+		str.Format("wParam:%d,lParam:%d", wParam, lParam);
+		AfxMessageBox(str);
+		return TRUE;
+	}
+	
+	//设置菜单项的勾选状态
+	afx_msg void OnInitMenuPopup(CMenu *pPopup, UINT nPos, BOOL v)
+	{
+		pPopup->CheckMenuItem(ID_NEW,MF_CHECKED);
+		//or 
+		//::CheckMenuItem(pPopup->m_hMenu,ID_NEW,MF_CHECKED);
+	}
+	
+	//右键菜单
+	afx_msg void OnContextMenu(CWnd* pWnd, CPoint pt)
+	{
+		CMenu* pPopup = menu.GetSubMenu(0);
+		pPopup->TrackPopupMenu(TPM_LEFTALIGN|TPM_TOPALIGN,pt.x,pt.y,this);
+		//or
+		//HMENU hPopup = ::GetSubMenu(menu.m_hMenu,0);
+		//::TrackPopupMenu(hPopup,TPM_LEFTALIGN|TPM_TOPALIGN,pt.x,pt.y,0,this->m_hWnd,NULL);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("框架类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_WM_MOUSEMOVE()
+	ON_WM_INITMENUPOPUP()
+	ON_WM_CONTEXTMENU()
+	ON_MESSAGE(WM_DIY_MESSAGE,ON_DIY_MSG)          //自定义消息
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("应用程序类-消息处理!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+工具栏
+---------------------------
+/**
+step.1 添加项目rc资源文件(.rc)
+   1.1 资源文件->右键->新建项->资源->资源文件(.rc)
+   1.2 资源视图->添加资源->Menu
+   1.3 资源视图->添加资源->Toolbar
+   1.4 编辑图标
+   1.5 双击小方块图标设置ID为:ID_NEW
+   
+   注意事项:命令消息的处理顺序,框架类->应用程序类;如果框架类中没有实现OnNew,则会去应用程序类中去寻找.
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+#define WM_DIY_MESSAGE WM_USER+1001
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	int m_x;
+	int m_y;
+	
+	//Objects
+	CMenu menu;
+	CToolBar toolbar;
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		//菜单
+		menu.LoadMenu(IDR_MENU1);
+		this->SetMenu(&menu);
+		//or
+		//::SetMenu(this->m_hWnd,menu.m_hMenu);
+		
+		//工具栏 
+		toolbar.CreateEx(this,TBSTYLE_FLAT,WS_CHILD|WS_VISIBLE|CBRS_ALIGN_TOP);
+		toolbar.LoadToolBar(IDR_TOOLBAR1);
+		
+		//AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		::PostMessageA(this->m_hWnd,WM_DIY_MESSAGE,1,2);   //发送自定消息,wParam:1,lParam:2
+		return CFrameWnd::OnCreate(pcs);
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, m_x, m_y, "DEMO", 4);
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg void OnMouseMove(UINT nKey, CPoint pt)
+	{
+		m_x = pt.x;
+		m_y = pt.y;
+		
+		::InvalidateRect(this->m_hWnd,NULL,TRUE);
+	}
+	
+	afx_msg LRESULT ON_DIY_MSG(WPARAM wParam,LPARAM lParam)
+	{
+		CString str;
+
+		str.Format("wParam:%d,lParam:%d", wParam, lParam);
+		AfxMessageBox(str);
+		return TRUE;
+	}
+	
+	//设置菜单项的勾选状态
+	afx_msg void OnInitMenuPopup(CMenu *pPopup, UINT nPos, BOOL v)
+	{
+		pPopup->CheckMenuItem(ID_NEW,MF_CHECKED);
+		//or 
+		//::CheckMenuItem(pPopup->m_hMenu,ID_NEW,MF_CHECKED);
+	}
+	
+	//右键菜单
+	afx_msg void OnContextMenu(CWnd* pWnd, CPoint pt)
+	{
+		CMenu* pPopup = menu.GetSubMenu(0);
+		pPopup->TrackPopupMenu(TPM_LEFTALIGN|TPM_TOPALIGN,pt.x,pt.y,this);
+		//or
+		//HMENU hPopup = ::GetSubMenu(menu.m_hMenu,0);
+		//::TrackPopupMenu(hPopup,TPM_LEFTALIGN|TPM_TOPALIGN,pt.x,pt.y,0,this->m_hWnd,NULL);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("框架类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_WM_MOUSEMOVE()
+	ON_WM_INITMENUPOPUP()
+	ON_WM_CONTEXTMENU()
+	ON_MESSAGE(WM_DIY_MESSAGE,ON_DIY_MSG)          //自定义消息
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("应用程序类-消息处理!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+工具栏-拖动
+---------------------------
+/**
+step.1 添加项目rc资源文件(.rc)
+   1.1 资源文件->右键->新建项->资源->资源文件(.rc)
+   1.2 资源视图->添加资源->Menu
+   1.3 资源视图->添加资源->Toolbar
+   1.4 编辑图标
+   1.5 双击小方块图标设置ID为:ID_NEW
+   
+   注意事项:命令消息的处理顺序,框架类->应用程序类;如果框架类中没有实现OnNew,则会去应用程序类中去寻找.
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+#define WM_DIY_MESSAGE WM_USER+1001
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	int m_x;
+	int m_y;
+	
+	//Objects
+	CMenu menu;
+	CToolBar toolbar;
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		//菜单
+		menu.LoadMenu(IDR_MENU1);
+		this->SetMenu(&menu);
+		//or
+		//::SetMenu(this->m_hWnd,menu.m_hMenu);
+		
+		//工具栏 
+		toolbar.CreateEx(this,TBSTYLE_FLAT,WS_CHILD|WS_VISIBLE|CBRS_ALIGN_TOP|CBRS_GRIPPER);
+		toolbar.LoadToolBar(IDR_TOOLBAR1);
+		toolbar.EnableDocking(CBRS_ALIGN_ANY);
+		this->EnableDocking(CBRS_ALIGN_ANY);
+		this->DockControlBar(&toolbar,AFX_IDW_DOCKBAR_TOP);
+		
+		//AfxMessageBox("WM_CREATE 消息被处理了!!!");
+		::PostMessageA(this->m_hWnd,WM_DIY_MESSAGE,1,2);   //发送自定消息,wParam:1,lParam:2
+		return CFrameWnd::OnCreate(pcs);
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, m_x, m_y, "DEMO", 4);
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg void OnMouseMove(UINT nKey, CPoint pt)
+	{
+		m_x = pt.x;
+		m_y = pt.y;
+		
+		::InvalidateRect(this->m_hWnd,NULL,TRUE);
+	}
+	
+	afx_msg LRESULT ON_DIY_MSG(WPARAM wParam,LPARAM lParam)
+	{
+		CString str;
+
+		str.Format("wParam:%d,lParam:%d", wParam, lParam);
+		AfxMessageBox(str);
+		return TRUE;
+	}
+	
+	//设置菜单项的勾选状态
+	afx_msg void OnInitMenuPopup(CMenu *pPopup, UINT nPos, BOOL v)
+	{
+		pPopup->CheckMenuItem(ID_NEW,MF_CHECKED);
+		//or 
+		//::CheckMenuItem(pPopup->m_hMenu,ID_NEW,MF_CHECKED);
+	}
+	
+	//右键菜单
+	afx_msg void OnContextMenu(CWnd* pWnd, CPoint pt)
+	{
+		CMenu* pPopup = menu.GetSubMenu(0);
+		pPopup->TrackPopupMenu(TPM_LEFTALIGN|TPM_TOPALIGN,pt.x,pt.y,this);
+		//or
+		//HMENU hPopup = ::GetSubMenu(menu.m_hMenu,0);
+		//::TrackPopupMenu(hPopup,TPM_LEFTALIGN|TPM_TOPALIGN,pt.x,pt.y,0,this->m_hWnd,NULL);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("框架类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_WM_MOUSEMOVE()
+	ON_WM_INITMENUPOPUP()
+	ON_WM_CONTEXTMENU()
+	ON_MESSAGE(WM_DIY_MESSAGE,ON_DIY_MSG)          //自定义消息
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "title");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("应用程序类-消息处理!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+运行时类信息机制
+---------------------------
+#include <iostream>
+#include <afxwin.h>
+#include <afxext.h>
+
+class CAnimal : public CObject {
+	DECLARE_DYNAMIC(CAnimal)
+};
+
+IMPLEMENT_DYNAMIC(CAnimal,CObject)
+
+class CDog : public CAnimal {
+	DECLARE_DYNAMIC(CDog)
+
+};
+
+IMPLEMENT_DYNAMIC(CDog,CAnimal)
+
+int main()
+{
+	CDog yellow;
+	
+	if(yellow.IsKindOf(RUNTIME_CLASS(CDog)))
+	{
+		std::cout<< "yellow is CDog" <<std::endl;
+	}
+	else
+	{
+		std::cout<< "yellow is not CDog" <<std::endl;
+	}
+	
+	return 0;
+}
+
+动态创建机制
+---------------------------
+#include <iostream>
+#include <afxwin.h>
+#include <afxext.h>
+
+class CAnimal : public CObject {
+	DECLARE_DYNAMIC(CAnimal)
+};
+
+IMPLEMENT_DYNAMIC(CAnimal,CObject)
+
+class CDog : public CAnimal {
+	DECLARE_DYNCREATE(CDog)
+
+};
+
+IMPLEMENT_DYNCREATE(CDog,CAnimal)
+
+int main()
+{
+	CObject* pob = RUNTIME_CLASS(CDog)->CreateObject();
+	
+	if(pob)
+	{
+		std::cout<< pob <<std::endl;
+	}
+	else
+	{
+		std::cout<< "object create failed" <<std::endl;
+	}
+	
+	return 0;
+}
+
+视图
+---------------------------
+/**
+step.1 添加项目rc资源文件(.rc)
+   1.1 资源文件->右键->新建项->资源->资源文件(.rc)
+   1.2 资源视图->添加资源->Menu
+   1.3 资源视图->添加资源->Toolbar
+   1.4 编辑图标
+   1.5 双击小方块图标设置ID为:ID_NEW
+   
+   注意事项:命令消息的处理顺序,框架类->应用程序类;如果框架类中没有实现OnNew,则会去应用程序类中去寻找.
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+
+class MFCView : public CView {
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		pDC->TextOut(100, 100, "MFCView");
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, 200, 200, "VIEW", strlen("VIEW"));
+		::EndPaint(this->m_hWnd,&ps);
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCView, CView)
+	ON_WM_PAINT()
+END_MESSAGE_MAP()
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+private:
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, 100, 100, "DEMO", strlen("DEMO"));
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		MFCView* pView = new MFCView();
+		pView->Create(NULL,"VIEW",WS_CHILD|WS_VISIBLE|WS_BORDER,CRect(0,0,200,200),this,AFX_IDW_PANE_FIRST);     //平铺:AFX_IDW_PANE_FIRST
+		
+		return CFrameWnd::OnCreate(pcs);
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_PAINT()
+	ON_WM_CREATE()
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "VIEW");
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+命令消息处理顺序
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCView : public CView {
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		pDC->TextOut(100, 100, "MFCView");
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, 200, 200, "VIEW", strlen("VIEW"));
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("视图类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCView, CView)
+	ON_WM_PAINT()
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+private:
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, 100, 100, "DEMO", strlen("DEMO"));
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		MFCView* pView = new MFCView();
+		pView->Create(NULL,"VIEW",WS_CHILD|WS_VISIBLE|WS_BORDER,CRect(0,0,200,200),this,AFX_IDW_PANE_FIRST);     //平铺:AFX_IDW_PANE_FIRST
+		m_pViewActive = pView;
+		return CFrameWnd::OnCreate(pcs);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("框架类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_PAINT()
+	ON_WM_CREATE()
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+		DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		pFrame->Create(NULL, "VIEW",WS_OVERLAPPEDWINDOW,CFrameWnd::rectDefault,NULL,(CHAR*)IDR_MENU1);
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("应用程序类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+文档类
+---------------------------
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDoc : public CDocument {
+
+};
+
+class MFCView : public CView {
+	DECLARE_DYNCREATE(MFCView)
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		pDC->TextOut(100, 100, "MFCView");
+	}
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		
+		return CView::OnCreate(pcs);
+	}
+};
+
+IMPLEMENT_DYNCREATE(MFCView,CView)
+BEGIN_MESSAGE_MAP(MFCView, CView)
+	ON_WM_CREATE()
+END_MESSAGE_MAP()
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	CSplitterWnd split;   //不规则框架窗口
+	
+	virtual BOOL OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext)
+	{
+		//创建两个视图窗口
+		split.CreateStatic(this,1,2);
+		split.CreateView(0,0,pContext->m_pNewViewClass,CSize(100,100),pContext);
+		//split.CreateView(0,1,pContext->m_pNewViewClass,CSize(100,100),pContext);
+		split.CreateView(0,1,RUNTIME_CLASS(MFCView),CSize(100,100),pContext);
+		
+		return TRUE;
+	}
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		//MFCView* pView = new MFCView();
+		//pView->Create(NULL,"VIEW",WS_CHILD|WS_VISIBLE|WS_BORDER,CRect(0,0,200,200),this,AFX_IDW_PANE_FIRST);     //平铺:AFX_IDW_PANE_FIRST
+		//m_pViewActive = pView;
+		return CFrameWnd::OnCreate(pcs);
+		//return 0;
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, 200, 200, "DEMO", strlen("DEMO"));
+		::EndPaint(this->m_hWnd,&ps);
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		//pFrame->Create(NULL, "VIEW",WS_OVERLAPPEDWINDOW,CFrameWnd::rectDefault,NULL,(CHAR*)IDR_MENU1);
+		
+		MFCDoc* pDoc = new MFCDoc();
+		
+		CCreateContext ctx;
+		ctx.m_pCurrentDoc = pDoc;
+		ctx.m_pNewViewClass = RUNTIME_CLASS(MFCView);
+		
+		pFrame->LoadFrame(IDR_MENU1,WS_OVERLAPPEDWINDOW,NULL,&ctx);
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+};
+
+MFCDemoWinApp theApp;
+
+命令消息处理顺序
+---------------------------
+/**
+1.视图类优先处理ON_COMMAND
+2.处理循序:视图类->文档类->框架类->应用程序类
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDoc : public CDocument {
+	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("文档类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDoc, CDocument)
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCView : public CView {
+	DECLARE_DYNCREATE(MFCView)
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		pDC->TextOut(100, 100, "MFCView");
+	}
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		
+		return CView::OnCreate(pcs);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("视图类-新建菜单项被点击了!!!");
+	}
+};
+
+IMPLEMENT_DYNCREATE(MFCView,CView)
+BEGIN_MESSAGE_MAP(MFCView, CView)
+	ON_WM_CREATE()
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	CSplitterWnd split;   //不规则框架窗口
+	
+	virtual BOOL OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext)
+	{
+		//创建两个视图窗口
+		split.CreateStatic(this,1,2);
+		split.CreateView(0,0,pContext->m_pNewViewClass,CSize(100,100),pContext);
+		//split.CreateView(0,1,pContext->m_pNewViewClass,CSize(100,100),pContext);
+		split.CreateView(0,1,RUNTIME_CLASS(MFCView),CSize(100,100),pContext);
+		
+		m_pViewActive = (CView*)split.GetPane(0,0);
+		
+		return TRUE;
+	}
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		//MFCView* pView = new MFCView();
+		//pView->Create(NULL,"VIEW",WS_CHILD|WS_VISIBLE|WS_BORDER,CRect(0,0,200,200),this,AFX_IDW_PANE_FIRST);     //平铺:AFX_IDW_PANE_FIRST
+		//m_pViewActive = pView;
+		return CFrameWnd::OnCreate(pcs);
+		//return 0;
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, 200, 200, "DEMO", strlen("DEMO"));
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("框架类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		//pFrame->Create(NULL, "VIEW",WS_OVERLAPPEDWINDOW,CFrameWnd::rectDefault,NULL,(CHAR*)IDR_MENU1);
+		
+		MFCDoc* pDoc = new MFCDoc();
+		
+		CCreateContext ctx;
+		ctx.m_pCurrentDoc = pDoc;
+		ctx.m_pNewViewClass = RUNTIME_CLASS(MFCView);
+		
+		pFrame->LoadFrame(IDR_MENU1,WS_OVERLAPPEDWINDOW,NULL,&ctx);
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("应用程序类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+文档类和视图类的关系
+---------------------------
+/**
+1.视图类优先处理ON_COMMAND
+2.处理循序:视图类->文档类->框架类->应用程序类
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDoc : public CDocument {
+	DECLARE_MESSAGE_MAP()
+public:
+	CString str;
+	
+	afx_msg void OnNew()
+	{
+		this->str = "MFCDoc OnNew Message!!!";
+		//this->UpdateAllViews(NULL);                    //刷新和这个文档类对象(this)关联的所有视图窗口
+		//this->m_viewList;   //链表迭代器
+		POSITION pos = this->GetFirstViewPosition();      //操作链表必须先调用GetFirstXXX拿到链表迭代器
+		CView* pView = this->GetNextView(pos);            //拿第一个节点就调用GetNextXXX
+		this->UpdateAllViews(pView);                      //刷新除了这个文档类对象(this)关联的除了pView指向的窗口
+		AfxMessageBox("文档类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDoc, CDocument)
+	ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCView : public CView {
+	DECLARE_DYNCREATE(MFCView)
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		//MFCDoc* pDoc = (MFCDoc*)this->m_pDocument;  //私有成员
+		//or 
+		MFCDoc* pDoc = (MFCDoc*)this->GetDocument();  //只要能拿到视图对象就能够访问文档类对象
+		pDC->TextOut(100, 100, pDoc->str);
+	}
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		
+		return CView::OnCreate(pcs);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("视图类-新建菜单项被点击了!!!");
+	}
+};
+
+IMPLEMENT_DYNCREATE(MFCView,CView)
+BEGIN_MESSAGE_MAP(MFCView, CView)
+	ON_WM_CREATE()
+	//ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_MESSAGE_MAP()
+public:
+	CSplitterWnd split;   //不规则框架窗口
+	
+	virtual BOOL OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext)
+	{
+		//创建两个视图窗口
+		split.CreateStatic(this,1,2);
+		split.CreateView(0,0,pContext->m_pNewViewClass,CSize(100,100),pContext);
+		//split.CreateView(0,1,pContext->m_pNewViewClass,CSize(100,100),pContext);
+		split.CreateView(0,1,RUNTIME_CLASS(MFCView),CSize(100,100),pContext);
+		
+		m_pViewActive = (CView*)split.GetPane(0,0);
+		
+		return TRUE;
+	}
+	
+	afx_msg int OnCreate(LPCREATESTRUCT pcs)
+	{
+		//MFCView* pView = new MFCView();
+		//pView->Create(NULL,"VIEW",WS_CHILD|WS_VISIBLE|WS_BORDER,CRect(0,0,200,200),this,AFX_IDW_PANE_FIRST);     //平铺:AFX_IDW_PANE_FIRST
+		//m_pViewActive = pView;
+		return CFrameWnd::OnCreate(pcs);
+		//return 0;
+	}
+	
+	afx_msg void OnPaint()
+	{
+		PAINTSTRUCT ps = { 0 };
+		HDC hdc = ::BeginPaint(this->m_hWnd,&ps);
+		::TextOut(hdc, 200, 200, "DEMO", strlen("DEMO"));
+		::EndPaint(this->m_hWnd,&ps);
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("框架类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+	ON_WM_CREATE()
+	ON_WM_PAINT()
+	//ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDemo* pFrame = new MFCDemo();
+		//pFrame->Create(NULL, "VIEW",WS_OVERLAPPEDWINDOW,CFrameWnd::rectDefault,NULL,(CHAR*)IDR_MENU1);
+		
+		MFCDoc* pDoc = new MFCDoc();
+		
+		CCreateContext ctx;
+		ctx.m_pCurrentDoc = pDoc;
+		ctx.m_pNewViewClass = RUNTIME_CLASS(MFCView);
+		
+		pFrame->LoadFrame(IDR_MENU1,WS_OVERLAPPEDWINDOW,NULL,&ctx);
+		m_pMainWnd = pFrame;
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		return TRUE;
+	}
+	
+	afx_msg void OnNew()
+	{
+		AfxMessageBox("应用程序类-新建菜单项被点击了!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+	//ON_COMMAND(ID_NEW,OnNew)
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+单文档视图代码模板
+---------------------------
+/**参与架构的类:CFrameWnd/CWinApp/CView/CDocument
+需要用到的类:CDocTemplate             -  文档模板类
+               |-> CSingleDocTemplate -  单文档模板类
+			 CDocManager              -  文档管理类
+			 
+			 CSingleDocTemplate* pTemplate
+			   |->m_pOnlyDoc      //唯一的文档类对象地址
+			   |->m_pDocClass     //RUNTIME_CLASS(MFCDoc)
+			   |->m_pFrameClass   //RUNTIME_CLASS(MFCDemo)
+			   |->m_pViewClass    //RUNTIME_CLASS(MFCView)
+			 
+			 theApp
+			   |->m_pDocManager        - 文档管理类对象地址
+			       |->m_templateList   - 单文档模板类对象地址
+			 ==>
+			 theApp
+			   |->m_pDocManager        - 文档管理类对象地址
+			       |->m_templateList   - 单文档模板类对象地址
+					  |->CSingleDocTemplate* pTemplate
+						   |->m_pOnlyDoc      //唯一的文档类对象地址
+						   |->m_pDocClass     //RUNTIME_CLASS(MFCDoc)
+						   |->m_pFrameClass   //RUNTIME_CLASS(MFCDemo)
+						   |->m_pViewClass    //RUNTIME_CLASS(MFCView)
+						   
+参与架构的四个类处理应用程序类外,其余的三个类均支持动态创建机制
+
+注意:该示例必须创建菜单资源和字符串资源(name:AFX_IDS_UNTITLED value:0xF003 text:...)
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDoc : public CDocument {
+	DECLARE_DYNCREATE(MFCDoc)
+	DECLARE_MESSAGE_MAP()
+public:
+	
+};
+
+IMPLEMENT_DYNCREATE(MFCDoc,CDocument)
+BEGIN_MESSAGE_MAP(MFCDoc, CDocument)
+
+END_MESSAGE_MAP()
+
+class MFCView : public CView {
+	DECLARE_DYNCREATE(MFCView)
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		//MFCDoc* pDoc = (MFCDoc*)this->m_pDocument;  //私有成员
+		//or 
+		MFCDoc* pDoc = (MFCDoc*)this->GetDocument();  //只要能拿到视图对象就能够访问文档类对象
+		pDC->TextOut(100, 100, "this is View Window!!!");
+	}
+};
+
+IMPLEMENT_DYNCREATE(MFCView,CView)
+BEGIN_MESSAGE_MAP(MFCView, CView)
+
+END_MESSAGE_MAP()
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_DYNCREATE(MFCDemo)
+	DECLARE_MESSAGE_MAP()
+public:
+
+};
+
+IMPLEMENT_DYNCREATE(MFCDemo,CFrameWnd)
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		CSingleDocTemplate* pTemplate = new CSingleDocTemplate(IDR_MENU1,RUNTIME_CLASS(MFCDoc),RUNTIME_CLASS(MFCDemo),RUNTIME_CLASS(MFCView));
+		
+		AddDocTemplate(pTemplate);
+		OnFileNew();
+		
+		m_pMainWnd->ShowWindow(SW_SHOW);
+		m_pMainWnd->UpdateWindow();
+		
+		return TRUE;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+单文档视图(特点:只有一个文档类对象)
+---------------------------
+/**参与架构的类:CFrameWnd/CWinApp/CView/CDocument
+需要用到的类:CDocTemplate             -  文档模板类
+               |-> CSingleDocTemplate -  单文档模板类
+			 CDocManager              -  文档管理类
+			 
+			 CSingleDocTemplate* pTemplate
+			   |->m_pOnlyDoc      //唯一的文档类对象地址
+			   |->m_pDocClass     //RUNTIME_CLASS(MFCDoc)
+			   |->m_pFrameClass   //RUNTIME_CLASS(MFCDemo)
+			   |->m_pViewClass    //RUNTIME_CLASS(MFCView)
+			 
+			 theApp
+			   |->m_pDocManager        - 文档管理类对象地址
+			       |->m_templateList   - 单文档模板类对象地址
+			 ==>
+			 theApp
+			   |->m_pDocManager        - 文档管理类对象地址
+			       |->m_templateList   - 单文档模板类对象地址
+					  |->CSingleDocTemplate* pTemplate
+						   |->m_pOnlyDoc      //唯一的文档类对象地址
+						   |->m_pDocClass     //RUNTIME_CLASS(MFCDoc)
+						   |->m_pFrameClass   //RUNTIME_CLASS(MFCDemo)
+						   |->m_pViewClass    //RUNTIME_CLASS(MFCView)
+						   
+参与架构的四个类处理应用程序类外,其余的三个类均支持动态创建机制
+
+注意:该示例必须创建菜单资源和字符串资源(name:AFX_IDS_UNTITLED value:0xF003 text:...)
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDoc : public CDocument {
+	DECLARE_DYNCREATE(MFCDoc)
+	DECLARE_MESSAGE_MAP()
+public:
+	
+};
+
+IMPLEMENT_DYNCREATE(MFCDoc,CDocument)
+BEGIN_MESSAGE_MAP(MFCDoc, CDocument)
+
+END_MESSAGE_MAP()
+
+class MFCView : public CView {
+	DECLARE_DYNCREATE(MFCView)
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		//MFCDoc* pDoc = (MFCDoc*)this->m_pDocument;  //私有成员
+		//or 
+		MFCDoc* pDoc = (MFCDoc*)this->GetDocument();  //只要能拿到视图对象就能够访问文档类对象
+		pDC->TextOut(100, 100, "this is View Window!!!");
+	}
+};
+
+IMPLEMENT_DYNCREATE(MFCView,CView)
+BEGIN_MESSAGE_MAP(MFCView, CView)
+
+END_MESSAGE_MAP()
+
+class MFCDemo : public CFrameWnd {
+	DECLARE_DYNCREATE(MFCDemo)
+	DECLARE_MESSAGE_MAP()
+public:
+
+};
+
+IMPLEMENT_DYNCREATE(MFCDemo,CFrameWnd)
+BEGIN_MESSAGE_MAP(MFCDemo, CFrameWnd)
+
+END_MESSAGE_MAP()
+
+class MFCDemoWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCDemoWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		CSingleDocTemplate* pTemplate = new CSingleDocTemplate(IDR_MENU1,RUNTIME_CLASS(MFCDoc),RUNTIME_CLASS(MFCDemo),RUNTIME_CLASS(MFCView));
+		
+		this->AddDocTemplate(pTemplate);
+		this->OnFileNew();
+		
+		m_pMainWnd->ShowWindow(SW_SHOW);
+		m_pMainWnd->UpdateWindow();
+		
+		return TRUE;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDemoWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCDemoWinApp theApp;
+
+多文档视图
+---------------------------
+/**参与架构的类:CMDIFrameWnd/CMDIChildWnd/CWinApp/CView/CDocument
+需要用到的类:CDocTemplate             -  文档模板类
+               |-> CMultiDocTemplate  -  多文档模板类
+			 CDocManager              -  文档管理类
+			 
+			 CMultiDocTemplate* pTemplate
+			   |->m_docList       //保存多个文档类对象地址
+			   |->m_pDocClass     //RUNTIME_CLASS(MFCDoc)
+			   |->m_pFrameClass   //RUNTIME_CLASS(MFChild)
+			   |->m_pViewClass    //RUNTIME_CLASS(MFCView)
+			 
+			 theApp
+			   |->m_pDocManager        - 文档管理类对象地址
+			       |->m_templateList   - 单文档模板类对象地址
+			 ==>
+			 theApp
+			   |->m_pDocManager        - 文档管理类对象地址
+			       |->m_templateList   - 单文档模板类对象地址
+					  |->CMultiDocTemplate* pTemplate
+						   |->m_docList       //保存多个文档类对象地址
+						   |->m_pDocClass     //RUNTIME_CLASS(MFCDoc)
+						   |->m_pFrameClass   //RUNTIME_CLASS(MFChild)
+						   |->m_pViewClass    //RUNTIME_CLASS(MFCView)
+						   
+参与架构的四个类处理应用程序类外,其余的三个类均支持动态创建机制
+
+注意:该示例必须创建菜单资源和字符串资源(name:AFX_IDS_UNTITLED value:0xF003 text:...)
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDoc : public CDocument {
+	DECLARE_DYNCREATE(MFCDoc)
+	DECLARE_MESSAGE_MAP()
+public:
+	
+};
+
+IMPLEMENT_DYNCREATE(MFCDoc,CDocument)
+BEGIN_MESSAGE_MAP(MFCDoc, CDocument)
+
+END_MESSAGE_MAP()
+
+class MFCView : public CView {
+	DECLARE_DYNCREATE(MFCView)
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		//MFCDoc* pDoc = (MFCDoc*)this->m_pDocument;  //私有成员
+		//or 
+		MFCDoc* pDoc = (MFCDoc*)this->GetDocument();  //只要能拿到视图对象就能够访问文档类对象
+		pDC->TextOut(100, 100, "this is View Window!!!");
+	}
+};
+
+IMPLEMENT_DYNCREATE(MFCView,CView)
+BEGIN_MESSAGE_MAP(MFCView, CView)
+
+END_MESSAGE_MAP()
+
+class MFChild : public CMDIChildWnd {
+	DECLARE_DYNCREATE(MFChild)
+	DECLARE_MESSAGE_MAP()
+public:
+
+};
+
+IMPLEMENT_DYNCREATE(MFChild,CMDIChildWnd)
+BEGIN_MESSAGE_MAP(MFChild, CMDIChildWnd)
+
+END_MESSAGE_MAP()
+
+class MFCFrameWnd : public CMDIFrameWnd {
+	DECLARE_DYNCREATE(MFCFrameWnd)
+	DECLARE_MESSAGE_MAP()
+public:
+
+};
+
+IMPLEMENT_DYNCREATE(MFCFrameWnd,CMDIFrameWnd)
+BEGIN_MESSAGE_MAP(MFCFrameWnd, CMDIFrameWnd)
+
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCFrameWnd* pFrame = new MFCFrameWnd();
+		CMultiDocTemplate* pTemplate = new CMultiDocTemplate(IDR_MENU2,RUNTIME_CLASS(MFCDoc),RUNTIME_CLASS(MFChild),RUNTIME_CLASS(MFCView));
+		
+		pFrame->LoadFrame(IDR_MENU1);
+		m_pMainWnd = pFrame;
+		
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		
+		this->AddDocTemplate(pTemplate);
+		this->OnFileNew();
+		this->OnFileNew();
+		this->OnFileNew();
+		
+		return TRUE;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+绘图
+---------------------------
+/**
+CDC类(绘图设备类):封装了各种绘图相关函数,以及两个非常重要的成员变量m_hDC和m_hAttribDC
+CPaintDC类,封装了在WM_PAINT消息中绘图的设备
+CClientDC类,封装了在客户区绘图的绘图设备
+
+绘图相关类
+-------------
+CGdiObject类(绘图对象类):封装了各种绘图对象的相关操作,以及一个非常重要的成员变量m_hObject(绘图对象句柄)
+CPen类,封装了画笔的操作
+CBrush类,封装了画刷的操作
+CFont类,封装了字体的操作
+CBitmap类,封装了位图的操作
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDoc : public CDocument {
+	DECLARE_DYNCREATE(MFCDoc)
+	DECLARE_MESSAGE_MAP()
+public:
+	
+};
+
+IMPLEMENT_DYNCREATE(MFCDoc,CDocument)
+BEGIN_MESSAGE_MAP(MFCDoc, CDocument)
+
+END_MESSAGE_MAP()
+
+class MFCView : public CView {
+	DECLARE_DYNCREATE(MFCView)
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDraw(CDC* pDC)
+	{
+		//MFCDoc* pDoc = (MFCDoc*)this->m_pDocument;  //私有成员
+		//or 
+		MFCDoc* pDoc = (MFCDoc*)this->GetDocument();  //只要能拿到视图对象就能够访问文档类对象
+		pDC->TextOut(100, 100, "this is View Window!!!");
+	}
+	
+	void OnPaint()
+	{
+		CPaintDC dc(this);
+		
+		//dc.Rectangle(100,100,300,300);
+		//or 
+		::Rectangle(dc.m_hDC,100,100,300,300);
+	}
+	
+	void OnClientDC()   //新建菜单(IDR_MENU2),ID:ID_CCLIENT,改变窗口图像会消失
+	{
+		CClientDC dc(this);
+		dc.Ellipse(300,300,500,500);
+	}
+	
+	void OnPen()
+	{
+		CClientDC dc(this);
+		CPen pen(PS_SOLID,2,RGB(255,0,0));
+		//CPen* old = dc.SelectObject(&pen);
+		//or 
+		CPen* old = (CPen*)::SelectObject(dc.m_hDC,pen.m_hObject);
+		//dc.Rectangle(150,150,300,300);
+		//or 
+		::Rectangle(dc.m_hDC,150,150,300,300);
+		//dc.SelectObject(old);
+		//or 
+		::SelectObject(dc.m_hDC,old);
+		//pen.DeleteObject();
+		//or 
+		::DeleteObject(pen.m_hObject);
+	}
+	
+	void OnBrush()
+	{
+		CClientDC dc(this);
+		CBrush brush(RGB(0,255,0));
+		CBrush *old = dc.SelectObject(&brush);
+		dc.Rectangle(180,180,300,300);
+		dc.SelectObject(old);
+		brush.DeleteObject();
+	}
+	
+	void OnFont()
+	{
+		CClientDC dc(this);
+		CFont font;
+		
+		font.CreatePointFont(300,"黑体");
+		CFont* old = dc.SelectObject(&font);
+		dc.TextOut(200,200,"Font!!!");
+		dc.SelectObject(old);
+		font.DeleteObject();
+	}
+	
+	void OnBitmap()
+	{
+		//step.1 添加位图资源
+		//step.2 创建一个和当前DC,相匹配的内存DC
+		//step.3 将位图的数据发送给内存DC
+		//step.4 成像
+		//step.5 将位图数据要回来
+		//step.6 销毁位图
+		//step.7 销毁内存DC
+
+		CClientDC dc(this);
+		CDC mem;
+		mem.CreateCompatibleDC(&dc); //::CreateCompatibleDC
+
+		CBitmap bmp;
+		bmp.LoadBitmap(IDB_ICO);
+		CBitmap* old = mem.SelectObject(&bmp); //::LOadBitmap
+
+		dc.BitBlt(210, 210, 48, 48, &mem, 0, 0, SRCCOPY); //::BitBlt
+
+		mem.SelectObject(old); //::SelectObject
+
+		bmp.DeleteObject();  //DeleteObject
+
+		mem.DeleteDC(); //::DeleteDC
+	}
+};
+
+IMPLEMENT_DYNCREATE(MFCView,CView)
+BEGIN_MESSAGE_MAP(MFCView, CView)
+	ON_WM_PAINT()
+	ON_COMMAND(ID_CCLIENT,OnClientDC)
+	ON_COMMAND(ID_CPEN,OnPen)
+	ON_COMMAND(ID_CBRUSH,OnBrush)
+	ON_COMMAND(ID_CFONT,OnFont)
+	ON_COMMAND(ID_CBITMAP,OnBitmap)
+END_MESSAGE_MAP()
+
+class MFChild : public CMDIChildWnd {
+	DECLARE_DYNCREATE(MFChild)
+	DECLARE_MESSAGE_MAP()
+public:
+
+};
+
+IMPLEMENT_DYNCREATE(MFChild,CMDIChildWnd)
+BEGIN_MESSAGE_MAP(MFChild, CMDIChildWnd)
+
+END_MESSAGE_MAP()
+
+class MFCFrameWnd : public CMDIFrameWnd {
+	DECLARE_DYNCREATE(MFCFrameWnd)
+	DECLARE_MESSAGE_MAP()
+public:
+
+};
+
+IMPLEMENT_DYNCREATE(MFCFrameWnd,CMDIFrameWnd)
+BEGIN_MESSAGE_MAP(MFCFrameWnd, CMDIFrameWnd)
+
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCFrameWnd* pFrame = new MFCFrameWnd();
+		CMultiDocTemplate* pTemplate = new CMultiDocTemplate(IDR_MENU2,RUNTIME_CLASS(MFCDoc),RUNTIME_CLASS(MFChild),RUNTIME_CLASS(MFCView));
+		
+		pFrame->LoadFrame(IDR_MENU1);
+		m_pMainWnd = pFrame;
+		
+		pFrame->ShowWindow(SW_SHOW);
+		pFrame->UpdateWindow();
+		
+		this->AddDocTemplate(pTemplate);
+		this->OnFileNew();
+		
+		return TRUE;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+序列化
+---------------------------
+/**
+相关类
+-----------
+CFile - 文件操作类,封装了关于文件读写等操作
+  CFile::Open
+  CFile::Write/Read
+  CFile::Close 
+  CFile::SeekToBegin / SeekToEnd / Seek
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include <iostream>
+
+void File()
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeCreate | CFile::modeReadWrite);
+	
+	char str[] = "this is String!!!";
+	vf.Write(str,strlen(str));
+	
+	char vb[256] = {0};
+	vf.SeekToBegin();
+	long ret = vf.Read(vb,255);
+	std::cout << vb << "\nlen:" << ret <<std::endl;
+	vf.Close();
+	
+}
+
+int main()
+{
+	File();
+}
+
+序列化
+---------------------------
+/**
+相关类
+-----------
+CFile - 文件操作类,封装了关于文件读写等操作
+  CFile::Open
+  CFile::Write/Read
+  CFile::Close 
+  CFile::SeekToBegin / SeekToEnd / Seek
+  
+CArchive - 归档类,完成内存数据的读写操作
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include <iostream>
+
+void File()
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeCreate | CFile::modeReadWrite);
+	
+	char str[] = "this is String!!!";
+	vf.Write(str,strlen(str));
+	
+	char vb[256] = {0};
+	vf.SeekToBegin();
+	long ret = vf.Read(vb,255);
+	std::cout << vb << "\nlen:" << ret <<std::endl;
+	vf.Close();
+	
+}
+
+void Store()
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeCreate | CFile::modeReadWrite);
+	
+	CArchive ar(&vf,CArchive::store,4096);
+	
+	long age = 18;
+	ar<<age;
+	
+	float score = 90;
+	ar<<score;
+	
+	CString name = "张三";
+	ar<<name;
+	
+	ar.Close();
+	vf.Close();
+}
+
+int main()
+{
+	Store();
+}
+
+序列化
+---------------------------
+/**
+相关类
+-----------
+CFile - 文件操作类,封装了关于文件读写等操作
+  CFile::Open
+  CFile::Write/Read
+  CFile::Close 
+  CFile::SeekToBegin / SeekToEnd / Seek
+  
+CArchive - 归档类,完成内存数据的读写操作
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include <iostream>
+
+void File()
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeCreate | CFile::modeReadWrite);
+	
+	char str[] = "this is String!!!";
+	vf.Write(str,strlen(str));
+	
+	char vb[256] = {0};
+	vf.SeekToBegin();
+	long ret = vf.Read(vb,255);
+	std::cout << vb << "\nlen:" << ret <<std::endl;
+	vf.Close();
+	
+}
+
+void Store()   //序列化
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeCreate | CFile::modeReadWrite);
+	
+	CArchive ar(&vf,CArchive::store,4096);
+	
+	long age = 18;
+	ar<<age;
+	
+	float score = 90;
+	ar<<score;
+	
+	CString name = "张三";
+	ar<<name;
+	
+	ar.Close();
+	vf.Close();
+}
+
+void Load()   //反序列化
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeReadWrite);
+	
+	CArchive ar(&vf,CArchive::load,4096);
+	
+	long age;
+	ar>>age;
+	
+	float score;
+	ar>>score;
+	
+	CString name;
+	ar>>name;
+	
+	std::cout << age << ' ' << score << ' ' << name <<std::endl;
+	
+}
+
+int main()
+{
+	Store();
+	Load();
+}
+
+序列化对象
+---------------------------
+/**
+相关类
+-----------
+CFile - 文件操作类,封装了关于文件读写等操作
+  CFile::Open
+  CFile::Write/Read
+  CFile::Close 
+  CFile::SeekToBegin / SeekToEnd / Seek
+  
+CArchive - 归档类,完成内存数据的读写操作
+类必须派生自CObject
+类内必须添加声明宏 DECLARE_SERIAL(theClass)
+类外必须添加声明宏 IMPLEMENT_SERIAL(theClass)
+类必须重写虚函数Serialize
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include <iostream>
+
+class MFCDoc : public CDocument  {
+	DECLARE_SERIAL(MFCDoc)
+public:
+	MFCDoc(int age = 0,float score = 0,CString name = ""):m_age(age),m_score(score),m_name(name)
+	{
+	
+	}
+	
+	virtual void Serialize(CArchive& ar)
+	{
+		if (ar.IsStoring())
+		{
+			ar << m_age << m_score << m_name;
+		}
+		else
+		{
+			ar >> m_age >> m_score >> m_name;
+		}
+	}
+	
+	int m_age;
+	float m_score;
+	CString m_name;
+};
+
+IMPLEMENT_SERIAL(MFCDoc,CDocument,1.0)
+
+void File()
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeCreate | CFile::modeReadWrite);
+	
+	char str[] = "this is String!!!";
+	vf.Write(str,strlen(str));
+	
+	char vb[256] = {0};
+	vf.SeekToBegin();
+	long ret = vf.Read(vb,255);
+	std::cout << vb << "\nlen:" << ret <<std::endl;
+	vf.Close();
+	
+}
+
+void Store()   //序列化
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeCreate | CFile::modeReadWrite);
+	
+	CArchive ar(&vf,CArchive::store,4096);
+	
+	MFCDoc data(10,88,"张三");
+	ar << &data;
+	
+	ar.Close();
+	vf.Close();
+}
+
+void Load()   //反序列化
+{
+	CFile vf;
+	
+	vf.Open("./xx",CFile::modeReadWrite);
+	
+	CArchive ar(&vf,CArchive::load,4096);
+	
+	MFCDoc* data;
+	ar >> data;
+	
+	ar.Close();
+	vf.Close();
+	
+	std::cout << data->m_age << ' ' << data->m_score << ' ' << data->m_name <<std::endl;
+}
+
+int main()
+{
+	Store();
+	Load();
+}
+
+无模式对话框
+---------------------------
+/**
+参与架构的类
+------------
+CDialog / CWinApp
+
+step.1 添加对话框资源
+step.2 顶一个自己的对话框类,管理对话框资源,派生自CDialog或CDialogEx均可
+
+资源文件
+  IDC_TEXT    -- 文本框
+  IDD_DIALOG1 -- 对话框
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDlg : public CDialog {
+	DECLARE_MESSAGE_MAP()
+public:
+	void OnDLGOK()
+	{
+		//CDialog::OnOK(); //父类只能把对话框隐藏,并没有销毁.
+		::DestroyWindow(this->m_hWnd); //真正能销毁窗口的接口
+	}
+	
+	void OnDLGCANCEL()
+	{
+		//CDialog::OnCancel();
+		//::DestroyWindow(this->m_hWnd);
+		this->DestroyWindow();
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDlg, CDialog)
+	ON_COMMAND(IDOK,OnDLGOK)
+	ON_COMMAND(IDCANCEL,OnDLGCANCEL)
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDlg* dlg = new MFCDlg();
+		
+		dlg->Create(IDD_DIALOG1);
+		
+		m_pMainWnd = dlg;
+		
+		dlg->ShowWindow(SW_SHOW);
+		
+		return TRUE;
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+模式对话框
+---------------------------
+/**
+参与架构的类
+------------
+CDialog / CWinApp
+
+step.1 添加对话框资源
+step.2 顶一个自己的对话框类,管理对话框资源,派生自CDialog或CDialogEx均可
+
+资源文件
+  IDC_TEXT    -- 文本框
+  IDD_DIALOG1 -- 对话框
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDlg : public CDialog {
+	DECLARE_MESSAGE_MAP()
+public:
+	enum { IDD = IDD_DIALOG1 };
+	MFCDlg() : CDialog(IDD)
+	{
+	
+	}
+	
+	afx_msg void OnDLGOK()
+	{
+		CDialog::OnOK(); //父类只能把对话框隐藏,并没有销毁.
+		//::DestroyWindow(this->m_hWnd); //真正能销毁窗口的接口
+	}
+	
+	afx_msg void OnDLGCANCEL()
+	{
+		CDialog::OnCancel();
+		//::DestroyWindow(this->m_hWnd);
+		//this->DestroyWindow();
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDlg, CDialog)
+	ON_COMMAND(IDOK,OnDLGOK)
+	ON_COMMAND(IDCANCEL,OnDLGCANCEL)
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDlg dlg;   //栈空间
+		
+		m_pMainWnd = &dlg;
+		
+		int nRet = dlg.DoModal();
+		
+		return FALSE; //不再执行MFC库中安排的Run函数
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+对象和控件绑定
+---------------------------
+/**
+将控件窗口和类对象绑定具有两大作用:
+1.如果和数据类对象绑定,对象和控件可以进行数据交换
+2.如果和控件类对象绑定,对象就可以代表整个控件
+
+与数据类型对象绑定的使用
+----------
+1.数据类型对象和控件可实现数据交互
+2.重写父类成员虚函数DoDataExchange,在函数内部通过一系列的DDX_xxx函数,实现控件和数据类型对象的数据交互
+3.如果需要实现数据交互,调用UpdateData函数
+    UpdateData(TRUE)  : 控件->变量
+	UpdateData(FALSE) : 变量->控件
+	
+与控件类型对象绑定的使用
+----------
+1.控件类型对象和控件可实现对象代表整个控件
+2.重写父类成员虚函数DoDataExchange,在函数内部通过一些列的DDX_xxx函数,实现控件句柄和控件类型对象的绑定
+3.控件类型对象代表这个控件
+
+资源文件
+  IDC_TEXT     -- 文本框
+  IDOK         -- 确定
+  IDCANCEL     -- 取消
+  IDC_KS       -- 按钮: 控件->数据对象
+  IDC_SK       -- 按钮: 数据对象->控件
+  IDD_DIALOG1  -- 对话框
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDlg : public CDialog {
+	DECLARE_MESSAGE_MAP()
+public:
+	enum { IDD = IDD_DIALOG1 };
+	CString m_strText;           //数据类型对象
+	
+	MFCDlg() : CDialog(IDD)
+	{
+	
+	}
+	
+	virtual void DoDataExchange(CDataExchange* pDX)   //数据类型对象与控件绑定
+	{
+		DDX_Text(pDX,IDC_TEXT,m_strText);   //调用一系列的DDX_XXX函数
+	}
+	
+	afx_msg void OnDLGOK()
+	{
+		CDialog::OnOK(); //父类只能把对话框隐藏,并没有销毁.
+		//::DestroyWindow(this->m_hWnd); //真正能销毁窗口的接口
+	}
+	
+	afx_msg void OnDLGCANCEL()
+	{
+		CDialog::OnCancel();
+		//::DestroyWindow(this->m_hWnd);
+		//this->DestroyWindow();
+	}
+	
+	afx_msg void OnKS()    //控件->数据对象
+	{
+		this->UpdateData(TRUE);
+		AfxMessageBox(m_strText);
+	}
+	
+	afx_msg void OnSK()   //数据对象->控件
+	{
+		m_strText = "MFCDlg";
+		this->UpdateData(FALSE);
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDlg, CDialog)
+	ON_COMMAND(IDOK,OnDLGOK)
+	ON_COMMAND(IDCANCEL,OnDLGCANCEL)
+	ON_COMMAND(IDC_KS,OnKS)
+	ON_COMMAND(IDC_SK,OnSK)
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDlg dlg;   //栈空间
+		
+		m_pMainWnd = &dlg;
+		
+		int nRet = dlg.DoModal();
+		
+		return FALSE; //不再执行MFC库中安排的Run函数
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+对象和控件绑定
+---------------------------
+/**
+将控件窗口和类对象绑定具有两大作用:
+1.如果和数据类对象绑定,对象和控件可以进行数据交换
+2.如果和控件类对象绑定,对象就可以代表整个控件
+
+与数据类型对象绑定的使用
+----------
+1.数据类型对象和控件可实现数据交互
+2.重写父类成员虚函数DoDataExchange,在函数内部通过一系列的DDX_xxx函数,实现控件和数据类型对象的数据交互
+3.如果需要实现数据交互,调用UpdateData函数
+    UpdateData(TRUE)  : 控件->变量
+	UpdateData(FALSE) : 变量->控件
+	
+与控件类型对象绑定的使用
+----------
+1.控件类型对象和控件可实现对象代表整个控件
+2.重写父类成员虚函数DoDataExchange,在函数内部通过一些列的DDX_xxx函数,实现控件句柄和控件类型对象的绑定
+3.控件类型对象代表这个控件
+
+资源文件
+  IDC_TEXT     -- 文本框
+  IDOK         -- 确定
+  IDCANCEL     -- 取消
+  IDC_KS       -- 按钮: 控件->数据对象
+  IDC_SK       -- 按钮: 数据对象->控件
+  IDD_DIALOG1  -- 对话框
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDlg : public CDialog {
+	DECLARE_MESSAGE_MAP()
+public:
+	enum { IDD = IDD_DIALOG1 };
+	CString m_strText;           //数据类型对象
+	CEdit m_ctrlText;            //控件类型对象
+	
+	MFCDlg() : CDialog(IDD)
+	{
+	
+	}
+	
+	virtual void DoDataExchange(CDataExchange* pDX)   //数据类型对象与控件绑定
+	{
+		DDX_Text(pDX,IDC_TEXT,m_strText);      //数据类型对象,调用一系列的DDX_XXX函数
+		DDX_Control(pDX,IDC_TEXT,m_ctrlText);  //控件类型对象
+	}
+	
+	afx_msg void OnDLGOK()
+	{
+		m_ctrlText.MoveWindow(0,0,200,200);    //移动文本框
+		//CDialog::OnOK(); //父类只能把对话框隐藏,并没有销毁.
+		//::DestroyWindow(this->m_hWnd); //真正能销毁窗口的接口
+	}
+	
+	afx_msg void OnDLGCANCEL()
+	{
+		CDialog::OnCancel();
+		//::DestroyWindow(this->m_hWnd);
+		//this->DestroyWindow();
+	}
+	
+	afx_msg void OnKS()    //控件->数据对象
+	{
+		this->UpdateData(TRUE);
+		AfxMessageBox(m_strText);
+	}
+	
+	afx_msg void OnSK()   //数据对象->控件
+	{
+		m_strText = "MFCDlg";
+		this->UpdateData(FALSE);
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDlg, CDialog)
+	ON_COMMAND(IDOK,OnDLGOK)
+	ON_COMMAND(IDCANCEL,OnDLGCANCEL)
+	ON_COMMAND(IDC_KS,OnKS)
+	ON_COMMAND(IDC_SK,OnSK)
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDlg dlg;   //栈空间
+		
+		m_pMainWnd = &dlg;
+		
+		int nRet = dlg.DoModal();
+		
+		return FALSE; //不再执行MFC库中安排的Run函数
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+控件消息的处理
+---------------------------
+/**
+将控件窗口和类对象绑定具有两大作用:
+1.如果和数据类对象绑定,对象和控件可以进行数据交换
+2.如果和控件类对象绑定,对象就可以代表整个控件
+
+与数据类型对象绑定的使用
+----------
+1.数据类型对象和控件可实现数据交互
+2.重写父类成员虚函数DoDataExchange,在函数内部通过一系列的DDX_xxx函数,实现控件和数据类型对象的数据交互
+3.如果需要实现数据交互,调用UpdateData函数
+    UpdateData(TRUE)  : 控件->变量
+	UpdateData(FALSE) : 变量->控件
+	
+与控件类型对象绑定的使用
+----------
+1.控件类型对象和控件可实现对象代表整个控件
+2.重写父类成员虚函数DoDataExchange,在函数内部通过一些列的DDX_xxx函数,实现控件句柄和控件类型对象的绑定
+3.控件类型对象代表这个控件
+
+控件消息的基本原理
+----------
+WM_COMMAND消息
+  LOWORD(wParam)    -  菜单项ID,控件ID
+  HIWORD(wParam)    -  菜单项为0
+                       控件,通知码(控件发生的事情)
+  IParam            -  均无用
+
+资源文件
+  IDC_TEXT     -- 文本框
+  IDOK         -- 确定
+  IDCANCEL     -- 取消
+  IDC_KS       -- 按钮: 控件->数据对象
+  IDC_SK       -- 按钮: 数据对象->控件
+  IDD_DIALOG1  -- 对话框
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDlg : public CDialog {
+	DECLARE_MESSAGE_MAP()
+public:
+	enum { IDD = IDD_DIALOG1 };
+	CString m_strText;           //数据类型对象
+	CEdit m_ctrlText;            //控件类型对象
+	
+	MFCDlg() : CDialog(IDD)
+	{
+	
+	}
+	
+	virtual void DoDataExchange(CDataExchange* pDX)   //数据类型对象与控件绑定
+	{
+		DDX_Text(pDX,IDC_TEXT,m_strText);      //数据类型对象,调用一系列的DDX_XXX函数
+		DDX_Control(pDX,IDC_TEXT,m_ctrlText);  //控件类型对象
+	}
+	
+	afx_msg void OnDLGOK()
+	{
+		m_ctrlText.MoveWindow(0,0,200,200);    //移动文本框
+		//CDialog::OnOK(); //父类只能把对话框隐藏,并没有销毁.
+		//::DestroyWindow(this->m_hWnd); //真正能销毁窗口的接口
+	}
+	
+	afx_msg void OnDLGCANCEL()
+	{
+		CDialog::OnCancel();
+		//::DestroyWindow(this->m_hWnd);
+		//this->DestroyWindow();
+	}
+	
+	afx_msg void OnKS()    //控件->数据对象
+	{
+		this->UpdateData(TRUE);
+		AfxMessageBox(m_strText);
+	}
+	
+	afx_msg void OnSK()   //数据对象->控件
+	{
+		m_strText = "MFCDlg";
+		this->UpdateData(FALSE);
+	}
+	
+	afx_msg void OnDClk()
+	{
+		AfxMessageBox("Double Clicked Message!!!");
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDlg, CDialog)
+	//ON_COMMAND(IDOK,OnDLGOK)
+	//or 
+	ON_BN_CLICKED(IDOK,OnDLGOK)       //按钮单击,ON_BN_CLICKED按钮专用宏
+	//ON_COMMAND(IDCANCEL,OnDLGCANCEL)
+	//or 
+	ON_BN_CLICKED(IDCANCEL,OnDLGCANCEL)
+	//ON_COMMAND(IDC_KS,OnKS)         //or ON_BN_CLICKED(IDC_KS,OnKS),只能处理单击消息.
+	//or 
+	ON_BN_CLICKED(IDC_KS,OnKS)
+	//ON_COMMAND(IDC_SK,OnSK)
+	//or 
+	ON_BN_CLICKED(IDC_SK,OnSK)
+	ON_BN_DOUBLECLICKED(IDC_SK,OnDClk)  //按钮双击,需要修改"控件->数据对象"属性"Notify:True"
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDlg dlg;   //栈空间
+		
+		m_pMainWnd = &dlg;
+		
+		int nRet = dlg.DoModal();
+		
+		return FALSE; //不再执行MFC库中安排的Run函数
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+基本控件
+---------------------------
+/**
+1.控件如何与数据类型对象绑定  -- 做数据交换
+2.控件如何与控件类对象绑定    -- 对象代表控件
+3.控件的消息如何处理
+
+控件消息的基本原理
+----------
+WM_COMMAND消息
+  LOWORD(wParam)    -  菜单项ID,控件ID
+  HIWORD(wParam)    -  菜单项为0
+                       控件,通知码(控件发生的事情)
+  IParam            -  均无用
+
+资源文件
+  IDC_TEXT     -- 文本框
+  IDOK         -- 确定
+  IDCANCEL     -- 取消
+  IDC_KS       -- 按钮: 控件->数据对象
+  IDC_SK       -- 按钮: 数据对象->控件
+  IDC_CBUTTON  -- 按钮: 练习CButton
+  IDC_CEdit    -- 按钮: 练习CEdit
+  IDC_CkBox    -- 复选框:练习CheckBox
+  IDD_DIALOG1  -- 对话框
+
+下压式按钮
+-----------
+相关类 -- CButton类:父类为CWnd,封装了关于下压式按钮控件的各种操作
+消息   -- 当下压式按钮被单击,WM_COMMAND消息(通知码BN_CLICKED)
+
+编辑框
+-----------
+相关类    -- CEdit类:父类为CWnd,封装了关于编辑框控件的各种操作
+常见操作  -- 获取编辑框文本内容,设置编辑框文本内容
+消息      -- 当编辑框文本内容发生变化,WM_COMMAND消息(通知码EN_CHANGE)
+
+复选框
+-----------
+相关类    -- CButton类:父类为CWnd,封装了关于复选框按钮控件的各种操作
+常见操作  -- 获取复选框状态,CButton::GetCheck
+          -- 设置复选框状态,CButton::SetCheck
+消息      -- 当下压式按钮被单击,WM_COMMAND消息(通知码BN_CLICKED)
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDlg : public CDialog {
+	DECLARE_MESSAGE_MAP()
+public:
+	enum { IDD = IDD_DIALOG1 };
+	CString m_strText;           //数据类型对象
+	CEdit m_ctrlText;            //文本框 - 控件类型对象
+	CButton m_cButton;           //按钮   - 控件类型对象,按钮没有数据交换
+	
+	CString m_strCEdit;          //数据类型对象
+	CEdit m_cEdit;               //编辑框
+	
+	CButton m_cKbox;             //复选框
+	INT    m_varCkbox;
+	
+	MFCDlg() : CDialog(IDD)
+	{
+	
+	}
+	
+	BOOL OnInitDialog()           //对话框初始化成员函数
+	{
+		CDialog::OnInitDialog();
+		
+		m_cButton.MoveWindow(0,0,180,50);
+		m_cButton.SetWindowText("练习CButton控件");
+		
+		m_cEdit.MoveWindow(301,0,180,30);
+		m_cEdit.SetWindowText("练习CEdit");
+		
+		m_strCEdit = "练习CEdit-数据交换";
+		UpdateData(FALSE);   //变量->控件
+		
+		m_cKbox.SetCheck(TRUE);  //复选框
+		
+		return TRUE;
+	}
+	
+	virtual void DoDataExchange(CDataExchange* pDX)   //数据类型对象与控件绑定
+	{
+		CDialog::DoDataExchange(pDX);
+		DDX_Text(pDX,IDC_TEXT,m_strText);       //数据类型对象,调用一系列的DDX_XXX函数
+		DDX_Control(pDX,IDC_TEXT,m_ctrlText);   //控件类型对象
+		
+		DDX_Control(pDX,IDC_CBUTTON,m_cButton); //控件类型对象
+		
+		DDX_Control(pDX,IDC_CEdit,m_cEdit);     //控件类型对象
+		DDX_Text(pDX,IDC_CEdit,m_strCEdit);     //数据类型对象
+		
+		DDX_Control(pDX,IDC_CkBox,m_cKbox);
+		DDX_Check(pDX,IDC_CkBox,m_varCkbox);
+	}
+	
+	afx_msg void OnDLGOK()
+	{
+		m_ctrlText.MoveWindow(0,0,200,200);    //移动文本框
+		//CDialog::OnOK(); //父类只能把对话框隐藏,并没有销毁.
+		//::DestroyWindow(this->m_hWnd); //真正能销毁窗口的接口
+	}
+	
+	afx_msg void OnDLGCANCEL()
+	{
+		CDialog::OnCancel();
+		//::DestroyWindow(this->m_hWnd);
+		//this->DestroyWindow();
+	}
+	
+	afx_msg void OnKS()    //控件->数据对象
+	{
+		this->UpdateData(TRUE);
+		AfxMessageBox(m_strText);
+	}
+	
+	afx_msg void OnSK()   //数据对象->控件
+	{
+		m_strText = "MFCDlg";
+		this->UpdateData(FALSE);
+	}
+	
+	afx_msg void OnDClk()
+	{
+		AfxMessageBox("Double Clicked Message!!!");
+	}
+	
+	afx_msg void OnCButtonClicked()
+	{
+		char strEdit[256];
+		
+		//文本框
+		m_cEdit.GetWindowText(strEdit,256);
+		
+		//复选框
+		m_cKbox.SetCheck(!m_cKbox.GetCheck());
+		
+		AfxMessageBox(strEdit);
+	}
+	
+	afx_msg void OnEditChange()
+	{
+		//char strEdit[256];
+		
+		//m_cEdit.GetWindowText(strEdit,256);
+		//m_cButton.SetWindowText(strEdit);
+		
+		//与上面两句效果是一样的.
+		UpdateData(TRUE);
+		m_cButton.SetWindowText(m_strCEdit);
+		//AfxMessageBox("Edit Context Changed Message!!!");
+	}
+	
+	afx_msg void OnCkBoxClk()
+	{
+		int nState = m_cKbox.GetCheck();
+		
+		CString sState;
+		//sState.Format("%d",nState);
+		//or 
+		UpdateData(TRUE);
+		sState.Format("%d",m_varCkbox);
+		
+		m_cButton.SetWindowText(sState);
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDlg, CDialog)
+	//ON_COMMAND(IDOK,OnDLGOK)
+	//or 
+	ON_BN_CLICKED(IDOK,OnDLGOK)       //按钮单击,ON_BN_CLICKED按钮专用宏
+	//ON_COMMAND(IDCANCEL,OnDLGCANCEL)
+	//or 
+	ON_BN_CLICKED(IDCANCEL,OnDLGCANCEL)
+	//ON_COMMAND(IDC_KS,OnKS)         //or ON_BN_CLICKED(IDC_KS,OnKS),只能处理单击消息.
+	//or 
+	ON_BN_CLICKED(IDC_KS,OnKS)
+	//ON_COMMAND(IDC_SK,OnSK)
+	//or 
+	ON_BN_CLICKED(IDC_SK,OnSK)
+	ON_BN_DOUBLECLICKED(IDC_SK,OnDClk)  //按钮双击,需要修改"控件->数据对象"属性"Notify:True"
+	
+	ON_BN_CLICKED(IDC_CBUTTON,OnCButtonClicked)       //按钮
+	
+	ON_EN_CHANGE(IDC_CEdit,OnEditChange)              //文本框
+	
+	ON_BN_CLICKED(IDC_CkBox,OnCkBoxClk)
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDlg dlg;   //栈空间
+		
+		m_pMainWnd = &dlg;
+		
+		int nRet = dlg.DoModal();
+		
+		return FALSE; //不再执行MFC库中安排的Run函数
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+基本控件
+---------------------------
+/**
+1.控件如何与数据类型对象绑定  -- 做数据交换
+2.控件如何与控件类对象绑定    -- 对象代表控件
+3.控件的消息如何处理
+
+控件消息的基本原理
+----------
+WM_COMMAND消息
+  LOWORD(wParam)    -  菜单项ID,控件ID
+  HIWORD(wParam)    -  菜单项为0
+                       控件,通知码(控件发生的事情)
+  IParam            -  均无用
+
+资源文件
+  IDC_TEXT     -- 文本框
+  IDOK         -- 确定
+  IDCANCEL     -- 取消
+  IDC_KS       -- 按钮: 控件->数据对象
+  IDC_SK       -- 按钮: 数据对象->控件
+  IDC_CBUTTON  -- 按钮: 练习CButton
+  IDC_CEdit    -- 按钮: 练习CEdit
+  IDC_CkBox    -- 复选框:练习CheckBox
+  IDC_Radio_Man   -- 单选按钮:男
+  IDC_Radio_Woman -- 单选按钮:女
+  IDC_People      -- 分组框(GroupBox)
+  IDD_DIALOG1     -- 对话框
+
+下压式按钮
+-----------
+相关类 -- CButton类:父类为CWnd,封装了关于下压式按钮控件的各种操作
+消息   -- 当下压式按钮被单击,WM_COMMAND消息(通知码BN_CLICKED)
+
+编辑框
+-----------
+相关类    -- CEdit类:父类为CWnd,封装了关于编辑框控件的各种操作
+常见操作  -- 获取编辑框文本内容,设置编辑框文本内容
+消息      -- 当编辑框文本内容发生变化,WM_COMMAND消息(通知码EN_CHANGE)
+
+复选框
+-----------
+相关类    -- CButton类:父类为CWnd,封装了关于复选框按钮控件的各种操作
+常见操作  -- 获取复选框状态,CButton::GetCheck
+          -- 设置复选框状态,CButton::SetCheck
+消息      -- 当下压式按钮被单击,WM_COMMAND消息(通知码BN_CLICKED)
+
+单选框
+-----------
+相关类    -- CButton类:父类为CWnd,封装了关于单选按钮控件的各种操作
+常见操作  -- 获取单选框状态,CButton::GetCheck
+          -- 设置单选框状态,CButton::SetCheck
+消息      -- 当下压式按钮被单击,WM_COMMAND消息(通知码BN_CLICKED)
+
+图像静态框
+-----------
+常见操作  -- 常用于显示图像,CStatic::SetIcon/CStatic::SetBitmap
+
+组合框/下拉框
+-----------
+分类      -- 简单式组合式/下拉式组合框/下拉列表式组合框
+相关类    -- CComBoBox类:父类为CWnd,封装了关于组合框控件的各种操作
+常见操作  -- 添加选项,CComboBox::AddString
+             删除选项,CComboBox::DeleteString
+			 获取选择项索引,CComboBox::GetCurSel
+			 设置选择项,CComboBox::SetCurSel
+			 获取选择项文本内容,CComboBox::GetItemText
+			 设置选项附加数据,CComboxBox::SetItemData
+			 获取选项附加数据,CComboBox::GetItemData
+**/
+
+#include <afxwin.h>
+#include <afxext.h>
+#include "resource.h"
+
+class MFCDlg : public CDialog {
+	DECLARE_MESSAGE_MAP()
+public:
+	enum { IDD = IDD_DIALOG1 };
+	
+	CString m_strText;           //数据类型对象
+	CEdit m_ctrlText;            //控件类型对象
+	
+	CButton m_rButton;           //单选框
+	
+	MFCDlg() : CDialog(IDD)
+	{
+	
+	}
+	
+	virtual void DoDataExchange(CDataExchange* pDX)   //数据类型对象与控件绑定
+	{
+		DDX_Text(pDX,IDC_TEXT,m_strText);      //数据类型对象,调用一系列的DDX_XXX函数
+		DDX_Control(pDX,IDC_TEXT,m_ctrlText);  //控件类型对象
+	}
+	
+	afx_msg void OnDLGOK()
+	{
+		m_ctrlText.MoveWindow(0,0,200,200);    //移动文本框
+		//CDialog::OnOK(); //父类只能把对话框隐藏,并没有销毁.
+		//::DestroyWindow(this->m_hWnd); //真正能销毁窗口的接口
+	}
+	
+	afx_msg void OnDLGCANCEL()
+	{
+		CDialog::OnCancel();
+		//::DestroyWindow(this->m_hWnd);
+		//this->DestroyWindow();
+	}
+	
+	afx_msg void OnKS()    //控件->数据对象
+	{
+		this->UpdateData(TRUE);
+		AfxMessageBox(m_strText);
+	}
+	
+	afx_msg void OnSK()   //数据对象->控件
+	{
+		m_strText = "MFCDlg";
+		this->UpdateData(FALSE);
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCDlg, CDialog)
+	ON_COMMAND(IDOK,OnDLGOK)
+	ON_COMMAND(IDCANCEL,OnDLGCANCEL)
+	ON_COMMAND(IDC_KS,OnKS)
+	ON_COMMAND(IDC_SK,OnSK)
+END_MESSAGE_MAP()
+
+class MFCWinApp : public CWinApp {
+	DECLARE_MESSAGE_MAP()
+public:
+	MFCWinApp() noexcept {
+
+	}
+
+	virtual BOOL InitInstance() {
+		MFCDlg dlg;   //栈空间
+		
+		m_pMainWnd = &dlg;
+		
+		int nRet = dlg.DoModal();
+		
+		return FALSE; //不再执行MFC库中安排的Run函数
+	}
+};
+
+BEGIN_MESSAGE_MAP(MFCWinApp, CWinApp)
+
+END_MESSAGE_MAP()
+
+MFCWinApp theApp;
+
+MFC国际化
+---------------------------
+用法            :把如下两句中选择一个放在CWinApp::InitInstance函数中第一行即可测试不同国家的字符串资源
+字符资源的国际化:选择资源文件->右键->插入副本->语言:英语美国,即可完成英语国际化工作
+
+SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH,SUBLANG_ENGLISH_US),SORT_DEFAULT));
+SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE,SUBLANG_CHINESE_SIMPLIFIED),SORT_DEFAULT))
+
+线程
+---------------------------
+/**
+创建线程
+----------
+HANDLE CreateThread(
+  LPSECURITY_ATTRIBUTES lpThreadAttributes, //安全属性
+  DWORD dwStackSize,                        //线程栈大小
+  LPTHREAD_START_ROUTINE lpStartAddress,    //线程处理函数的函数地址
+  LPVOID lpParameter,                       //传递给线程处理函数的参数
+  DWORD dwCreationFlags,                    //线程的创建方式
+  LPDWORD lpThreadId                        //创建成功,返回线程的ID
+);创建成功,返回线程句柄
+
+定义线程处理函数
+----------
+DWORD WINAPI ThreadProc(
+  LPVOID lpParameter   //创建线程时,传递给线程的参数
+);
+
+销毁线程
+----------
+挂起
+-----
+DWORD SuspendThread(
+  HANDLE hThread   // handle to thread
+);
+
+唤醒
+-----
+DWORD ResumeThread(
+  HANDLE hThread   // handle to thread
+);
+
+结束指定线程
+-----
+BOOL TerminateThread(
+  HANDLE hThread,    // handle to thread
+  DWORD dwExitCode   // exit code
+);
+
+结束函数所在的线程
+-----
+VOID ExitThread(
+  DWORD dwExitCode   // exit code for this thread
+);
+
+线程相关操作
+----------
+获取当前线程的ID
+-----
+DWORD GetCurrentThreadId(VOID);
+
+获取当前线程的句柄
+-----
+HANDLE GetCurrentThread(VOID);
+
+等候单个句柄有信号
+-----
+DWORD WaitForSingleObject(
+  HANDLE hHandle,        //句柄BUFF的地址
+  DWORD dwMilliseconds   //等候时间 INFINITE
+);
+
+同时等候多个句柄有信号
+-----
+DWORD WaitForMultipleObjects(
+  DWORD nCount,             // 句柄数量
+  CONST HANDLE *lpHandles,  // 句柄BUFF的地址
+  BOOL fWaitAll,            // 等候方式,TRUE  - 所有句柄都有信号才结束等候
+                                        FALSE - 句柄中只要有一个有信号就结束等候 
+  DWORD dwMilliseconds      //等候时间 INFINITE
+);
+
+**/
+
+#include <WIndows.h>
+#include <stdio.h>
+
+DWORD CALLBACK thread(LPVOID pParam)
+{
+	char* pszText = (char*)pParam;
+	
+	while(1)
+	{
+		printf("thread:%s\n",pszText);
+		
+		Sleep(1000);
+	}
+}
+
+DWORD CALLBACK two(LPVOID pParam)
+{
+	char* pszText = (char*)pParam;
+	
+	while(1)
+	{
+		printf("thread:%s\n",pszText);
+		
+		Sleep(1000);
+	}
+}
+
+int main()
+{
+	const char* pszText = "Thread PARAM!!!";
+	DWORD nID = 0;
+	
+	HANDLE hThread = CreateThread(NULL,0,thread,(LPVOID*)pszText,0,&nID);
+	
+	const char* pszTWO = "TWO Thread PARAM!!!";
+	
+	HANDLE hTwo = CreateThread(NULL,0,two,(LPVOID*)pszTWO,CREATE_SUSPENDED,&nID);  //线程挂起
+	
+	getchar();
+	
+	SuspendThread(hThread);
+	ResumeThread(hTwo);
+	
+	getchar();
+	return 0;
+}
+
+线程同步
+---------------------------
+/**
+原子锁
+----------
+相关问题 - 多个线程对同一个数据进行原子操作,会产生结果丢失.比如执行++运算时.
+
+使用原子锁函数
+-----
+LONG InterlockedIncrement(
+  LPLONG lpAddend   // variable to increment
+);
+
+LONG InterlockedDecrement(
+  LPLONG lpAddend   // variable address
+);
+
+LONG InterlockedCompareExchange( 
+  LPLONG Destination,  // destination address
+  LONG Exchange,       // exchange value
+  LONG Comperand       // value to compare
+);
+
+LONG InterlockedExchange(
+  LPLONG Target, // value to exchange
+  LONG Value     // new value
+);
+
+原子锁的实现 - 直接对数据所在的内存操作,并且在任何一个瞬间只能有一个线程访问.
+
+互斥
+----------
+相关问题 - 多线程下代码或资源的共享使用
+
+互斥的使用
+-------
+1.创建互斥
+-----
+HANDLE CreateMutex(
+  LPSECURITY_ATTRIBUTES lpMutexAttributes,  //安全属性
+  BOOL bInitialOwner,                       //初始的拥有者TRUE/FALSE
+  LPCTSTR lpName                            //线程名称
+);创建成功返回互斥句柄
+
+2.等候互斥
+-----
+WaitFor...    --  互斥的等候遵循谁先等候谁先获取
+
+3.释放互斥
+-----
+BOOL ReleaseMutex(
+  HANDLE hMutex   // handle to mutex
+);
+
+4.关闭互斥句柄
+-----
+BOOL CloseHandle(
+  HANDLE hObject   // handle to object
+);
+
+事件
+----------
+相关问题 - 程序之间的通知问题
+
+事件的使用
+-------
+1.创建事件
+-----
+HANDLE CreateEvent(
+  LPSECURITY_ATTRIBUTES lpEventAttributes, //安全属性
+  BOOL bManualReset,                       //事件重置(复位)方式,TRUE手动,FALSE自动
+  BOOL bInitialState,                      //事件初始状态,TRUE有信号
+  LPCTSTR lpName                           //事件名称
+);创建成功返回事件句柄
+
+2.等候事件
+-----
+WaitForSingleObject / WaitForMultipleObjects
+
+3.触发事件(将事件设置成有信号状态)
+-----
+BOOL SetEvent(
+  HANDLE hEvent   // handle to event
+);
+
+4.复位事件
+-----
+BOOL ResetEvent(
+  HANDLE hEvent   // handle to event
+);
+
+5.关闭事件
+-----
+BOOL CloseHandle(
+  HANDLE hObject   // handle to object
+);
+
+信号量
+----------
+相关问题 - 类似于事件,解决通知的相关问题;提供一个计数器,可以设置次数
+
+信号量的使用
+-------
+1.创建信号量
+-----
+HANDLE CreateSemaphore(
+  LPSECURITY_ATTRIBUTES lpSemaphoreAttributes, //安全属性
+  LONG lInitialCount,                          //初始化信号量数量
+  LONG lMaximumCount,                          //信号量的最大值
+  LPCTSTR lpName                               //信号量名称
+);创建成功返回信号量句柄
+
+2.等候信号量
+-----
+WaitForSingleObject / WaitForMultipleObjects   -- 每等候通过一次,信号量的信号减1，直到为0阻塞
+
+3.给信号量指定计数值
+-----
+BOOL ReleaseSemaphore(
+  HANDLE hSemaphore,       //信号量句柄
+  LONG lReleaseCount,      //释放数量
+  LPLONG lpPreviousCount   //释放前原来信号量的数量,可以为NULL
+);
+
+4.关闭事件
+-----
+BOOL CloseHandle(
+  HANDLE hObject   // handle to object
+);
+**/
+
+#include <WIndows.h>
+#include <stdio.h>
+
+long g_value = 0;
+
+DWORD CALLBACK thread(LPVOID pParam)
+{
+	for(int i = 0;i < 100000; i++)
+	{
+		InterlockedIncrement(&g_value);
+	}
+	
+	return 0;
+}
+
+DWORD CALLBACK two(LPVOID pParam)
+{
+	for(int i = 0;i < 100000; i++)
+	{
+		InterlockedIncrement(&g_value);
+	}
+	
+	return 0;
+}
+
+int main()
+{
+	DWORD nID = 0;
+	HANDLE hThread[2];
+	
+	hThread[0] = CreateThread(NULL,0,thread,(LPVOID*)NULL,0,&nID);
+	hThread[1] = CreateThread(NULL,0,two,(LPVOID*)NULL,0,&nID);
+	
+	WaitForMultipleObjects(2,hThread,TRUE,INFINITE);
+	
+	printf("Wait Over!\ng_value:%d\n",g_value);
+	return 0;
+}
+
+----------------------------------------------------------
+
+#include <WIndows.h>
+#include <stdio.h>
+
+HANDLE g_hMutex = 0; //互斥句柄
+
+DWORD CALLBACK thread(LPVOID pParam)
+{
+	char* pszText = (char*)pParam;
+	
+	while(1)
+	{
+		WaitForSingleObject(g_hMutex,INFINITE);
+		for(int i = 0;i<strlen(pszText);i++)
+		{
+			printf("%c",pszText[i]);
+			Sleep(2);
+		}
+		
+		printf("\n");
+		ReleaseMutex(g_hMutex);
+	}
+	
+	return 0;
+}
+
+DWORD CALLBACK two(LPVOID pParam)
+{
+	char* pszText = (char*)pParam;
+	
+	while(1)
+	{
+		WaitForSingleObject(g_hMutex,INFINITE);
+		for(int i = 0;i<strlen(pszText);i++)
+		{
+			printf("%c",pszText[i]);
+			Sleep(2);
+		}
+		
+		printf("\n");
+		ReleaseMutex(g_hMutex);
+	}
+	
+	return 0;
+}
+
+int main()
+{
+	const char* pszText = "********";
+	DWORD nID = 0;
+	
+	g_hMutex = CreateMutex(NULL,FALSE,NULL);
+	
+	HANDLE hThread = CreateThread(NULL,0,thread,(LPVOID*)pszText,0,&nID);
+	
+	const char* pszTWO  = "--------";
+	
+	HANDLE hTwo = CreateThread(NULL,0,two,(LPVOID*)pszTWO,0,&nID);  //线程挂起
+	
+	getchar();
+	CloseHandle(g_hMutex);
+	return 0;
+}
+
+----------------------------------------------------------
+#include <WIndows.h>
+#include <stdio.h>
+
+HANDLE g_hEvent = 0;  //接收事件句柄
+
+DWORD CALLBACK thread(LPVOID pParam)
+{
+	while(1)
+	{
+		WaitForSingleObject(g_hEvent,INFINITE);
+		ResetEvent(g_hEvent);
+		printf("****************\n");
+	}
+	
+	return 0;
+}
+
+DWORD CALLBACK two(LPVOID pParam)
+{
+	while(1)
+	{
+		SetEvent(g_hEvent);
+		Sleep(3000);
+	}
+	
+	return 0;
+}
+
+int main()
+{
+	DWORD nID = 0;
+	HANDLE hThread[2];
+	
+	g_hEvent = CreateEvent(NULL,TRUE,FALSE,NULL);
+	
+	hThread[0] = CreateThread(NULL,0,thread,(LPVOID*)NULL,0,&nID);
+	hThread[1] = CreateThread(NULL,0,two,(LPVOID*)NULL,0,&nID);
+	
+	WaitForMultipleObjects(2,hThread,TRUE,INFINITE);
+	CloseHandle(g_hEvent);
+	
+	printf("Wait Over!\n");
+	return 0;
+}
+
+----------------------------------------------------------
+#include <WIndows.h>
+#include <stdio.h>
+
+HANDLE g_hEvent = 0;  //接收事件句柄
+
+DWORD CALLBACK thread(LPVOID pParam)
+{
+	while(1)
+	{
+		WaitForSingleObject(g_hEvent,INFINITE);
+		//ResetEvent(g_hEvent);
+		printf("****************\n");
+	}
+	
+	return 0;
+}
+
+DWORD CALLBACK two(LPVOID pParam)
+{
+	while(1)
+	{
+		SetEvent(g_hEvent);
+		Sleep(3000);
+	}
+	
+	return 0;
+}
+
+int main()
+{
+	DWORD nID = 0;
+	HANDLE hThread[2];
+	
+	g_hEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
+	
+	hThread[0] = CreateThread(NULL,0,thread,(LPVOID*)NULL,0,&nID);
+	hThread[1] = CreateThread(NULL,0,two,(LPVOID*)NULL,0,&nID);
+	
+	WaitForMultipleObjects(2,hThread,TRUE,INFINITE);
+	CloseHandle(g_hEvent);
+	
+	printf("Wait Over!\n");
+	return 0;
+}
+
+----------------------------------------------------------
+#include <WIndows.h>
+#include <stdio.h>
+
+HANDLE g_hSema = 0;  //信号量句柄
+
+DWORD CALLBACK thread(LPVOID pParam)
+{
+	while(1)
+	{
+		WaitForSingleObject(g_hSema,INFINITE);
+		printf("****************\n");
+	}
+	
+	return 0;
+}
+
+int main()
+{
+	DWORD nID = 0;
+	HANDLE hThread;
+	
+	g_hSema = CreateSemaphore(NULL,3,10,NULL);
+	hThread = CreateThread(NULL,0,thread,(LPVOID*)NULL,0,&nID);
+	
+	getchar();                        //回车
+	ReleaseSemaphore(g_hSema,5,NULL); //超过最大值会阻塞这里
+	
+	WaitForSingleObject(hThread,INFINITE);
+	CloseHandle(g_hSema);
+	
+	printf("Wait Over!\n");
+	return 0;
+}

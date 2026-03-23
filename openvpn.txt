@@ -1,0 +1,105 @@
+准备工作
+-------------------
+cd easyrsa3
+mkdir srv 
+mkdir cli
+
+生成证书
+-------------------
+cd easyrsa3
+source source easy-rsa/easyrsa3/vars
+./easyrsa init-pki
+./easyrsa build-ca nopass         #创建根证书
+./easyrsa gen-req srv nopass      #服务端证书
+./easyrsa sign server srv         #给服务证书签名
+./easyrsa gen-dh                  #秘钥交换文件
+./easyrsa gen-req cli nopass      #客户端证书
+./easyrsa sign client cli         #给服务端证书签名
+
+srv 
+-------------------
+cd easyrsa3
+cp pki/ca.crt srv/
+cp pki/dh.pem srv/
+cp pki/issued/srv.crt srv/
+cp pki/private/srv.key srv/
+
+cli 
+-------------------
+cp pki/ca.crt cli/
+cp pki/issued/cli.crt cli/
+cp pki/private/cli.key cli/
+
+验证证书文件
+-------------------
+openssl verify -CAfile pki/ca.crt verify -CAfile pki/issued/srv.crt  verify -CAfile pki/issued/cli.crt
+
+openssl
+-------------------
+./config -d no-asm --prefix=/usr
+make && make install 
+
+openvpn
+-------------------
+date -s 2022/12/01
+apt-get install libpam-dev liblzo2-dev liblz4-dev liblz4-tool zip
+./configure --prefix=/usr
+make && make install 
+mkdir -pv /etc/openvpn/srv/ 
+mkdir -pv /etc/openvpn/cli/
+cp sample/sample-config-files/server.conf /etc/openvpn/srv/ 
+cp sample/sample-config-files/client.conf /etc/openvpn/cli/ 
+cd /etc/openvpn/srv/ 
+/usr/sbin/openvpn --genkey tls-auth ta.key
+/usr/sbin/openvpn --daemon --cd /etc/openvpn/srv/ --config tcp.conf
+/usr/sbin/openvpn --daemon --cd /etc/openvpn/srv/ --config udp.conf
+or 
+/usr/sbin/openvpn --cd /etc/openvpn/srv/ --config tcp.conf
+/usr/sbin/openvpn --cd /etc/openvpn/srv/ --config udp.conf
+/sbin/sysctl -f
+echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+/sbin/sysctl -p
+netstat -anlutp | grep -i 1194
+cp /etc/openvpn/srv/ta.key /etc/openvpn/cli/
+mv /etc/openvpn/cli/tcp.conf /etc/openvpn/cli/tcp.ovpn 
+mv /etc/openvpn/cli/udp.conf /etc/openvpn/cli/udp.ovpn 
+zip cli.zip cli/* 
+
+cli                      #可直接使用,client配置下载windows上进行使用需配合客户端工具.
+srv                      #可直接使用,server配置.
+
+注意:以上内容已在debian 10上验证成功,client需修改remote 192.168.10.200 1194,server需修改push "route 192.168.10.0 255.255.255.0"     --  (192.168.10.0其实对应的就是相应的网口)
+     使用云主机时需要在安全组中添加端口<1194>,方向<流入 & 流出>,地址段访问,0.0.0.0/0
+
+Linux使用openvpn客户端
+-------------------
+/usr/sbin/openvpn --daemon --cd /etc/openvpn/cli/ --config tcp.ovpn
+/usr/sbin/openvpn --daemon --cd /etc/openvpn/cli/ --config udp.ovpn
+or 
+/usr/sbin/openvpn --cd /etc/openvpn/cli/ --config tcp.ovpn
+/usr/sbin/openvpn --cd /etc/openvpn/cli/ --config udp.ovpn
+
+$>vi VPN.BAT
+-------------------
+@echo off
+cacls.exe "%SystemDrive%\System Volume Information" >nul 2>nul
+if %errorlevel%==0 goto Admin
+if exist "%temp%\getadmin.vbs" del /f /q "%temp%\getadmin.vbs"
+echo Set RequestUAC = CreateObject^("Shell.Application"^)>"%temp%\getadmin.vbs"
+echo RequestUAC.ShellExecute "%~s0","","","runas",1 >>"%temp%\getadmin.vbs"
+echo WScript.Quit >>"%temp%\getadmin.vbs"
+"%temp%\getadmin.vbs" /f
+if exist "%temp%\getadmin.vbs" del /f /q "%temp%\getadmin.vbs"
+exit
+
+:Admin
+::设置环境变量
+@setx PATH "%PATH%;C:\Program Files\OpenVPN\bin;"
+
+::首选以管理员运行powershell,运行"set-executionpolicy unrestricted"命令(允许所有的脚本执行).
+@PowerShell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -NoLogo -NoProfile "openvpn --cd 'C:\Program Files\OpenVPN\cli' --config tcp.ovpn"
+
+All tap-windows6 adapters on this system are currently in use or disabled
+-------------------
+开始->OpenVPN\Utilities->Add a new TAP-Windows6 virtual network adapter
+

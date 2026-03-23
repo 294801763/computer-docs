@@ -1,0 +1,1361 @@
+打开书签窗口
+---------------
+ctrl + m
+
+注意:书签可以保存为xml格式,并且可以单独修改xml,xml注释格式<!-- -->
+
+高亮单词
+---------------
+F8
+
+设置语言选项
+---------------
+alt + y    #可以设置tab转空格,字体,行号,辅助线,关闭symbol,overview等窗口.
+
+SI显示当前文件所在的绝对路径
+---------------
+Options->Preferences...->Display->Trim long path names with ellipses      #去掉勾选即可.
+
+SI修改字体以及字体大小
+---------------
+Options->Document Options                                                 #修改相关内容即可.
+
+SI添加macro
+---------------
+Project->Open Project:Base                                                #编辑"Utils.em"
+
+注意:如果(Options->Key Assignments...->Command:Macro:)识别不出来新添加的宏,关闭打开的工程;打开Base工程,重新构建工程(Project->Rebuild Project...->Re-Parse all source files).
+
+SI快捷键规划
+---------------
+alt+'             #CommentBlock.
+alt+:             #UnCommentBlock.
+alt+=             #GetFullFileName.
+alt+-             #MyInsertComment.
+alt+0             #Enable Event Handlers.
+
+注意:工程打开后立即执行"alt+0",然后代码的修改可以配合"SlickEdit Pro".
+
+SI获取文件的绝对路径
+---------------
+$>vi Base:Utils.em
+----------
+macro GetFullFileName()
+{
+	hbuf = GetCurrentBuf()
+	hbufClip = GetBufHandle("Clipboard")
+	EmptyBuf(hbufClip)
+	AppendBufLine(hbufClip,GetBufName(hbuf))
+}
+
+event DocumentOpen(sFile)
+{
+	GetFullFileName()
+}
+
+注意:想要运行"GetFullFileName",需要在使用的项目中配置快捷键即可(Options->Key Assignments...->Command:Macro:GetFullFileName 点击Assign New Key...添加一个快捷键即可);如果希望在每次打开文件的时候自动获取文件名,只需在(Options->Key Assignments...->Options:Enable Event Handlers)添加快捷键,然后每次打开工程的时候执行一次该快捷键即可.
+
+SI插入函数注释
+---------------
+$>vi Base:Utils.em
+----------
+macro MyInsertComment()  
+{  
+    szMyName = "HY"
+  
+    //Get a handle to the current file buffer and the name and location of the current symbol where the cursor is.  
+    hbuf = GetCurrentBuf()  
+    szFunc = GetCurSymbol()  
+    ln = GetSymbolLine(szFunc)  
+  
+    InsBufLine(hbuf, ln, "/************************************************************");  
+    ln = ln +1  
+  
+    // begin assembling the title string  
+    sz = "** 函数名称: "   
+  
+    cch = strlen(szFunc)  
+    ich = 0  
+    while (ich < cch)  
+    {  
+        ch = szFunc[ich]  
+        if (ich > 0)  
+            if (isupper(ch))  
+                sz = cat(sz, "   ")  
+            else  
+                sz = cat(sz, " ")  
+        sz = Cat(sz, toupper(ch))  
+        ich = ich + 1  
+    }   
+    InsBufLine(hbuf, ln, sz)  
+    ln = ln + 1  
+  
+    InsBufLine(hbuf, ln, "** 功能描述: ")  
+    ln = ln + 1  
+    
+    InsBufLine(hbuf, ln, "** 输入参数:")  
+    ln = ln + 1  
+    
+    InsBufLine(hbuf, ln, "** 输出参数: ")  
+    ln = ln + 1  
+    
+    InsBufLine(hbuf, ln, "** 返 回 值:")  
+    ln = ln + 1  
+  
+    /*if owner variable exists, insert Owner: name */  
+    if (strlen(szMyName) > 0)  
+    {  
+        InsBufLine(hbuf, ln, "** 作    者: @szMyName@")                   
+    }  
+    else  
+    {  
+        InsBufLine(hbuf, ln, "** 作    者: ")                   
+    }  
+    ln = ln + 1  
+  
+    //Get current time  
+    szTime  = GetSysTime(1)  
+    Day      = szTime.Day  
+    Month   = szTime.Month  
+    Year     = szTime.Year  
+    if (Day < 10)  
+        szDay = "0@Day@"  
+    else  
+        szDay = Day    
+  
+    InsBufLine(hbuf, ln, "** 日    期: @Year@年@Month@月@szDay@日")  
+    ln = ln + 1  
+  
+    InsBufLine(hbuf, ln, "**************************************************************/")  
+} 
+
+注意:闪烁的光标需在函数名上的任意位置,然后执行改宏即可添加函数注释.
+
+SI添加/取消注释
+---------------
+//
+// Comment the selected block of text using single line comments and indent it
+//
+macro CommentBlock()
+{
+	hbuf = GetCurrentBuf();
+	hwnd = GetCurrentWnd();
+
+	sel = GetWndSel(hwnd);
+
+	iLine = sel.lnFirst;
+	
+	while (iLine <= sel.lnLast)
+	{
+		szLine = GetBufLine(hbuf, iLine);
+		szLine = cat("//	", szLine);
+		PutBufLine(hbuf, iLine, szLine);
+		iLine = iLine + 1;
+	}
+
+	if (sel.lnFirst == sel.lnLast)
+	{
+		tabSize = _tsGetTabSize() - 1;
+		sel.ichFirst = sel.ichFirst + tabSize;
+		sel.ichLim = sel.ichLim + tabSize;
+	}
+	SetWndSel(hwnd, sel);
+}
+
+//
+// Undo the CommentBlock for the selected text.
+//
+macro UnCommentBlock()
+{
+	hbuf = GetCurrentBuf();
+	hwnd = GetCurrentWnd();
+
+	sel = GetWndSel(hwnd);
+
+	iLine = sel.lnFirst;
+
+
+	tabSize = 0;
+	while (iLine <= sel.lnLast)
+	{
+		szLine = GetBufLine(hbuf, iLine);
+		len = strlen(szLine);
+		szNewLine = "";
+		if (len > 1)
+		{
+			if (szLine[0] == "/" && szLine[1] == "/")
+			{
+				if (len > 2)
+				{
+					if (AsciiFromChar(szLine[2]) == 9)
+					{
+						tabSize = _tsGetTabSize() - 1;
+						szNewLine = strmid(szLine, 3, strlen(szLine));
+					}
+				}
+
+				if (szNewLine == "")
+				{
+					szNewLine = strmid(szLine, 2, strlen(szLine));
+					tabSize = 2;
+				}
+				
+				PutBufLine(hbuf, iLine, szNewLine);
+			}
+		}
+		iLine = iLine + 1;
+	}
+
+	if (sel.lnFirst == sel.lnLast)
+	{
+		sel.ichFirst = sel.ichFirst - tabSize;
+		sel.ichLim = sel.ichLim - tabSize;
+	}
+
+	SetWndSel(hwnd, sel);
+}
+
+macro _tsGetTabSize()
+{
+	szTabSize = GetReg("TabSize");
+
+	if (szTabSize != "")
+	{
+		tabSize = AsciiFromChar(szTabSize[0]) - AsciiFromChar("0");
+	}
+	else
+	{
+		tabSize = 4;
+	}
+
+	return tabSize;
+}
+
+//
+// Reformat a selected comment block to wrap text at 80 columns.
+// The start of the selection (upper left most character of the selection) is
+// handled specially, in that it specifies the left most column at which all
+// lines will begin.  For example, if the following block was selected starting
+// at the @ symbol, through the last line of the block...
+//------------------------------------------------------------------------------
+// preamble:	@ This is a line that will be wrapped keeping the "at" symbol in its current column.
+// All lines following it that are selected will use that as their starting column.  See below to see how the wrapping
+// works for this block of text.
+//------------------------------------------------------------------------------
+// preamble:	@ This is a line that will be wrapped keeping the "at" symbol in
+//				its current column. All lines following it that are selected
+//				will use that as their starting column.  See below to see how
+//				the wrapping works for this block of text.
+//
+macro tsReformatCommentBlock()
+{
+	hbuf = GetCurrentBuf();
+	hwnd = GetCurrentWnd();
+
+	sel = GetWndSel(hwnd);
+
+	tabSize = _tsGetTabSize();
+	leftTextCol = 0 - 1;
+	colWrap = 80;
+
+	// Find the starting column, and create a Margin string
+	ichFirst = sel.ichFirst;
+	
+	// Single line comment reformat?
+	if (sel.ichFirst == sel.ichLim && sel.lnFirst == sel.lnLast)
+	{
+		ichFirst = 0;
+	}
+
+	rec = _tsGetStartColumn(hbuf, ichFirst, sel.lnFirst);
+
+	if (rec == "")
+		stop;
+
+	colLeftMargin = rec.colMargin;
+	szMargin = "";
+
+	colComment = 0;
+	if (rec.colComment >= 0)
+	{
+		colComment = rec.colComment + 2
+		szMargin = _tsAddWhiteToColumn(szMargin, 0, rec.colComment, tabSize);
+		szMargin = cat(szMargin, "//");
+	}
+
+	szMargin = _tsAddWhiteToColumn(szMargin, colComment, rec.colMargin, tabSize);
+
+	rec = "";
+
+	szCurMargin = "";
+	if (ichFirst != 0)
+	{
+		szLine = GetBufLine(hbuf, sel.lnFirst);
+		szCurMargin = strmid(szLine, 0, ichFirst);
+	}
+	else
+	{
+		szCurMargin = szMargin;
+		szMargin = "";
+	}
+
+	insertLine = sel.lnFirst;
+	iLine = sel.lnFirst;
+	szRemainder = "";
+	while (1)
+	{
+//		msg("$0-" # iLine # ":" # szRemainder);
+		rec = _tsGetNextCommentString(hbuf, ichFirst, szRemainder, iLine, sel.lnLast, colWrap);
+		ichFirst = 0;
+
+		if (rec == "")
+			break;
+
+//		msg("$1-" # rec.ln # ":" # rec.szComment);
+		szLine = rec.szComment;
+	
+		ich = 0;
+		col = colLeftMargin;
+		len = strlen(szLine);
+		
+		ichPrevCharToWhite = 0-1;
+		ichPrevWhiteToChar = 0-1;
+//		msg("Leftovers @szRemainder@");
+
+		while (ich < len)
+		{
+			if (AsciiFromChar(szLine[ich]) == 9)
+			{
+				col = (((col + tabSize) / tabSize) * tabSize);
+			}
+			else
+			{
+				col = col + 1;
+			}
+
+			if (col > colWrap)
+				break;
+
+			fIsWhitespace = _tsIsWhitespaceChar(szLine[ich]);
+			fIsWhitespace1 = 1;
+
+			if (ich + 1 < len)
+			{
+				fIsWhitespace1 = _tsIsWhitespaceChar(szLine[ich + 1]);
+			}
+
+			if (!fIsWhitespace && fIsWhitespace1)
+				ichPrevCharToWhite = ich;
+			
+			ich = ich + 1;
+		}
+
+		if (ichPrevCharToWhite > 0)
+		{
+//			msg("$2:" # strmid(szLine, 0, ichPrevCharToWhite + 1));
+			ich = ichPrevCharToWhite + 1;
+
+			while (ich < len)
+			{
+				if (!_tsIsWhitespaceChar(szLine[ich]))
+				{
+					ichPrevWhiteToChar = ich - 1;
+//					msg("$3:" # strmid(szLine, ichPrevWhiteToChar + 1, len));
+					break;
+				}
+				ich = ich + 1;
+			}
+		}
+
+		if (ichPrevCharToWhite > 0 && col > colWrap)
+		{
+			szNewLine = cat(szCurMargin, strmid(szLine, 0, ichPrevCharToWhite + 1));
+			szRemainder = "";
+			if (ichPrevWhiteToChar > 0)
+				szRemainder = strmid(szLine, ichPrevWhiteToChar + 1, len);
+				
+			if (ichPrevCharToWhite > ichPrevWhiteToChar)
+				msg("!!!Wrap, duplicating word " # ichPrevWhiteToChar # " " # ichPrevCharToWhite # " " # szNewLine # " >>> " # szRemainder);
+//				msg(szLine);
+//				msg(col # " " # ichPrevWhiteToChar # " " # ichPrevCharToWhite # " " # szNewLine # " >>> " # szRemainder);
+		}
+		else if (szLine != "")
+		{
+			szNewLine = cat(szCurMargin, szLine );
+			szRemainder = "";
+//			sel.lnLast = sel.lnLast + 1;
+		}
+
+		iLine = rec.ln;
+		if (insertLine == iLine)
+		{
+			iLine = iLine + 1;
+			sel.lnLast = sel.lnLast + 1;
+			
+//			msg("$5-" # insertLine # ":" # szNewLine);
+			InsBufLine(hbuf, insertLine, szNewLine);
+		}
+		else
+		{
+			szLine = GetBufLine(hbuf, insertLine);
+			if (szLine != szNewLine)
+			{
+//				msg("$6-" # insertLine # ":" # szNewLine);
+				PutBufLine(hbuf, insertLine, szNewLine);
+			}
+		}
+		insertLine = insertLine + 1;
+
+		if (szMargin != "")
+		{
+			szCurMargin = szMargin;
+			szMargin = "";
+		}
+	}
+
+	while (insertLine <= sel.lnLast)
+	{
+		DelBufLine(hbuf, insertLine);
+		sel.lnLast = sel.lnLast - 1;
+	}
+
+	len = GetBufLineLength(hbuf, insertLine-1);
+
+	sel.ichFirst = len;
+	sel.ichLim = len;
+	sel.lnFirst = sel.lnLast;
+	SetWndSel(hwnd, sel);
+}
+
+macro _tsAddWhiteToColumn(sz, col0, col, tabSize)
+{
+	szTabs = "																														";
+	szSpaces = "                ";
+
+	tabs0 = col0 / tabSize;
+	tabs = (col / tabSize) - tabs0;
+
+	if (tabs == 0)
+		foo = col0;
+	else
+		foo = (tabs + tabs0) * tabSize;
+	spaces = col - foo;
+//	msg(col0 # " " # col # " " # tabs # " " # spaces # " " # tabs0);
+
+	if (tabs)
+		sz = cat(sz, strmid(szTabs, 0, tabs));
+
+	if (spaces)
+		sz = cat(sz, strmid(szSpaces, 0, spaces));
+
+	return sz;
+}
+
+macro _tsGetStartColumn(hbuf, ichBegin, ln)
+{
+	szLine = GetBufLine(hbuf, ln);
+	len = strlen(szLine);
+	tabSize = _tsGetTabSize();
+	ich = 0;
+
+	colMargin = 0;
+	colComment = 0-1;
+
+	rec = "";
+	rec.colMargin = colMargin;
+	rec.colComment = colComment;
+	
+	while (ich < len)
+	{
+		if (AsciiFromChar(szLine[ich]) == 9)
+		{
+			colMargin = (((colMargin + tabSize) / tabSize) * tabSize);
+		}
+		else
+		{
+			colMargin = colMargin + 1;
+		}
+
+		if (colComment < 0)
+		{
+			if (ich + 1 < len)
+			{
+				if (szLine[ich] == "/" && szLine[ich+1] == "/")
+				{
+					colComment = colMargin - 1;
+					ich = ich + 2;
+					colMargin = colMargin + 1;
+					continue;
+				}
+			}
+		}
+
+		if (ich >= ichBegin)
+		{
+			if (!_tsIsWhitespaceChar(szLine[ich]))
+			{
+				rec.colMargin = colMargin - 1;
+				rec.colComment = colComment;
+//				msg(szLine[ich]);
+				return rec;
+			}
+		}
+
+		ich = ich + 1;
+	}
+	
+	return rec;
+}
+
+macro _tsGetNextCommentString(hbuf, ichSkip, szRemainder, ln, lnLast, colWrap)
+{
+	rec = "";
+
+	// Go until we get a string that is at least long enough to fill a line
+	// or, we run out of lines.
+	if (szRemainder == "" && ln > lnLast)
+		return "";
+		
+	ichFirst = ichSkip;
+//	msg(ichSkip);
+	while (1)
+	{
+		if (ln > lnLast)
+		{
+			rec.szComment = szRemainder;
+			rec.ln = ln;
+			return rec;
+		}
+
+		cchRemainder = strlen(szRemainder);
+
+		if (cchRemainder > colWrap)
+		{
+			rec.szComment = szRemainder;
+			rec.ln = ln;
+			return rec;
+		}
+
+		szLine = GetBufLine(hbuf, ln);
+		len = strlen(szLine);
+
+		if (ichSkip == 0)
+			ichFirst = _tsSkipPastCommentAndWhitespace(szLine, len);
+		ichSkip = 0;
+			
+		ichLast = len - 1;
+
+		// Now, strip out all whitespace at the end of the line
+		while (ichLast >= ichFirst)
+		{
+			if (!_tsIsWhitespaceChar(szLine[ichLast]))
+			{
+				break;
+			}
+			ichLast = ichLast - 1;
+		}
+
+		// Entire line is whitespace?
+		if (ichLast < ichFirst)
+		{
+			if (szRemainder == "")
+				ln = ln + 1;
+			rec.szComment = szRemainder;
+			rec.ln = ln;
+			return rec;
+
+		}
+		// length of the non whitespaced comment + 1 space + cchRemainder
+		if ((ichLast + 1) - ichFirst + cchRemainder + 1 > 255)
+		{
+			// It may not format the current line quite right, but
+			// but at least we won't throw away some of the comment.
+			rec.szComment = szRemainder;
+			rec.ln = ln;
+			return rec;
+		}
+
+		if (szRemainder != "")
+			szRemainder = cat(szRemainder, " ");
+		szRemainder = cat(szRemainder, strmid(szLine, ichFirst, ichLast + 1));
+		ln = ln + 1;
+	}
+}
+
+macro _tsSkipPastCommentAndWhitespace(szLine, len)
+{
+	ichFirst = 0;
+	// Skip past the comment initiator "//" if there is one.
+	while (ichFirst < len)
+	{
+		if (ichFirst + 1 < len)
+		{
+			if (szLine[ichFirst] == "/" && szLine[ichFirst+1] == "/")
+			{
+				ichFirst = ichFirst + 2;
+				break;
+			}
+		}
+		ichFirst = ichFirst + 1;
+	}
+
+	// If no comment found in line, then start from the beginning
+	if (ichFirst >= len)
+		ichFirst = 0;
+
+	ichFirst = ichFirst;
+	// Now, strip out all whitespace after the comment start.
+	while (ichFirst < len)
+	{
+		if (!_tsIsWhitespaceChar(szLine[ichFirst]))
+		{
+			break;
+		}
+		ichFirst = ichFirst + 1;
+	}
+
+	return ichFirst;
+}
+
+SI可用的事件列表
+---------------
+/* Events.em - This file contains example event functions
+
+To show an example of what can be done with events,  the functions in this file 
+output events to a textual log file.
+
+The log file is named c:\sitest.log. The name is determined in the function OpenLogBuffer.
+
+For more information, see Readme_Events.txt
+
+***Some Practical Tips***
+
+SI will ignore event handlers in any file that is modified and unsaved. 
+Therefore, if you are editing an event handler source file, SI will not try 
+to execute the handler while you are editing it!  Once you are done with the 
+editing, save the file. SI will once again execute the handlers when the 
+file is saved.
+
+If an event handler causes a syntax error or runtime error, then ALL event 
+handlers are disabled for the rest of the SI session. You will see a "Macro 
+Error" warning message.  To enable event handlers again, simply restart SI.
+
+It is best to put all event handlers in one file, or a small number of files 
+with names like "event-something.em".  That way, you can easily remove those
+files from the project to effectively turn off the handlers.
+*/
+
+// This is called when the application starts
+event AppStart()
+{
+}
+
+// This is called when the application exits
+event AppShutdown()
+{
+	var fname
+	var hbuf
+
+	hbuf = OpenLogBuffer()
+	fname = GetBufName(hbuf)
+	SaveBufAs(hbuf, fname)
+}
+
+// This is called when the user issues a command via the keyboard or menus
+event AppCommand(sCommand)
+{
+	AppendToLog("command: " # sCommand)
+}
+
+// This is called after the document is opened
+event DocumentOpen(sFile)
+{
+	AppendToLog("opening " # sFile)
+}
+
+// This is called just before the document is closed
+event DocumentClose(sFile)
+{
+	AppendToLog("closing " # sFile)
+}
+
+// this is called when the user edits the document
+event DocumentChanged(sFile)
+{
+	AppendToLog("Document Changed: " # sFile)
+}
+    
+// This is called when the user selects text or moves the cursor
+// in the given document
+event DocumentSelectionChanged(sFile)
+{ 
+	var hbuf 
+	var hwnd
+	var ln var sym
+	var sel 
+	
+
+	// this global counter is used to throttle the event action down
+	// to every 5 calls
+	global selchange_count
+	if (selchange_count == nil) selchange_count = 0;
+	if (++selchange_count < 5) stop
+	selchange_count = 0;
+	
+	// note that the sFile may not be open anymore, because this event is
+	// called asynchronously.
+	hbuf = GetBufHandle(sFile)
+	if (hbuf == hNil)
+		stop
+	
+	// get the exact selection details
+	hwnd = GetWndHandle(hbuf)
+	sel = GetWndSel(hwnd)
+	
+	
+	// determine the function or symbol that contains the selection's first line
+	ln = sel.lnFirst
+	sym = GetSymbolLocationFromLn(hbuf, ln)
+	if (sym == nil)
+ 		stop
+	 
+	// if the symbol not the same as last time, then output a message to the log file
+	global lastsym
+	if (sym.symbol != lastsym)
+		{
+		AppendToLog("SelChange: symbol: " # sym.symbol # " line: " # ln # " ich: " # sel.ichFirst)
+		lastsym = sym.symbol
+		}
+	
+} 
+
+// This is called when a project is opened
+event ProjectOpen(sProject) 
+{
+	AppendToLog("Open project @sProject@")
+}
+
+// This is called when a project is about to be closed
+event ProjectClose(sProject) 
+{
+	AppendToLog("Close project @sProject@")
+}
+
+// This is called whenever the statusbar is changed
+event StatusbarUpdate(sMessage)
+{
+	var hbuf
+
+	// this global counter is used to throttle down the output 
+	global statusbar_count
+	if (statusbar_count == nil) statusbar_count = 0;
+	if (++statusbar_count < 5) stop
+	statusbar_count = 0;
+	
+ 	AppendToLog("Statusbar: " # sMessage)
+}
+
+// Helper function to append a string line to the log file
+macro AppendToLog(s)
+{
+	var hbuf
+	var stime
+	 
+	stime = GetSysTime(true)
+	
+	hbuf = OpenLogBuffer()
+	AppendBufLine(hbuf, stime.month # "/" # stime.day # "/" # stime.year # " " # stime.time # ":  " # s)
+}
+
+// Open the log file buffer and return its handle
+macro OpenLogBuffer()
+{
+	var hbufLog
+	var sLogFile
+
+	sLogFile = "c:\\sitest.log"
+	
+	// see if log file buffer is already open
+	hbufLog = GetBufHandle(sLogFile)
+	if (hbufLog == hNil)
+		{
+		// try to open existing log file
+	 	hbufLog = OpenBuf(sLogFile)
+		
+		// if existing file doesn't exist, then create new one
+		if (hbufLog == hNil)
+			hbufLog = NewBuf(sLogFile)
+	 	} 
+
+	return hbufLog
+}
+
+SI完整配置文件
+---------------
+macro MyInsertComment()  
+{  
+    szMyName = "HY"
+  
+    //Get a handle to the current file buffer and the name and location of the current symbol where the cursor is.  
+    hbuf = GetCurrentBuf()  
+    szFunc = GetCurSymbol()  
+    ln = GetSymbolLine(szFunc)  
+  
+    InsBufLine(hbuf, ln, "/************************************************************");  
+    ln = ln +1  
+  
+    // begin assembling the title string  
+    sz = "** 函数名称: "   
+  
+    cch = strlen(szFunc)  
+    ich = 0  
+    while (ich < cch)  
+    {  
+        ch = szFunc[ich]  
+        if (ich > 0)  
+            if (isupper(ch))  
+                sz = cat(sz, "   ")  
+            else  
+                sz = cat(sz, " ")  
+        sz = Cat(sz, toupper(ch))  
+        ich = ich + 1  
+    }   
+    InsBufLine(hbuf, ln, sz)  
+    ln = ln + 1  
+  
+    InsBufLine(hbuf, ln, "** 功能描述: ")  
+    ln = ln + 1  
+    
+    InsBufLine(hbuf, ln, "** 输入参数:")  
+    ln = ln + 1  
+    
+    InsBufLine(hbuf, ln, "** 输出参数: ")  
+    ln = ln + 1  
+    
+    InsBufLine(hbuf, ln, "** 返 回 值:")  
+    ln = ln + 1  
+  
+    /*if owner variable exists, insert Owner: name */  
+    if (strlen(szMyName) > 0)  
+    {  
+        InsBufLine(hbuf, ln, "** 作    者: @szMyName@")                   
+    }  
+    else  
+    {  
+        InsBufLine(hbuf, ln, "** 作    者: ")                   
+    }  
+    ln = ln + 1  
+  
+    //Get current time  
+    szTime  = GetSysTime(1)  
+    Day      = szTime.Day  
+    Month   = szTime.Month  
+    Year     = szTime.Year  
+    if (Day < 10)  
+        szDay = "0@Day@"  
+    else  
+        szDay = Day    
+  
+    InsBufLine(hbuf, ln, "** 日    期: @Year@年@Month@月@szDay@日")  
+    ln = ln + 1  
+  
+    InsBufLine(hbuf, ln, "**************************************************************/")  
+} 
+
+macro GetFullFileName()
+{
+	hbuf = GetCurrentBuf()
+	hbufClip = GetBufHandle("Clipboard")
+	EmptyBuf(hbufClip)
+	AppendBufLine(hbufClip,GetBufName(hbuf))
+}
+
+event DocumentOpen(sFile)
+{
+	GetFullFileName()
+}
+
+//
+// Comment the selected block of text using single line comments and indent it
+//
+macro CommentBlock()
+{
+	hbuf = GetCurrentBuf();
+	hwnd = GetCurrentWnd();
+
+	sel = GetWndSel(hwnd);
+
+	iLine = sel.lnFirst;
+	
+	while (iLine <= sel.lnLast)
+	{
+		szLine = GetBufLine(hbuf, iLine);
+		szLine = cat("//	", szLine);
+		PutBufLine(hbuf, iLine, szLine);
+		iLine = iLine + 1;
+	}
+
+	if (sel.lnFirst == sel.lnLast)
+	{
+		tabSize = _tsGetTabSize() - 1;
+		sel.ichFirst = sel.ichFirst + tabSize;
+		sel.ichLim = sel.ichLim + tabSize;
+	}
+	SetWndSel(hwnd, sel);
+}
+
+//
+// Undo the CommentBlock for the selected text.
+//
+macro UnCommentBlock()
+{
+	hbuf = GetCurrentBuf();
+	hwnd = GetCurrentWnd();
+
+	sel = GetWndSel(hwnd);
+
+	iLine = sel.lnFirst;
+
+
+	tabSize = 0;
+	while (iLine <= sel.lnLast)
+	{
+		szLine = GetBufLine(hbuf, iLine);
+		len = strlen(szLine);
+		szNewLine = "";
+		if (len > 1)
+		{
+			if (szLine[0] == "/" && szLine[1] == "/")
+			{
+				if (len > 2)
+				{
+					if (AsciiFromChar(szLine[2]) == 9)
+					{
+						tabSize = _tsGetTabSize() - 1;
+						szNewLine = strmid(szLine, 3, strlen(szLine));
+					}
+				}
+
+				if (szNewLine == "")
+				{
+					szNewLine = strmid(szLine, 2, strlen(szLine));
+					tabSize = 2;
+				}
+				
+				PutBufLine(hbuf, iLine, szNewLine);
+			}
+		}
+		iLine = iLine + 1;
+	}
+
+	if (sel.lnFirst == sel.lnLast)
+	{
+		sel.ichFirst = sel.ichFirst - tabSize;
+		sel.ichLim = sel.ichLim - tabSize;
+	}
+
+	SetWndSel(hwnd, sel);
+}
+
+macro _tsGetTabSize()
+{
+	szTabSize = GetReg("TabSize");
+
+	if (szTabSize != "")
+	{
+		tabSize = AsciiFromChar(szTabSize[0]) - AsciiFromChar("0");
+	}
+	else
+	{
+		tabSize = 4;
+	}
+
+	return tabSize;
+}
+
+//
+// Reformat a selected comment block to wrap text at 80 columns.
+// The start of the selection (upper left most character of the selection) is
+// handled specially, in that it specifies the left most column at which all
+// lines will begin.  For example, if the following block was selected starting
+// at the @ symbol, through the last line of the block...
+//------------------------------------------------------------------------------
+// preamble:	@ This is a line that will be wrapped keeping the "at" symbol in its current column.
+// All lines following it that are selected will use that as their starting column.  See below to see how the wrapping
+// works for this block of text.
+//------------------------------------------------------------------------------
+// preamble:	@ This is a line that will be wrapped keeping the "at" symbol in
+//				its current column. All lines following it that are selected
+//				will use that as their starting column.  See below to see how
+//				the wrapping works for this block of text.
+//
+macro tsReformatCommentBlock()
+{
+	hbuf = GetCurrentBuf();
+	hwnd = GetCurrentWnd();
+
+	sel = GetWndSel(hwnd);
+
+	tabSize = _tsGetTabSize();
+	leftTextCol = 0 - 1;
+	colWrap = 80;
+
+	// Find the starting column, and create a Margin string
+	ichFirst = sel.ichFirst;
+	
+	// Single line comment reformat?
+	if (sel.ichFirst == sel.ichLim && sel.lnFirst == sel.lnLast)
+	{
+		ichFirst = 0;
+	}
+
+	rec = _tsGetStartColumn(hbuf, ichFirst, sel.lnFirst);
+
+	if (rec == "")
+		stop;
+
+	colLeftMargin = rec.colMargin;
+	szMargin = "";
+
+	colComment = 0;
+	if (rec.colComment >= 0)
+	{
+		colComment = rec.colComment + 2
+		szMargin = _tsAddWhiteToColumn(szMargin, 0, rec.colComment, tabSize);
+		szMargin = cat(szMargin, "//");
+	}
+
+	szMargin = _tsAddWhiteToColumn(szMargin, colComment, rec.colMargin, tabSize);
+
+	rec = "";
+
+	szCurMargin = "";
+	if (ichFirst != 0)
+	{
+		szLine = GetBufLine(hbuf, sel.lnFirst);
+		szCurMargin = strmid(szLine, 0, ichFirst);
+	}
+	else
+	{
+		szCurMargin = szMargin;
+		szMargin = "";
+	}
+
+	insertLine = sel.lnFirst;
+	iLine = sel.lnFirst;
+	szRemainder = "";
+	while (1)
+	{
+//		msg("$0-" # iLine # ":" # szRemainder);
+		rec = _tsGetNextCommentString(hbuf, ichFirst, szRemainder, iLine, sel.lnLast, colWrap);
+		ichFirst = 0;
+
+		if (rec == "")
+			break;
+
+//		msg("$1-" # rec.ln # ":" # rec.szComment);
+		szLine = rec.szComment;
+	
+		ich = 0;
+		col = colLeftMargin;
+		len = strlen(szLine);
+		
+		ichPrevCharToWhite = 0-1;
+		ichPrevWhiteToChar = 0-1;
+//		msg("Leftovers @szRemainder@");
+
+		while (ich < len)
+		{
+			if (AsciiFromChar(szLine[ich]) == 9)
+			{
+				col = (((col + tabSize) / tabSize) * tabSize);
+			}
+			else
+			{
+				col = col + 1;
+			}
+
+			if (col > colWrap)
+				break;
+
+			fIsWhitespace = _tsIsWhitespaceChar(szLine[ich]);
+			fIsWhitespace1 = 1;
+
+			if (ich + 1 < len)
+			{
+				fIsWhitespace1 = _tsIsWhitespaceChar(szLine[ich + 1]);
+			}
+
+			if (!fIsWhitespace && fIsWhitespace1)
+				ichPrevCharToWhite = ich;
+			
+			ich = ich + 1;
+		}
+
+		if (ichPrevCharToWhite > 0)
+		{
+//			msg("$2:" # strmid(szLine, 0, ichPrevCharToWhite + 1));
+			ich = ichPrevCharToWhite + 1;
+
+			while (ich < len)
+			{
+				if (!_tsIsWhitespaceChar(szLine[ich]))
+				{
+					ichPrevWhiteToChar = ich - 1;
+//					msg("$3:" # strmid(szLine, ichPrevWhiteToChar + 1, len));
+					break;
+				}
+				ich = ich + 1;
+			}
+		}
+
+		if (ichPrevCharToWhite > 0 && col > colWrap)
+		{
+			szNewLine = cat(szCurMargin, strmid(szLine, 0, ichPrevCharToWhite + 1));
+			szRemainder = "";
+			if (ichPrevWhiteToChar > 0)
+				szRemainder = strmid(szLine, ichPrevWhiteToChar + 1, len);
+				
+			if (ichPrevCharToWhite > ichPrevWhiteToChar)
+				msg("!!!Wrap, duplicating word " # ichPrevWhiteToChar # " " # ichPrevCharToWhite # " " # szNewLine # " >>> " # szRemainder);
+//				msg(szLine);
+//				msg(col # " " # ichPrevWhiteToChar # " " # ichPrevCharToWhite # " " # szNewLine # " >>> " # szRemainder);
+		}
+		else if (szLine != "")
+		{
+			szNewLine = cat(szCurMargin, szLine );
+			szRemainder = "";
+//			sel.lnLast = sel.lnLast + 1;
+		}
+
+		iLine = rec.ln;
+		if (insertLine == iLine)
+		{
+			iLine = iLine + 1;
+			sel.lnLast = sel.lnLast + 1;
+			
+//			msg("$5-" # insertLine # ":" # szNewLine);
+			InsBufLine(hbuf, insertLine, szNewLine);
+		}
+		else
+		{
+			szLine = GetBufLine(hbuf, insertLine);
+			if (szLine != szNewLine)
+			{
+//				msg("$6-" # insertLine # ":" # szNewLine);
+				PutBufLine(hbuf, insertLine, szNewLine);
+			}
+		}
+		insertLine = insertLine + 1;
+
+		if (szMargin != "")
+		{
+			szCurMargin = szMargin;
+			szMargin = "";
+		}
+	}
+
+	while (insertLine <= sel.lnLast)
+	{
+		DelBufLine(hbuf, insertLine);
+		sel.lnLast = sel.lnLast - 1;
+	}
+
+	len = GetBufLineLength(hbuf, insertLine-1);
+
+	sel.ichFirst = len;
+	sel.ichLim = len;
+	sel.lnFirst = sel.lnLast;
+	SetWndSel(hwnd, sel);
+}
+
+macro _tsAddWhiteToColumn(sz, col0, col, tabSize)
+{
+	szTabs = "																														";
+	szSpaces = "                ";
+
+	tabs0 = col0 / tabSize;
+	tabs = (col / tabSize) - tabs0;
+
+	if (tabs == 0)
+		foo = col0;
+	else
+		foo = (tabs + tabs0) * tabSize;
+	spaces = col - foo;
+//	msg(col0 # " " # col # " " # tabs # " " # spaces # " " # tabs0);
+
+	if (tabs)
+		sz = cat(sz, strmid(szTabs, 0, tabs));
+
+	if (spaces)
+		sz = cat(sz, strmid(szSpaces, 0, spaces));
+
+	return sz;
+}
+
+macro _tsGetStartColumn(hbuf, ichBegin, ln)
+{
+	szLine = GetBufLine(hbuf, ln);
+	len = strlen(szLine);
+	tabSize = _tsGetTabSize();
+	ich = 0;
+
+	colMargin = 0;
+	colComment = 0-1;
+
+	rec = "";
+	rec.colMargin = colMargin;
+	rec.colComment = colComment;
+	
+	while (ich < len)
+	{
+		if (AsciiFromChar(szLine[ich]) == 9)
+		{
+			colMargin = (((colMargin + tabSize) / tabSize) * tabSize);
+		}
+		else
+		{
+			colMargin = colMargin + 1;
+		}
+
+		if (colComment < 0)
+		{
+			if (ich + 1 < len)
+			{
+				if (szLine[ich] == "/" && szLine[ich+1] == "/")
+				{
+					colComment = colMargin - 1;
+					ich = ich + 2;
+					colMargin = colMargin + 1;
+					continue;
+				}
+			}
+		}
+
+		if (ich >= ichBegin)
+		{
+			if (!_tsIsWhitespaceChar(szLine[ich]))
+			{
+				rec.colMargin = colMargin - 1;
+				rec.colComment = colComment;
+//				msg(szLine[ich]);
+				return rec;
+			}
+		}
+
+		ich = ich + 1;
+	}
+	
+	return rec;
+}
+
+macro _tsGetNextCommentString(hbuf, ichSkip, szRemainder, ln, lnLast, colWrap)
+{
+	rec = "";
+
+	// Go until we get a string that is at least long enough to fill a line
+	// or, we run out of lines.
+	if (szRemainder == "" && ln > lnLast)
+		return "";
+		
+	ichFirst = ichSkip;
+//	msg(ichSkip);
+	while (1)
+	{
+		if (ln > lnLast)
+		{
+			rec.szComment = szRemainder;
+			rec.ln = ln;
+			return rec;
+		}
+
+		cchRemainder = strlen(szRemainder);
+
+		if (cchRemainder > colWrap)
+		{
+			rec.szComment = szRemainder;
+			rec.ln = ln;
+			return rec;
+		}
+
+		szLine = GetBufLine(hbuf, ln);
+		len = strlen(szLine);
+
+		if (ichSkip == 0)
+			ichFirst = _tsSkipPastCommentAndWhitespace(szLine, len);
+		ichSkip = 0;
+			
+		ichLast = len - 1;
+
+		// Now, strip out all whitespace at the end of the line
+		while (ichLast >= ichFirst)
+		{
+			if (!_tsIsWhitespaceChar(szLine[ichLast]))
+			{
+				break;
+			}
+			ichLast = ichLast - 1;
+		}
+
+		// Entire line is whitespace?
+		if (ichLast < ichFirst)
+		{
+			if (szRemainder == "")
+				ln = ln + 1;
+			rec.szComment = szRemainder;
+			rec.ln = ln;
+			return rec;
+
+		}
+		// length of the non whitespaced comment + 1 space + cchRemainder
+		if ((ichLast + 1) - ichFirst + cchRemainder + 1 > 255)
+		{
+			// It may not format the current line quite right, but
+			// but at least we won't throw away some of the comment.
+			rec.szComment = szRemainder;
+			rec.ln = ln;
+			return rec;
+		}
+
+		if (szRemainder != "")
+			szRemainder = cat(szRemainder, " ");
+		szRemainder = cat(szRemainder, strmid(szLine, ichFirst, ichLast + 1));
+		ln = ln + 1;
+	}
+}
+
+macro _tsSkipPastCommentAndWhitespace(szLine, len)
+{
+	ichFirst = 0;
+	// Skip past the comment initiator "//" if there is one.
+	while (ichFirst < len)
+	{
+		if (ichFirst + 1 < len)
+		{
+			if (szLine[ichFirst] == "/" && szLine[ichFirst+1] == "/")
+			{
+				ichFirst = ichFirst + 2;
+				break;
+			}
+		}
+		ichFirst = ichFirst + 1;
+	}
+
+	// If no comment found in line, then start from the beginning
+	if (ichFirst >= len)
+		ichFirst = 0;
+
+	ichFirst = ichFirst;
+	// Now, strip out all whitespace after the comment start.
+	while (ichFirst < len)
+	{
+		if (!_tsIsWhitespaceChar(szLine[ichFirst]))
+		{
+			break;
+		}
+		ichFirst = ichFirst + 1;
+	}
+
+	return ichFirst;
+}
+

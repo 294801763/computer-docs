@@ -1,0 +1,35 @@
+查看Gcc所支持的标准
+--------------
+$>gcc -posix -E -dM - < /dev/null |grep --color=auto -i "__STDC_ISO" 
+
+查看头文件路径
+--------------
+$>gcc -x c++ -v -E /dev/null
+
+查看编译器默认搜索路径
+--------------
+$>gcc -E -v -
+or 
+$>arm-linux-gnueabihf-gcc -E -v -
+
+$>echo 'main(){}' | gcc -E -v -
+or 
+$>echo 'main(){}' | arm-linux-gnueabihf-gcc -E -v -
+
+查看预处理
+--------------
+$>gcc -E <name>.c 
+
+宏展开
+--------------
+gcc -E -dM <name>.c 2>&1 | tee macro.txt
+
+依赖关系
+--------------
+gcc -Wp,-MD,<name>.dep -c -o <name> <name>.c 
+
+环境变量(env)
+--------------
+PATH = ...:$(PATH)
+LD_LIBRARY_PATH = ...:$(LD_LIBRARY_PATH)
+

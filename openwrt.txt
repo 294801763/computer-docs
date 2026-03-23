@@ -1,0 +1,43 @@
+默认的用户名和密码
+------------
+root/
+
+wrt安装
+------------
+$>dd if=openwrt-19.07.2.img of=/dev/sdx
+
+添加lan口
+------------
+1.使用lan侧的地址打开openwrt配置页面.
+2.Network->Interfaces->LAN->Edit->Physical Settings->Interface->...                #在下拉框中勾选需要作为lan侧接口即可.
+
+配置ip
+------------
+$>ifconfig [ethx] [a.b.c.d] up
+$>vi /etc/config/network
+----------
+...
+config interface 'lan'
+        option type 'bridge'
+        option ifname 'eth0'
+        option proto 'static'
+        option ipaddr 'a.b.c.d'                                                    #例如:192.168.8.1或者192.168.10.1,接上lan口可通过192.168.8.1或192.168.10.1访问openwrt系统.
+        option netmask '255.255.255.0'
+        option ip6assign '60'
+
+config interface 'wan'
+        option ifname 'ethx'
+        option proto 'dhcp'
+        option dns 'a.b.c.d'                                                       #配置wan口的dns,例如:1.2.4.8或者192.168.1.1(光猫的默认网关).
+
+config interface 'wan6'
+        option ifname 'ethx'
+        option proto 'dhcpv6'
+...
+
+注意:如果不配置wan口的dns,openwrt是无法访问网页的.
+
+将img转换成vdi/vmdk
+------------
+$>qemu-system-x86_64 -M pc -m 256 -display none -serial stdio wrt.img          #对wrt.img进行修改.
+$>VBoxManage convertfromraw --format VDI/VMDK wrt.img  y.vdi/.vmdk             #转换成vdi/vmdk.

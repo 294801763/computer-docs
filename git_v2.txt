@@ -1,0 +1,164 @@
+Git忽略某类文件
+-------------------
+$>cat > .gitignore << EOF
+*.o 
+EOF
+
+Git添加远程仓库
+-------------------
+linux
+------
+$>cd /[path]/repo                                                           #步骤1,
+$>git init --bare [repo_name].git                                           #步骤2,
+
+windows
+------
+$>cd x:\prj                                                                 #步骤1,进入到工程目录.
+$>git init .                                                                #步骤2,初始化本地仓库.
+$>git config --global user.name "HY"                                        #步骤3,配置用户.
+$>git config --global user.email "huhuoyun@sina.com"                        #步骤4,配置邮件.
+$>git config --global color.ui true                                         #步骤5,配置颜色.
+$>git config --global core.quotepath false                                  #步骤6,配置显示中文文件名.
+$>git config --global i18n.logoutputencoding gbk                            #步骤7,配置日志输出字符集.
+$>git config --global i18n.commitencoding gbk                               #步骤8,配置提交字符集.
+$>git add .                                                                 #步骤9,把本地文件添加暂存区.
+$>git commit -am "..."                                                      #步骤10,提交.
+$>git remote add origin [Linux_user]@[srv_ip]:/[path]/repo/[repo_name].git  #步骤11,添加远程仓库以及远程仓库别名[origin].
+$>git remote                                                                #步骤12,查看远程仓库和远程仓库别名.
+$>git push origin [new-branch name]/master                                  #步骤13,使用[new-branch name]或者主干[master]分支;同样可以创建远程分支,参考[Git创建远程分支].
+$>git log --pretty=fuller                                                   #查看提交日志信息.
+$>git log -1 --pretty=raw
+$>git log --pretty=raw --graph [commit-id]                   
+$>git status -s -b                                                          #显示工作状态,[-s]精简输出,[-b]显示当前工作分支名称.
+
+Git创建远程分支
+-------------------
+$>git branch
+$>git checkout -b [new-branch name]                                         #步骤1,在本地创建[new-branch name]分支.
+$>git add .
+$>git commit -am "..."
+$>git push origin -u [new-branch name]                                      #步骤2,把本地创建[new-branch name]分支提交到远程仓库.
+
+注意:在本地仓库中新创建一个分支,然后使用push命令将新创建的分支同步到远程仓库;经过测试OK!
+
+Git与远程仓库分支进行关联
+-------------------
+$>git branch -r                                                             #查看远程分支.
+$>git push -u origin master                                                 #以后每次只需执行"git push"即可将内容同步到远程origin仓库.
+$>git push --set-upstream origin master 
+
+Git文件归档
+-------------------
+$>git archive -o latest.zip HEAD                                            #基于最新提交建立归档文件latest.zip.
+$>git archive --format=tar --prefix=1.0/ v1.0 | gzip > latest-1.0.tar.gz    #基于里程碑v1.0建立归档,并且为归档中的文件添加目录前缀1.0.
+
+Git添加(add)
+-------------------
+$>git add . 
+$>git add -u                                                                #[-u]将(被版本库追踪的)本地文件的变更(修改,删除)全部记录到暂存区.
+ 
+Git修改上一次的提交信息
+-------------------
+$>git commit --amend --allow-empty --reset-author -am "..."                 #改正上一次的提交记录,此条命令执行后不会新增新的[commit-id]信息;[--amend]是对刚刚的提交进行修补,[--allow-empty]使得空白提交被允许,[--reset-author]是将作者[Author]的ID同步修改,否则只能影响(commit)的ID.
+
+Git回退到[commit-id]
+-------------------
+$>git reset --soft [commit-id]                                              #[--soft]软回退,回退到[commit-id]并保留回退前的所有修改;建议用这个.
+
+Git撤销本地的修改并回退到[commit-id]
+-------------------
+$>git reset --hard [commit-id]                                              #[--hard]会破坏工作未提交的改动,慎用.
+
+Git查看工作区状态
+-------------------
+$>git status -s                                                             #精简的状态输出.
+
+Git暂存区与版本库比较
+-------------------
+$>git diff HEAD -s                                                          #与[HEAD]当前版本库的头指针或[Master]主干或当前工作分支进行比较.
+$>git add .                                                                 #将修改的内容提交到暂存区.
+$>git diff --cached/--staged                                                #查看提交到暂存区和版本库中文件的差异.
+
+Git版本库的目录浏览
+-------------------
+$>git ls-tree -l HEAD                                                       #[-l]显示文件的大小.
+
+Git暂存区的目录浏览
+-------------------
+$>git ls-files -s                                                           #查看暂存区的目录树.
+$>git write-tree
+------
+586bfb7d6b223963f6748de56370668f8c4502c8
+
+$>git ls-tree -l 586bfb7d6b223963f6748de56370668f8c4502c8                   #查看目录树.
+
+Git保存暂存区
+-------------------
+$>git add .
+$>git stash
+or 
+$>git stash save "..."                                                      #保存暂存区,并添加注释.
+$>git stash list
+$>git stash pop 
+$>git stash drop <stash id>                                                 #删除一个存储的进度[stash id],默认删除最新的进度.
+$>git stash clear                                                           #删除所有存储进度.
+$>git stash branch <branch name> <stash id>                                 #基于进度创建分支.
+$>git stash apply <stash id>                                                #恢复<stash id>的进度.
+
+Git-HEAD,master,refs/heads/master 
+-------------------
+$>git log -l HEAD 
+$>git log -l master 
+$>git log -l refs/heads/master 
+
+注意:以上三条命令的输出完全相同.
+
+Git查看详细的提交信息
+-------------------
+$>git log --stat
+
+Git单行显示日志
+-------------------
+$>git log --pretty=oneline
+
+Git给仓库添加文件
+-------------------
+$>git add .
+$>git add [file name]
+
+Git编辑".git/config"
+-------------------
+$>git config -e 
+
+Git编辑"~/.gitconfig"
+-------------------
+$>git config -e global 
+
+Git编辑"/etc/gitconfig"
+-------------------
+$>git config -e --system 
+
+Git读取配置属性
+-------------------
+$>git config <section>.<key>             #语法
+
+eg.
+$>git config core.bare 
+
+Git更改或设置属性
+-------------------
+$>git config <section>.<key> <value>     #语法
+
+Git删除全局配置
+-------------------
+$>git config --unset --global <section>.<key>
+
+eg.
+$>git config --unset --global user.name 
+$>git config --unset --global user.email
+
+Git查看标记并按时间进行排序
+-------------------
+$>git tag --sort=taggerdate
+$>git tag --sort=taggerdate --format '%(refname:short) %(taggerdate:short) %(subject)'
+$>git tag -n --sort=taggerdate

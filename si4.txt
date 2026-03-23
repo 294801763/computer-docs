@@ -1,0 +1,64 @@
+打开书签窗口
+---------------
+ctrl + m
+
+注意:书签可以保存为xml格式,并且可以单独修改xml,xml注释格式<!-- -->
+
+高亮单词
+---------------
+F8
+
+清除高亮
+---------------
+F9
+
+设置工程目录
+---------------
+Options->Preferences...->Folders
+
+设置语言选项
+---------------
+alt + y    #可以设置tab转空格,字体,行号,辅助线,关闭symbol,overview等窗口.
+
+SI显示当前文件所在的绝对路径
+---------------
+Options->Preferences...->Display->Trim long path names with ellipses      #去掉勾选即可.
+
+SI修改字体以及字体大小
+---------------
+Options->Document Options                                                 #修改相关内容即可.
+
+SI添加macro
+---------------
+Project->Open Project:Base                                                #编辑"Utils.em"
+
+注意:如果(Options->Key Assignments...->Command:Macro:)识别不出来新添加的宏,关闭打开的工程;打开Base工程,重新构建工程(Project->Rebuild Project...->Re-Parse all source files).
+
+SI快捷键规划
+---------------
+alt+'             #CommentBlock.
+alt+:             #UnCommentBlock.
+alt+=             #GetFullFileName.
+alt+-             #MyInsertComment.
+alt+0             #Enable Event Handlers.
+alt+~             #Project Add and Remove Project Files...
+alt+,             #Go Back
+alt+.             #Go Forward
+alt+x             #Reload File 
+alt+r             #Reload Modified Files 
+alt+c             #Lock Relation Window
+alt+n             #Lock Context Window 
+alt+g             #Go To Line...
+alt+/             #Lookup References...
+F2                #Go To Frist Link
+F3                #Go To Next Link 
+F4                #Go To Previous Link 
+alt+[             #Jump To Definition
+alt+]             #Jump To Caller
+alt+\             #Jump To Base Type
+CTRL+SHIFT+,      #Zoom Out 
+CTRL+SHIFT+.      #Zoom In 
+CTRL+w            #Close 
+CTRL+SHIFT+w      #Close All 
+
+注意:工程打开后立即执行"alt+0",然后代码的修改可以配合"SlickEdit Pro".

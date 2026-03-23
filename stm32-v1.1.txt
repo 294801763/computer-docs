@@ -1,0 +1,63 @@
+使用注意事项
+---------------
+1. 强制退出"openocd -f scripts/stm32f429igt6.cfg -c "set V8_SMP_DEBUG 1" -c "bindto 0.0.0.0" -c "gdb_port 3333" -c "telnet_port 4444" -c "tcl_port 5555" -c init -c 'reset halt' -c "add_script_search_dir scripts/""会导致openocd无法再次启动,需要将Jlink USB拔出再插.
+2. 程序下载需要telnet到openocd的4444端口然后执行"script ll"进行下载
+3. ARMCC和arm-none-eabi-gcc的区别主要体现在串口
+4. 串口打印中文,字符集最好是GB2312.UTF-8用串口调试工具会乱码.
+
+代码说明
+---------------
+STM32F429IGT6-v1.18.10.01.tar.gz - 串口                 -   试验OK
+STM32F429IGT6-v1.18.10.02.tar.gz - 外部中断             -   试验OK 
+STM32F429IGT6-v1.18.10.03.tar.gz - 独立看门狗           -   试验OK 
+STM32F429IGT6-v1.18.10.04.tar.gz - 窗口看门狗           -   试验OK 
+STM32F429IGT6-v1.18.10.05.tar.gz - 定时器               -   试验OK 
+STM32F429IGT6-v1.18.10.06.tar.gz - 定时器-PWM输出       -   试验OK
+STM32F429IGT6-v1.18.10.07.tar.gz - 定时器-输入捕获      -   试验OK,按下KEY_UP触发
+STM32F429IGT6-v1.18.10.08.tar.gz - 定时器-电容触摸按键  -
+STM32F429IGT6-v1.18.10.09.tar.gz - OLED显示             -
+STM32F429IGT6-v1.18.10.10.tar.gz - TFTLED(MCU屏)        -
+STM32F429IGT6-v1.18.10.11.tar.gz - SDRAM                -
+STM32F429IGT6-v1.18.10.12.tar.gz - LTDC LCD(RGB屏)      -
+STM32F429IGT6-v1.18.10.13.tar.gz - RTC实时时钟          -
+STM32F429IGT6-v1.18.10.14.tar.gz - 随机数发生器         -
+STM32F429IGT6-v1.18.10.15.tar.gz - 待机唤醒             -
+STM32F429IGT6-v1.18.10.16.tar.gz - ADC                  -
+STM32F429IGT6-v1.18.10.17.tar.gz - 内部温度传感器       -
+STM32F429IGT6-v1.18.10.18.tar.gz - DAC                  -
+STM32F429IGT6-v1.18.10.19.tar.gz - PWM DAC              -
+STM32F429IGT6-v1.18.10.20.tar.gz - DMA                  -
+STM32F429IGT6-v1.18.10.21.tar.gz - 串口调试(USMART)     -
+STM32F429IGT6-v1.18.10.22.tar.gz - IIC                  -
+STM32F429IGT6-v1.18.10.23.tar.gz - IO扩展               -
+STM32F429IGT6-v1.18.10.24.tar.gz - SPI                  -
+STM32F429IGT6-v1.18.10.25.tar.gz - 485                  -
+STM32F429IGT6-v1.18.10.26.tar.gz - CAN,HAL库已变更,暂时忽略
+STM32F429IGT6-v1.18.10.27.tar.gz         - 内存管理             - ERROR
+STM32F429IGT6-v1.18.10.28-v1.1.tar.gz    - 内存管理             - 试验OK
+
+串口打印
+---------------
+1. 使用printf-4.0.0.tar.gz库,需要手动实现_putchar函数
+--
+void _putchar(char character)
+{
+	UART_TypeDef *base = g_uart_bases[UART_CONSOLE_INSTANCE];
+	uint32_t tmp_d = character;
+	tmp_d &= 0xff;
+	uart_drv_fput_char(base, tmp_d);
+}
+
+2. 使用编译器库,需手动实现_write函数
+--
+int _write (int fd, char *pBuffer, int size)  
+{  
+	for (int i = 0; i < size; i++)  
+	{  
+		while((USART1->SR&0X40)==0);          //等待上一次串口数据发送完成  
+		USART1->DR = (uint8_t) pBuffer[i];    //写DR,串口1将发送数据
+	}  
+	
+	return size;  
+}
+

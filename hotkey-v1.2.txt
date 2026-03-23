@@ -1,0 +1,15 @@
+显示或隐藏标题栏
+-------------------
+; 隐藏标题栏
+^!h::  ; Ctrl+Alt+H
+WinGetTitle, currentWindow, A    ; 获取当前活动窗口的标题
+if WinExist(currentWindow)       ; 检查窗口是否存在
+    WinSet, Style, -0xC00000, A  ; 隐藏标题栏
+return
+
+; 显示标题栏
+^!s::  ; Ctrl+Alt+S
+WinGetTitle, currentWindow, A    ; 获取当前活动窗口的标题
+if WinExist(currentWindow)       ; 检查窗口是否存在
+    WinSet, Style, +0xC00000, A  ; 显示标题栏
+return

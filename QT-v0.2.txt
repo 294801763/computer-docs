@@ -1,0 +1,194 @@
+VNC
+--------------
+$>cd xf86-video-vnc
+$>./buildAndInstall && ./autogen.sh --disable-static && make 
+$>cp src/.libs/vnc_drv.so /usr/lib/xorg/modules/drivers/
+$>cp vncserver-virtual.conf /etc/X11/
+$>nano /etc/gdm3/daemon.conf
+------
+...
+[daemon]
+WaylandEnable=false
+DefaultSession=gnome-xorg.desktop
+...
+
+$>gtf 1920 1080 120
+------
+# 1920x1080 @ 120.00 Hz (GTF) hsync: 138.84 kHz; pclk: 368.76 MHz
+Modeline "1920x1080_120.00"  368.76  1920 2072 2288 2656  1080 1081 1084 1157  -HSync +Vsync
+
+$>nano /etc/X11/vncserver-virtual-dummy.conf
+------
+...
+Section "Monitor"
+...
+ Modeline "1920x1080_120.00"  368.76  1920 2072 2288 2656  1080 1081 1084 1157  -HSync +Vsync
+EndSection
+...
+
+$>nano /usr/lib/systemd/system/vncserver-virtuald.service
+------
+...
+[Service]
+ExecStart=/usr/bin/vncserver-virtuald 
+...
+
+$>nano /usr/lib/systemd/system/vncserver-x11-serviced.service
+------
+...
+[Service]
+ExecStart=/usr/bin/vncserver-x11-serviced 
+...
+
+$>git git://anongit.freedesktop.org/xorg/driver/xf86-video-fbdev
+$>git checkout xf86-video-fbdev-0.5.0 -fb v0.5
+$>./autogen.sh && make 
+$>cp src/.libs/fbdev_drv.so /usr/lib/xorg/modules/drivers/
+
+$>git git://anongit.freedesktop.org/xorg/driver/xf86-video-dummy
+$>git checkout xf86-video-dummy-0.4.0 -fb v0.4
+$>./autogen.sh && make 
+$>cp src/.libs/dummy_drv.so /usr/lib/xorg/modules/drivers/
+$>nano /usr/share/X11/xorg.conf.d/10-dummy.conf
+--------------
+Section "Device"
+    Identifier  "Configured Video Device"
+    Driver      "dummy"
+    VideoRam 256000
+EndSection
+ 
+Section "Monitor"
+    Identifier  "Configured Monitor"
+    HorizSync 31.5-48.5
+    VertRefresh 50-70
+    # 1360x768 @ 60.00 Hz (GTF) hsync: 47.70 kHz; pclk: 84.72 MHz
+    Modeline "1360x768"  84.72  1360 1424 1568 1776  768 769 772 795  -HSync +Vsync
+EndSection
+ 
+Section "Screen"
+    Identifier  "Default Screen"
+    Monitor     "Configured Monitor"
+    Device      "Configured Video Device"
+    DefaultDepth 24
+    SubSection "Display"
+    Depth 24
+    Modes "1360x768"
+    EndSubSection
+EndSection
+
+$>echo options radeon modeset=1 > /etc/modprobe.d/radeon-kms.conf                    #ATI
+$>echo options i915 modeset=1 > /etc/modprobe.d/i915-kms.conf                        #INTEL
+
+$>export PATH=/usr/sbin:/sbin:$PATH
+$>mkdir -pv /usr/X11R6/lib/X11 && ln -sf /usr/share/fonts/X11 /usr/X11R6/lib/X11/fonts
+$>dpkg -i VNC-Server-6.11.0-Linux-x64.deb
+$>vnclicense -add 77NVU-D9G5T-79ESS-V9Y6X-JMVGA
+$>vncinitconfig -enable-system-xorg
+$>systemctl enable vncserver-virtuald.service
+$>systemctl enable vncserver-x11-serviced.service
+$>systemctl daemon-reload
+$>su - hy -s /bin/bash -c '/usr/bin/vncserver-virtual -DisableTrayIcon=1 -DisableOptions=1 -DisableAddNewClient=1 -ShareFiles=0 -EnableManualUpdateChecks=0 -EnableScreenRecording=0 -EnableChat=0 -EnableRemotePrinting=0 -IpListenProtocols=TCP -JpegQuality=100 -depth 24 -geometry 1366x768 >/dev/null 2>&1&'
+
+注意:以上内容已在v1.4.iso试验成功.
+
+QT中文输入法
+--------------
+$>tasksel install gnome-desktop --new-install
+$>apt remove ibus
+$>apt-get install build-essential dh-autoreconf libncurses5-dev tftp-hpa tftpd-hpa xinetd nfs-common nfs-kernel-server samba libtool libtool-bin gcc-multilib g++-multilib gdb-multiarch net-tools pkg-config v4l-utils dh-make libgmp-dev libelf-dev xorg-dev xserver-xorg-core xserver-xorg x11-xserver-utils xserver-xorg-dev xserver-xorg-video-dummy xutils-dev x11proto-randr-dev x11proto-render-dev libssl-dev libxcb-xinerama0-dev libgl1-mesa-dev libqt4-declarative libxkbcommon-dev libxkbcommon-x11-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-render-util0-dev libxcb-util0-dev libxcb-keysyms1-dev python2.7-dev dpkg-dev xfonts-75dpi xfonts-100dpi xfonts-base ninja-build libguestfs-tools libfdt-dev libssl-dev libglib2.0-dev libpixman-1-dev zlib1g-dev python3-pip qemu qemu-user-static qemu-system bridge-utils uml-utilities binfmt-support virtualenv python3 devscripts imagemagick python2 sparse meson netcat bc lzop texinfo bison flex make automake autoconf gdb cscope ctags tree git dos2unix minicom ttyrec cmake unzip astyle indent slurm socat tcpdump ipcalc nmap ffmpeg nano vim gawk screen tmux valgrind autogen ethtool rsync dejagnu genisoimage kpartx vlan trickle wondershaper resolvconf help2man linux-headers-`uname -r` fcitx fcitx-bin fcitx-config-common fcitx-config-gtk fcitx-data fcitx-frontend-all fcitx-frontend-gtk2 fcitx-frontend-gtk3 fcitx-frontend-qt4 fcitx-frontend-qt5 fcitx-module-dbus fcitx-module-kimpanel fcitx-module-lua fcitx-module-x11 fcitx-modules fcitx-ui-classic fcitx5-module-quickphrase-editor im-config libdouble-conversion1 libfcitx-config4 libfcitx-core0 libfcitx-gclient1 libfcitx-qt5-1 libfcitx-qt5-data libfcitx-utils0 libgail-common libgail18 libgettextpo0 libgtk2.0-0 libgtk2.0-bin libgtk2.0-common libpcre2-16-0 libpresage-data libpresage1v5 libqt5core5a libqt5dbus5 libqt5gui5 libqt5network5 libqt5svg5 libqt5widgets5 libtinyxml2.6.2v5 presage qt5-gtk-platformtheme qttranslations5-l10n libxdo3 
+
+$>dpkg -i sogoupinyin_4.0.1.2800_x86_64.deb
+$>reboot
+
+$>gsettings set org.gnome.desktop.screensaver lock-enabled false                                                           #禁止锁屏
+$>fcitx-configtool
+
+$>scp root@192.168.10.88:/home/vsftpd/linux/arm/gcc/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz /opt/
+$>scp root@192.168.10.88:/home/vsftpd/linux/arm/media/qt-opensource-linux-x64-5.12.12.run /opt/
+$>scp root@192.168.10.88:/home/vsftpd/linux/arm/media/qt-everywhere-src-5.12.12.tar.xz /opt/
+
+$>ln -sf /usr/lib/x86_64-linux-gnu/libxcb-util.so.0 /usr/lib/x86_64-linux-gnu/libxcb-util.so.1
+$>chmod a+x /opt/qt-opensource-linux-x64-5.12.12.run && /opt/qt-opensource-linux-x64-5.12.12.run
+$>dpkg -L fcitx-frontend-qt5 | grep .so
+-------
+/usr/lib/x86_64-linux-gnu/qt5/plugins/platforminputcontexts/libfcitxplatforminputcontextplugin.so
+
+$>cp -afv /usr/lib/x86_64-linux-gnu/qt5/plugins/platforminputcontexts/libfcitxplatforminputcontextplugin.so /opt/Qt5.12.12/Tools/QtCreator/lib/Qt/plugins/platforminputcontexts
+$>/opt/Qt5.12.12/Tools/QtCreator/bin/qtcreator
+
+交叉编译QT工程
+--------------
+$>nano /etc/profile
+-------
+...
+export ARMV7_PREFIX=/opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf 
+export PATH=$ARMV7_PREFIX/bin:$PATH
+...
+
+$>cd qt-everywhere-src-5.12.12
+$>cp -rfv qtbase/mkspecs/linux-arm-gnueabi-g++ qtbase/mkspecs/linux-arm-gnueabihf-g++
+$>nano qtbase/mkspecs/linux-arm-gnueabihf-g++/qmake.conf
+-------
+...
+MAKEFILE_GENERATOR      = UNIX
+CONFIG                 += incremental
+QMAKE_INCREMENTAL_STYLE = sublib
+
+QT_QPA_DEFAULT_PLATFORM = linuxfb
+QMAKE_CFLAGS += -O2 -march=armv7-a -mtune=cortex-a7 -mfpu=neon -mfloat-abi=hard
+QMAKE_CXXFLAGS += -O2 -march=armv7-a -mtune=cortex-a7 -mfpu=neon -mfloat-abi=hard
+
+include(../common/linux.conf)
+include(../common/gcc-base-unix.conf)
+include(../common/g++-unix.conf)
+
+# modifications to g++.conf
+QMAKE_CC                = arm-linux-gnueabihf-gcc
+QMAKE_CXX               = arm-linux-gnueabihf-g++
+QMAKE_LINK              = arm-linux-gnueabihf-g++
+QMAKE_LINK_SHLIB        = arm-linux-gnueabihf-g++
+
+# modifications to linux.conf
+QMAKE_AR                = arm-linux-gnueabihf-ar cqs
+QMAKE_OBJCOPY           = arm-linux-gnueabihf-objcopy
+QMAKE_NM                = arm-linux-gnueabihf-nm -P
+QMAKE_STRIP             = arm-linux-gnueabihf-strip
+load(qt_config)
+...
+
+$>./configure -prefix /opt/shared/qt-everywhere-5.12.12 -opensource -confirm-license -release -strip -shared -optimized-qmake -c++std c++11 --rpath=no -pch -xplatform linux-arm-gnueabihf-g++ -skip qt3d -skip qtactiveqt -skip qtandroidextras -skip qtcanvas3d -skip qtconnectivity -skip qtdatavis3d -skip qtdoc -skip qtgamepad -skip qtlocation -skip qtmacextras -skip qtnetworkauth -skip qtpurchasing -skip qtremoteobjects -skip qtscript -skip qtscxml -skip qtsensors -skip qtspeech -skip qtsvg -skip qttools -skip qttranslations -skip qtwayland -skip qtwebengine -skip qtwebview -skip qtwinextras -skip qtx11extras -skip qtxmlpatterns -make libs -make examples -nomake tools -nomake tests -gui -widgets -dbus-runtime --glib=no --iconv=no --pcre=qt --zlib=qt -no-openssl --freetype=qt --harfbuzz=qt -no-opengl -linuxfb --xcb=no -tslib --libpng=qt --libjpeg=qt --sqlite=qt -plugin-sql-sqlite -I /opt/shared/tslib/include/ -L /opt/shared/tslib/lib/ -recheck-all
+$>make -j`nproc` && make install 
+
+$>/opt/shared/qt-everywhere-5.12.12/bin/qmake                                                     #armhf编译出来的qmake
+
+QT使用中文字体
+----------------
+#include <QApplication>
+#include <QDebug>
+#include <QFont>
+#include <QTextCodec>
+#include <QFontDatabase>
+
+int main(int argc, char *argv[])
+{
+	int fontId = QFontDatabase::addApplicationFont("/usr/share/fonts/DroidSansFallbackFull.ttf");
+	
+	QApplication a(argc, argv);
+	QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
+    QString sans = QFontDatabase::applicationFontFamilies(fontId).at(0);
+    QFont font(sans,10);
+	
+	font.setPointSize(8);                        //改变字体大小
+    a.setFont(font);
+	
+	qDebug() << "fonts:" << sans << endl;
+	
+    return a.exec();
+}
+
+$>/opt/shared/qt-everywhere-5.12.12/bin/qmake <name>.pro
+$>scp root@192.168.10.88:/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf /usr/share/fonts
+$>scp root@192.168.10.88:/home/vsftpd/linux/arm/fonts/DroidSansFallback.ttf /usr/share/fonts
+$>scp root@192.168.10.88:/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf /opt/shared/rootfs/usr/share/fonts
+$>scp root@192.168.10.88:/home/vsftpd/linux/arm/fonts/DroidSansFallback.ttf /opt/shared/rootfs/usr/share/fonts
+

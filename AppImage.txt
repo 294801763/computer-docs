@@ -1,0 +1,10 @@
+运行AppImage
+-------------------
+$>sysctl -w kernel.unprivileged_userns_clone=1
+$>sysctl -p
+or
+$>nano /etc/sysctl.conf
+--
+kernel.unprivileged_userns_clone=1
+
+$>sysctl -p

@@ -1,0 +1,23 @@
+查找软件包 - 方法1
+-------------------
+$>apt-get install apt-file 
+$>apt-file update 
+$>apt-file search ethtool | grep -i /sbin/ethtool 
+
+查找软件包 - 方法2
+-------------------
+step.1 查找命令的具体位置
+----------------
+$>type ls 
+$>which ls 
+$>whereis ls 
+
+step.2 查询属于哪个软件包
+----------------
+$>dpkg-query -S /usr/bin/ls 
+
+忽略软件的更新
+-------------------
+$>apt-mark hold <包名,eg.ethtool>                   #忽略.
+$>apt-mark unhold <包名,eg.ethtool>                 #解除.
+

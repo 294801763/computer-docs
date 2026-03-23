@@ -1,0 +1,45 @@
+步骤1,"window + r"输入"shell:startup"创建一个"hotkey.ahk"文件.
+步骤2,编辑"hotkey.ahk"文件.
+例如:
+$>vi hotkey.ahk
+---------
+#n::Run notepad.exe                                                              ;"Windows + n"打开系统中的记事本.            
+#c::Run calc.exe                                                                 ;"Windows + c"打开计算器.
+#o::Run C:\Users\HY\AppData\Local\Programs\Microsoft VS Code\code.exe d:\docs    ;"Windows + o"使用vscode快速打开'd:\docs'目录.
+#space::Run C:\x\y\z\ConEmu (x64)                                                ;"Windows + space"使用"C:\x\y\z\"目录下的ConEmu (x64)快捷方式打开ConEmu.
+!d::Run explorer d:\[工作目录]                                                   ;"alt+d"快速打开D盘下的工作目录.
+#c::Run cmd /K cd [目录]
+
+注意:如果有中文,必须把"AutoHotkey_1.1.33.00.ahk"另存为ASCII编码格式.
+
+$>vi hotkey.ahk
+---------
+#space::Run calc.exe                                                             ;windows+space
+#n::Run notepad.exe                                                              ;"Windows + n"打开系统中的记事本.            
+#c::Run calc.exe                                                                 ;"Windows + c"打开计算器.
+#o::Run C:\Users\HY\AppData\Local\Programs\Microsoft VS Code\code.exe d:\docs    ;"Windows + o"使用vscode快速打开'd:\docs'目录.
+;#space::Run C:\x\y\z\ConEmu (x64)                                               ;"Windows + space"使用"C:\x\y\z\"目录下的ConEmu (x64)快捷方式打开ConEmu.
+!d::Run explorer d:\[工作目录]                                                   ;"alt+d"快速打开D盘下的工作目录.
+;#c::Run cmd /K cd [目录]
+!j::                                                                             ;"alt+j"Source Insight配合Linux(Slick Edit)编辑器来使用.
+;StringReplace, <用来存储替换后的新字符串的变量名>, 要被读取内容的变量名, 要搜索的字符串, 用来替换搜索的文本, All
+StringReplace, clipboard, clipboard, z:\,/home/github/, All
+StringReplace, clipboard, clipboard, \,/, All
+;MsgBox,%clipboard%
+return
+
+辅助开发
+-------------------
+$>vi hotkey.ahk
+---------
+;alt + c
+;vscode - command: copy path
+;File->Keyboard Shortcuts SHIFT + ALT + C   -  复制文件绝对路径
+!c::Send, {SHIFT down}{ALT down}c{SHIFT up}{ALT up}   ;SHIFT + ALT + c 
+
+;alt + n
+!n::
+Run, "C:\Program Files\Notepad++\notepad++.exe" %clipboard%
+return
+;在vscode 阅读代码的时候就可以配合 notepad++ 快速打开当前文件并借用notepad++强大的搜索功能来搜索字符串
+;alt+c 复制文件绝对路径, alt+n 打开notepad++该文件

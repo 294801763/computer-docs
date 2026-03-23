@@ -1,0 +1,76 @@
+查看服务日志
+--
+$>systemctl status <服务名>.service
+$>journalctl -u <服务名>
+
+systemd目录
+--
+$>cd /usr/lib/systemd/system
+
+systemd - FRP 
+--
+$>nano /usr/lib/systemd/system/frpc.service
+-
+[Unit]
+Description=FRP
+After=network.target
+
+[Service]
+ExecStart=frpc -c /opt/frp/frpc.toml
+Restart=always
+RestartSec=1s
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
+
+$>systemctl daemon-reload
+$>systemctl enable frpc.service
+
+注意:可以重启应用.
+
+systemd - hbs
+--
+$>nano /usr/lib/systemd/system/hbs.service
+-
+[Unit]
+Description=Graphic
+Before=network.target
+
+[Service]
+Type=idle
+Environment=ENCRYPTED_ONLY=1
+Environment=DB_URL=/opt/desktop/desktop.db
+WorkingDirectory=/opt/desktop
+ExecStart=/opt/desktop/hbbs
+
+[Install]
+WantedBy=multi-user.target
+
+$>systemctl daemon-reload 
+$>systemctl enable hbs.service
+$>systemctl start hbs.service
+
+systemd - hbr
+--
+$>nano /usr/lib/systemd/system/hbr.service
+-
+[Unit]
+Description=Graphic
+Before=network.target
+
+[Service]
+Type=idle
+Environment=ENCRYPTED_ONLY=1
+Environment=DB_URL=/opt/desktop/desktop.db
+WorkingDirectory=/opt/desktop
+ExecStart=/opt/desktop/hbbr
+
+[Install]
+WantedBy=multi-user.target
+
+$>systemctl daemon-reload 
+$>systemctl enable hbr.service
+$>systemctl start hbr.service
+

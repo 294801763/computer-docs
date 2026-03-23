@@ -1,0 +1,2769 @@
+INSTALL 
+--------------
+$>apt-get install build-essential dh-autoreconf libncurses5-dev tftp-hpa tftpd-hpa xinetd nfs-common nfs-kernel-server samba gcc-multilib g++-multilib gdb-multiarch net-tools pkg-config v4l-utils dh-make libgmp-dev xorg-dev xserver-xorg-core xserver-xorg xserver-xorg-video-dummy x11-xserver-utils libxkbcommon-dev libxkbcommon-x11-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-render-util0-dev libxcb-util0-dev libxcb-keysyms1-dev python2.7-dev dpkg-dev xserver-xorg-dev xutils-dev x11proto-randr-dev x11proto-render-dev libssl-dev xfonts-75dpi xfonts-100dpi xfonts-base ninja-build libfdt-dev libglib2.0-dev libpixman-1-dev zlib1g-dev python3-pip qemu-system uml-utilities bridge-utils virtualenv python3 devscripts imagemagick python2 sparse meson netcat bc lzop texinfo bison flex make automake autoconf gdb cscope ctags tree git dos2unix minicom ttyrec cmake unzip astyle indent slurm socat tcpdump ipcalc nmap ffmpeg nano vim gawk screen tmux valgrind autogen dejagnu
+
+Make menuconfig修改参数
+-----------------------
+CTRL + Backspace                 #删除参数
+
+驱动从零开始检索关键字
+--------------
+Board Bring Up 
+
+单独编译设备树
+--------------
+$>dtc -I dts -O dtb -o <name>.dtb  <name>.dts 
+
+反编译设备树
+--------------
+$>dtc -I dtb -O dts -o <name>.dts  <name>.dtb 
+
+参考网页
+------------------
+https://zhuanlan.zhihu.com/p/464626628
+https://mp.weixin.qq.com/s/f4dP-w284F8iiIZMyq3Epg
+
+uboot - 选择启动方式
+--------------
+setenv boot_targets mmc1 mmc0 usb pxe;boot 
+
+驱动从零开始
+--------------
+shopt -s
+shopt -s extglob
+rm -rf drivers/!(base|Kconfig|Makefile|sh|pci|pcmcia|cpufreq|cpuidle|firmware|clk|char|tty|i2c|pinctrl|cpufreq|net|clocksource|cpuidle|input) 
+
+禁用USB
+--------------
+usbcore.nousb
+
+隐藏终端光标
+--------------
+vt.global_cursor_default=0
+
+CPU_IDLE
+--------------
+cpuidle.off=1               #disable the cpuidle sub-system
+
+CPU_FREQ
+--------------
+cpufreq.off=1               #disable the cpufreq sub-system
+
+DTC反编译
+--------------
+$>dtc -I dtb -O dts -o imx6ull-14x14-emmc-7-1024x600-c.dts imx6ull-14x14-emmc-7-1024x600-c.dtb 
+
+串口
+--------------
+源码路径: drivers/tty/serial
+设备名称: #define DEV_NAME "<串口设备的名称,eg.ttymxc>"
+
+屏蔽GCC插件检查
+--------------
+$>cat Makefile | grep -n GCC_PLUGINS
+--------
+1090:include-$(CONFIG_GCC_PLUGINS)      += scripts/Makefile.gcc-plugins
+
+$>cat scripts/gcc-plugins/Kconfig
+--------
+...
+config HAVE_GCC_PLUGINS
+	bool
+	help
+	  An arch should select this symbol if it supports building with
+	  GCC plugins.
+
+menuconfig GCC_PLUGINS
+	bool "GCC plugins"
+	depends on HAVE_GCC_PLUGINS
+	depends on CC_IS_GCC
+	depends on $(success,test -e $(shell,$(CC) -print-file-name=plugin)/include/plugin-version.h)
+	default y
+...
+
+$>vi arch/arm/Kconfig +100 
+--------
+ ...
+ #select HAVE_GCC_PLUGINS
+ ...
+ 
+注意:以上即可屏蔽"scripts/gcc-plugins/"目录下的检查.
+
+查看Git版本信息
+--------------
+$>git show v4.1.15
+
+NFS 
+--------------
+$>mkdir -pv /opt/shared && chmod 777 /opt/shared
+$>vi /etc/exports
+--------
+/opt/shared *(insecure,rw,sync,fsid=0,crossmnt,no_subtree_check,no_root_squash)
+
+$>/etc/init.d/nfs-kernel-server start
+$>exportfs -rv
+
+TFTPD 
+--------------
+$>vi /etc/xinetd.d/tftpd
+--------
+server tftp
+{
+ socket_type  =  dgram
+ protocol     =  udp
+ wait         =  yes
+ user         =  root
+ server       =  /usr/sbin/in.tftpd
+ server_args  =  -s /opt/shared
+ disable      =  no
+ per_source   =  11
+ cps          =  100 2
+ flags        =  IPv4
+}
+
+$>vi /etc/default/tftpd-hpa
+--------
+TFTP_USERNAME="tftp"
+TFTP_DIRECTORY="/opt/shared"
+TFTP_ADDRESS="0.0.0.0:69"
+TFTP_OPTIONS="-l -s -c"
+
+SAMBA 
+--------------
+$>vi /etc/samba/smb.conf
+----------
+[global]
+follow symlinks = yes 
+wide links = yes 
+unix extensions = yes
+
+[shared]
+comment = "shared"
+path = /opt/shared
+public = yes
+only guest = yes
+writeable = yes
+create mask = 2777
+directory mask = 2777
+
+ARM-TOOLS
+--------------
+32-bit Armv7 Cortex-a,hard-float,little-endian -- 由linaro公司基于gcc推出的ARM交叉编译工具,可用于交叉编译ARMv7(32bit)系统中所有环节的代码(包括裸机程序,u-boot,Linux kernel,filessystem和App应用程序)
+32-bit Armv8 Cortex-a,hard-float,little-endian -- 由linaro公司基于gcc推出的ARM交叉编译工具,可用于交叉编译ARMv8(32bit)系统中所有环节的代码(包括裸机程序,u-boot,Linux kernel,filessystem和App应用程序)
+64-bit Armv8 Cortex-a,hard-float,little-endian -- 由linaro公司基于gcc推出的ARM交叉编译工具,可用于交叉编译ARMv8(64bit)系统中所有环节的代码(包括裸机程序,u-boot,Linux kernel,filessystem和App应用程序)
+
+ABI  -- 二进制应用程序接口,在计算机中应用二进制接口描述了应用程序(或其他类型)和操作系统之间或其他应用程序低级接口
+EABI -- 嵌入式ABI,嵌入式应用二进制接口指定了文件格式,数据类型,寄存器使用,堆积组织优化和在一个嵌入式软件中的参数和标准约定,开发者使用自己的汇编语言也可以用EABI作为与兼容的编译器生成汇编语言接口
+
+gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu          -- 64-bit Armv8 Cortex-a,hard-float,little-endian
+gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf        -- 32-bit Armv7 Cortex-a,hard-float,little-endian
+gcc-linaro-7.5.0-2019.12-x86_64_armv8l-linux-gnueabihf     -- 32-bit Armv8 Cortex-a,hard-float,little-endian
+gcc-linaro-7.5.0-2019.12-x86_64_armeb-linux-gnueabihf      -- 32-bit Armv8 Cortex-a,hard-float,bit-endian,armeb中的eb表示大端(bit-endian)
+
+查看动态链接库
+---------------
+$>arm-linux-gnueabihf-readelf -d /opt/shared/rootfs/bin/busybox
+$>arm-linux-gnueabihf-readelf -a /opt/shared/rootfs/bin/busybox
+
+构建交叉编译器
+--------------
+$>date -s "2022-12-01 12:00"
+$>hwclock -w
+
+step.1 创建目录
+--------
+$>cd /opt/
+$>mkdir armlinux
+$>cd armlinux
+$>mkdir -pv build-tools kernel tools
+
+step.2 设置环境变量
+--------
+$>export PRJROOT=/opt/armlinux
+$>export TARGET=arm-linux-gnueabihf
+$>export PREFIX=$PRJROOT/tools 
+$>export TARGET_PREFIX=$PREFIX/$TARGET
+$>export PATH=$PREFIX/bin:$PATH
+
+step.3 binutils
+--------
+$>cp binutils-2.39.tar.gz $PRJROOT/build-tools
+$>mkdir -pv $PRJROOT/build-tools/build-binutils
+$>cd $PRJROOT/build-tools
+$>tar -xvf binutils-2.39.tar.gz
+$>cd $PRJROOT/build-tools/build-binutils
+$>../binutils-2.39/configure --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --prefix=$PREFIX --with-sysroot=$TARGET_PREFIX --enable-multilib --enable-threads --enable-static --disable-shared --disable-plugins --disable-nls --disable-bootstrap --disable-werror --disable-gdb --disable-sim --disable-libdecnumber --disable-readline
+$>make -j`nproc` && make install
+
+step.4 gcc - v1
+--------
+$>cp gcc-12.2.0.tar.gz $PRJROOT/build-tools
+$>mkdir -pv $PRJROOT/build-tools/build-gcc-v1
+$>cd $PRJROOT/build-tools
+$>tar -xvf gcc-12.2.0.tar.gz
+$>cd $PRJROOT/build-tools/gcc-12.2.0/mpfr
+$>autoreconf -f
+$>cd $PRJROOT/build-tools/gcc-12.2.0/isl/
+$>autoreconf -f
+$>cd $PRJROOT/build-tools/build-gcc-v1
+$>../gcc-12.2.0/configure --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --prefix=$PREFIX --with-sysroot=$TARGET_PREFIX --with-glibc-version=2.36 --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb --with-tune=cortex-a9 --with-cloog=no --with-ppl=no --with-isl=no --with-gnu-ld --with-gnu-as --with-system-zlib --with-newlib --without-included-gettext --without-headers --enable-lto --enable-nls --enable-multiarch --enable-c99 --enable-long-long --enable-gnu-indirect-function --enable-libstdcxx-debug --enable-gnu-unique-object --enable-linker-build-id --enable-clocale=gnu --enable-languages=c,c++ --enable-threads=posix --enable-libstdcxx-time=yes --disable-multilib --disable-libmudflap --disable-libssp --disable-libquadmath --disable-libgomp --disable-libatomic --disable-libvtv --disable-libstdcxx --disable-bootstrap --disable-libitm --disable-libsanitizer --disable-sjlj-exceptions --disable-libstdcxx-pch --disable-threads --disable-decimal-float --disable-plugins --disable-shared
+$>make -j`nproc` all-gcc all-target-libgcc && make install-gcc install-target-libgcc 
+
+注意:失败以后需删除$PRJROOT/tools目录下的所有文件,重新进行以上步骤.
+
+step.5 linux 
+--------
+$>cd $PRJROOT/kernel/
+$>git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+$>cd linux 
+$>git checkout 4.19.267 -fb v4.19.267
+$>make ARCH=arm headers_check
+$>make C=2 V=1 ARCH=arm O=./tmp INSTALL_HDR_PATH=$TARGET_PREFIX/usr headers_install
+
+step.6 glibc
+--------
+$>cp glibc-2.36.tar.gz $PRJROOT/build-tools
+$>mkdir -pv $PRJROOT/build-tools/build-glibc
+$>cd $PRJROOT/build-tools
+$>tar -xvf glibc-2.36.tar.gz
+$>cd $PRJROOT/build-tools/build-glibc
+$>CC=$TARGET-gcc AR=$TARGET-ar RANLIB=$TARGET-ranlib ../glibc-2.36/configure --prefix=/usr --build=$MACHTYPE --host=$TARGET --target=$TARGET --with-headers=$TARGET_PREFIX/usr/include --without-selinux --without-gd -enable-shared --enable-obsolete-rpc --disable-werror --disable-profile libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
+$>make install-bootstrap-headers=yes install_root=$TARGET_PREFIX install-headers
+$>LDFLAGS=-static-libgcc make -j`nproc` && LDFLAGS=-static-libgcc make install_root=$TARGET_PREFIX install
+
+注意:"--prefix=/usr"对使用动态库的busybox能否正常运行,起着关键性的作用;经过步骤3,4,5没有问题后,执行步骤5就能正确生成"stubs-hard.h";失败以后需删除$PRJROOT/tools目录下的所有文件,重新进行以上步骤;"stubs-hard.h"是由glibc生成的,如果生成了"stubs-soft.h"请检查binutils,gcc,glibc编译选项中是否包含"--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16".
+
+step.7 gcc - v2 
+--------
+$>cp gcc-12.2.0.tar.gz $PRJROOT/build-tools
+$>mkdir -pv $PRJROOT/build-tools/build-gcc-v2
+$>cd $PRJROOT/build-tools
+$>tar -xvf gcc-12.2.0.tar.gz
+$>cd $PRJROOT/build-tools/gcc-12.2.0/mpfr
+$>autoreconf -f
+$>cd $PRJROOT/build-tools/gcc-12.2.0/isl/
+$>autoreconf -f
+$>nano $PRJROOT/build-tools/gcc-12.2.0/libsanitizer/asan/asan_linux.cpp
+-------
+#ifndef PATH_MAX 
+#define PATH_MAX 8192
+#endif
+
+$>cd $PRJROOT/build-tools/build-gcc-v2
+$>../gcc-12.2.0/configure --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --prefix=$PREFIX --with-sysroot=$TARGET_PREFIX --with-cloog=no --with-float=hard --with-mode=thumb --with-tune=cortex-a9 --with-arch=armv7-a --with-fpu=vfpv3-d16 --with-gnu-as --with-gnu-ld --with-system-zlib --without-included-gettext --enable-languages=c,c++ --enable-libstdcxx-time=yes --enable-threads=posix --enable-clocale=gnu --enable-checking=yes --enable-default-pie --enable-default-ssp --enable-shared --enable-threads --enable-lto --enable-nls --enable-multiarch --enable-gnu-indirect-function --enable-gnu-unique-object --enable-linker-build-id --enable-c99 --enable-libatomic --enable-libvtv --enable-libssp --enable-libgomp --enable-libquadmath --enable-multilib --enable-libstdcxx --enable-libstdcxx-debug --enable-long-long --enable-libsanitizer --disable-sjlj-exceptions --disable-bootstrap --disable-libstdcxx-pch --disable-libmudflap
+$>make -j`nproc` && make install
+
+注意:失败以后需删除$PRJROOT/tools目录下的所有文件,重新进行以上步骤.
+
+step.8 gdb
+--------
+$>cp binutils-2.39.tar.gz $PRJROOT/build-tools
+$>mkdir -pv $PRJROOT/build-tools/build-gdb
+$>cd $PRJROOT/build-tools
+$>tar -xvf binutils-2.39.tar.gz
+$>cd $PRJROOT/build-tools/build-gdb
+$>../binutils-2.39/configure --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --prefix=$PREFIX --with-sysroot=$TARGET_PREFIX --with-python=python3 --with-python --enable-targets=all --with-gnu-ld --with-gnu-as --enable-lto --enable-plugins --enable-multilib --enable-threads --enable-static --disable-shared --disable-nls --disable-bootstrap --disable-werror --disable-gdb --disable-sim --disable-libdecnumber --disable-readline --disable-gas --disable-binutils --disable-elfcpp --disable-ld --disable-gold --disable-gprof
+$>make -j`nproc` && make install
+
+查看交叉编译器默认搜索路径
+--------------
+$>arm-linux-gnueabihf-gcc -E -v -
+
+BUILD(u-boot)
+--------------
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6ull_14x14_ddr512_emmc_defconfig             #./configs/xx_defconfig
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc`
+or 
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp distclean
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp mx6ull_14x14_ddr512_emmc_defconfig #./configs/xx_defconfig
+$>make C=2 V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=./tmp -j`nproc`
+
+内核选项检查
+--------------
+CONFIG_NETCONSOLE          -- on 
+CONFIG_NETCONSOLE_DYNAMIC  -- on 
+
+查看日志
+--------------
+$>netcat -lup 6666 | tee /opt/shared/kernel.log
+
+BUILD(Linux)
+--------------
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- imx_v7_mfg_defconfig                           #arch/arm/configs 
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage                               #arch/arm/boot 
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- dtbs                                           #arch/arm/boot/dts
+or
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- imx_v7_mfg_defconfig         #arch/arm/configs  
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage             #arch/arm/boot 
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- dtbs                         #arch/arm/boot/dts 
+or 
+$>make C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- imx_v7_mfg_defconfig         #arch/arm/configs  
+$>make C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage             #arch/arm/boot 
+$>make C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- dtbs                         #arch/arm/boot/dts 
+$>make C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- modules_install INSTALL_MOD_PATH=/opt/shared/rootfs/lib/modules/`uname -r`
+
+拷贝动态库
+--------------
+$>cd /opt/armlinux/tools/arm-linux-gnueabihf/lib/
+$>cp -afdv *so* /opt/shared/rootfs/lib/
+
+$>cd /opt/armlinux/tools/arm-linux-gnueabihf/usr/lib/
+$>cp -afdv *so* /opt/shared/rootfs/lib/
+
+注意:测试已通过.
+
+BUILD(busybox-使用共享库)
+--------------
+#Settings  --->    
+# --- Build Options 
+#  [ ] Build static binary (no shared libs)    #使用共享库构建
+#--- Applets
+# Shells  ---> 
+#  [ ]   Job control                           #去掉勾选,为了解决'sh: can't access tty; job control turned off'
+#Linux System Utilities  --->
+# [*] mdev
+#  [*]   Support /etc/mdev.conf
+#  [*]     Support subdirs/symlinks
+#  [*]       Support regular expressions substitutions when renaming device 
+#  [*]     Support command execution at device addition/removal
+#  [*]   Support loading of firmware
+$>cd <交叉编译器目录,eg.gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf>/arm-linux-gnueabihf/lib/
+$>cp *so* *.a /opt/shared/rootfs/lib/ -d 
+
+$>cd <交叉编译器目录,eg.gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf>/arm-linux-gnueabihf/libc/lib/
+$>cp *so* *.a /opt/shared/rootfs/lib/ -d
+
+$>cd <交叉编译器目录,eg.gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf>/arm-linux-gnueabihf/libc/usr/lib/
+$>cp *so* *.a /opt/shared/rootfs/usr/lib/ -d
+
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- defconfig
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc`
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- CONFIG_PREFIX=/opt/shared/rootfs install 
+$>cd /opt/shared/rootfs
+$>mkdir -pv proc/ sys/ etc/ usr/sbin/ usr/bin/ usr/lib/ lib/ dev/ root/ tmp/ media/ usr/share/alsa etc/init.d/ var/run/wpa/ var/empty/ 
+or
+$>mkdir -pv proc/ sys/ etc/ usr/sbin/ usr/bin/ usr/lib/ lib/ dev/ root/ tmp/ media/ usr/share/alsa usr/share/fonts etc/init.d/ var/run/wpa/ var/empty/
+$>chmod 700 usr/lib
+$>touch init etc/fstab etc/passwd etc/group etc/pointercal
+$>chmod a+x init
+$>vi init
+-------
+#!/bin/busybox sh
+
+export PATH=/sbin:/bin:/usr/sbin:usr/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib
+
+export TERM=vt100
+export TERMINFO=/usr/share/terminfo
+
+export TSLIB_ROOT=/usr/
+export TSLIB_CONSOLEDEVICE=none 
+export TSLIB_FBDEVICE=/dev/fb0 
+export TSLIB_TSDEVICE=/dev/input/event<No.>
+export TSLIB_CONFFILE=$TSLIB_ROOT/etc/ts.conf 
+export TSLIB_CALIBFILE=/etc/pointercal
+export TSLIB_PLUGINDIR=$TSLIB_ROOT/lib/ts
+export LD_PRELOAD=$TSLIB_ROOT/lib/libts.so 
+
+export QT_ROOT=/usr 
+export QT_QPA_GENERIC_PLUGINS=tslib:/dev/input/event<No.>
+export QT_QPA_FONTDIR=/usr/share/fonts
+export QT_QPA_PLATFORM_PLUGIN_PATH=$QT_ROOT/plugins 
+export QT_QPA_PLATFORM=linuxfb:tty=/dev/fb0 
+export QT_QPA_TSLIB=1
+export QT_PLUGIN_PATH=$QT_ROOT/plugins
+export QML2_IMPORT_PATH=$QT_ROOT/qml 
+export LD_LIBRARY_PATH=$QT_ROOT/lib:$QT_ROOT/plugins/platforms:$LD_LIBRARY_PATH
+
+busybox mount -t proc none /proc
+busybox mount -t sysfs none /sys
+busybox mount -t tmpfs none /dev
+
+busybox mkdir /dev/pts
+busybox mount -t devpts none /dev/pts
+busybox mount -a 
+
+busybox echo "busybox mdev" > /proc/sys/kernel/hotplug
+busybox echo "4 4 1 7" > /proc/sys/kernel/printk
+busybox mdev -s -d
+
+busybox echo "" > /etc/passwd
+busybox echo "" > /etc/group
+
+busybox adduser -u 0 -s /bin/sh -h /root root >/dev/null 2>&1&
+busybox echo "root:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox adduser -h /shared -u 1001 -s /bin/sh sshd >/dev/null 2>&1&
+busybox echo "sshd:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox mkdir -pv /lib/modules/`uname -r` >/dev/null 2>&1&
+
+#busybox telnetd >/dev/null 2>&1&
+ 
+#/sbin/sshd >/dev/null 2>&1&
+#alsactl -f /usr/share/alsa/state restore
+#mplayer -loop 0 -fs <name>.h264 >/dev/null 2>&1&
+
+busybox cat <<!
+Boot took $(busybox cut -d' ' -f1 /proc/uptime) seconds
+        _       _        _                  
+  /\/\ (_)_ __ (_)   / /(_)_ __  _   ___  __
+ /    \| | '_ \| |  / / | | '_ \| | | \ \/ /
+/ /\/\ \ | | | | | / /__| | | | | |_| |>  < 
+\/    \/_|_| |_|_| \____/_|_| |_|\__,_/_/\_\ 
+
+Welcome to MINI Linux
+!
+
+exec /bin/busybox sh
+
+注意:默认就支持NFS.
+or
+$>vi init
+-------
+#!/bin/busybox sh
+
+export XDG_RUNTIME_DIR=/usr/lib/
+export RUNLEVEL=3
+
+export PATH=/sbin:/bin:/usr/sbin:usr/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib
+
+export TERM=vt100
+export TERMINFO=/usr/share/terminfo
+
+export TSLIB_ROOT=/usr/
+export TSLIB_CONSOLEDEVICE=none 
+export TSLIB_FBDEVICE=/dev/fb0 
+export TSLIB_TSDEVICE=/dev/input/event<No.>
+export TSLIB_CONFFILE=$TSLIB_ROOT/etc/ts.conf 
+export TSLIB_CALIBFILE=/etc/pointercal
+export TSLIB_PLUGINDIR=$TSLIB_ROOT/lib/ts
+export LD_PRELOAD=$TSLIB_ROOT/lib/libts.so 
+
+export QT_ROOT=/usr 
+export QT_QPA_GENERIC_PLUGINS=tslib:/dev/input/event<No.>
+export QT_QPA_FONTDIR=/usr/share/fonts
+export QT_QPA_PLATFORM_PLUGIN_PATH=$QT_ROOT/plugins 
+export QT_QPA_PLATFORM=linuxfb:tty=/dev/fb0 
+export QT_QPA_TSLIB=1
+export QT_PLUGIN_PATH=$QT_ROOT/plugins
+export QML2_IMPORT_PATH=$QT_ROOT/qml 
+export LD_LIBRARY_PATH=$QT_ROOT/lib:$QT_ROOT/plugins/platforms:$LD_LIBRARY_PATH
+
+busybox mount -t proc none /proc
+busybox mount -t sysfs none /sys
+busybox mount -t tmpfs none /dev
+
+busybox mkdir /dev/pts
+busybox mount -t devpts none /dev/pts
+busybox mount -a 
+
+busybox echo "busybox mdev" > /proc/sys/kernel/hotplug
+busybox echo "4 4 1 7" > /proc/sys/kernel/printk
+busybox mdev -s -d
+
+busybox echo "" > /etc/passwd
+busybox echo "" > /etc/group
+
+busybox sleep 1
+busybox adduser -u 0 -s /bin/sh -D -h /root root >/dev/null 2>&1&
+
+busybox sleep 1
+busybox echo "root:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox sleep 1
+busybox adduser -u 74 -s /sbin/nologin -D -H sshd >/dev/null 2>&1&
+
+busybox sleep 1
+busybox echo "sshd:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox mkdir -pv /lib/modules/`uname -r` >/dev/null 2>&1&
+
+#busybox telnetd >/dev/null 2>&1&
+ 
+#/sbin/sshd >/dev/null 2>&1&
+#alsactl -f /usr/share/alsa/state restore
+#mplayer -loop 0 -fs <name>.h264 >/dev/null 2>&1&
+
+busybox cat <<!
+Boot took $(busybox cut -d' ' -f1 /proc/uptime) seconds
+        _       _        _                  
+  /\/\ (_)_ __ (_)   / /(_)_ __  _   ___  __
+ /    \| | '_ \| |  / / | | '_ \| | | \ \/ /
+/ /\/\ \ | | | | | / /__| | | | | |_| |>  < 
+\/    \/_|_| |_|_| \____/_|_| |_|\__,_/_/\_\ 
+
+Welcome to MINI Linux
+!
+
+exec /bin/busybox sh
+
+注意:默认就支持NFS,QT程序运行必须在串口模式下才能正常显示.
+
+BUILD(busybox-使用静态库)
+--------------
+#Settings  --->    
+# --- Build Options 
+#  [x] Build static binary (no shared libs)
+#--- Applets
+# Shells  ---> 
+#  [ ]   Job control                          #去掉勾选,为了解决'sh: can't access tty; job control turned off'
+#Linux System Utilities  --->
+# [*] mdev
+#  [*]   Support /etc/mdev.conf
+#  [*]     Support subdirs/symlinks
+#  [*]       Support regular expressions substitutions when renaming device 
+#  [*]     Support command execution at device addition/removal
+#  [*]   Support loading of firmware
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- defconfig
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc`
+$>make V=1 ARCH=arm O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- CONFIG_PREFIX=/opt/shared/rootfs install 
+$>cd /opt/shared/rootfs
+$>mkdir -pv proc/ sys/ etc/ usr/sbin/ usr/bin/ usr/lib/ lib/ dev/ root/ tmp/ media/ usr/share/alsa etc/init.d/ var/run/wpa/ var/empty/ 
+$>touch init etc/fstab etc/passwd etc/group etc/pointercal
+$>chmod a+x init
+$>vi init
+-------
+#!/bin/busybox sh
+
+export PATH=/sbin:/bin:/usr/sbin:usr/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib
+
+export TERM=vt100
+export TERMINFO=/usr/share/terminfo
+
+export TSLIB_ROOT=/usr/
+export TSLIB_CONSOLEDEVICE=none 
+export TSLIB_FBDEVICE=/dev/fb0 
+export TSLIB_TSDEVICE=/dev/input/event<No.>
+export TSLIB_CONFFILE=$TSLIB_ROOT/etc/ts.conf 
+export TSLIB_CALIBFILE=/etc/pointercal
+export TSLIB_PLUGINDIR=$TSLIB_ROOT/lib/ts
+export LD_PRELOAD=$TSLIB_ROOT/lib/libts.so 
+
+export QT_ROOT=/usr 
+export QT_QPA_GENERIC_PLUGINS=tslib:/dev/input/event<No.>
+export QT_QPA_FONTDIR=/usr/share/fonts
+export QT_QPA_PLATFORM_PLUGIN_PATH=$QT_ROOT/plugins 
+export QT_QPA_PLATFORM=linuxfb:tty=/dev/fb0 
+export QT_QPA_TSLIB=1
+export QT_PLUGIN_PATH=$QT_ROOT/plugins
+export QML2_IMPORT_PATH=$QT_ROOT/qml 
+export LD_LIBRARY_PATH=$QT_ROOT/lib:$QT_ROOT/plugins/platforms:$LD_LIBRARY_PATH
+
+busybox mount -t proc none /proc
+busybox mount -t sysfs none /sys
+busybox mount -t tmpfs none /dev
+
+busybox mkdir /dev/pts
+busybox mount -t devpts none /dev/pts
+busybox mount -a 
+
+busybox echo "busybox mdev" > /proc/sys/kernel/hotplug
+busybox echo "4 4 1 7" > /proc/sys/kernel/printk
+busybox mdev -s -d
+
+busybox adduser -u 0 -s /bin/sh -h /root root >/dev/null 2>&1&
+busybox echo "root:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox adduser -h /shared -u 1001 -s /bin/sh sshd >/dev/null 2>&1&
+busybox echo "sshd:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox mkdir -pv /lib/modules/`uname -r` >/dev/null 2>&1&
+
+#busybox telnetd >/dev/null 2>&1&
+ 
+#/sbin/sshd >/dev/null 2>&1&
+#alsactl -f /usr/share/alsa/state restore
+#mplayer -loop 0 -fs <name>.h264 >/dev/null 2>&1&
+
+busybox cat <<!
+Boot took $(busybox cut -d' ' -f1 /proc/uptime) seconds
+ __ _                  
+  /\/\ (_)_ __ (_)   / /(_)_ __  _   ___  __
+ /    \| | '_ \| |  / / | | '_ \| | | \ \/ /
+/ /\/\ \ | | | | | / /__| | | | | |_| |>  < 
+\/    \/_|_| |_|_| \____/_|_| |_|\__,_/_/\_\ 
+
+Welcome to MINI Linux
+!
+
+exec /bin/busybox sh
+
+注意:默认就支持NFS.
+
+网络启动Linux(带根文件系统,方便调试) 
+--------------
+$>setenv ipaddr 192.168.10.100
+$>setenv ethaddr 00:00:00:00:00:01
+$>setenv gatewayip 192.168.10.1 
+$>setenv netmask 255.255.255.0 
+$>setenv serverip 192.168.10.8 
+$>setenv bootcmd 'tftp 80800000 zImage; tftp 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb; bootz 80800000 - 83000000'
+$>setenv bootargs 'console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init rootwait text'
+or 
+$>setenv bootargs 'console=tty0 console=ttymxc0,115200 kgdboc=ttymxc1,115200 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init netconsole=+6666@192.168.10.100/eth0,6666@192.168.10.8/ rootwait text nokaslr'
+$>saveenv
+$>boot 
+
+注意:使用NFS,Linux内核网络驱动要工作正常,80800000和83000000多写了或少写了都会导致内核启动不了(不断重启/下载,周而复始).
+
+BUILD(GDB)
+--------------
+$>CFLAGS="-static" CPPFLAGS="-static" CXXFLAGS="-static" ./configure -v --enable-static --prefix=/opt/shared/rootfs --host=arm-linux-gnueabihf 
+$>CFLAGS="-static" CPPFLAGS="-static" CXXFLAGS="-static" make V=1 CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` && make V=1 CROSS_COMPILE=arm-linux-gnueabihf- install 
+
+Modules
+--------------
+$>vi Makfile 
+-------
+KBUILD_CFLAGS += -O0 -g3 -ggdb 
+PWD  := $(shell pwd)
+KDIR := /opt/shared/linux-<...>
+KO   := <MODULE NAME>
+obj-m += $(KO).o       
+
+$(KO)-y := x.o y.o z.o ... 
+
+.PHONY:all
+all:
+	$(MAKE) -C $(KDIR) M=$(PWD) modules 
+
+.PHONY:clean
+clean:
+	$(MAKE) -C $(KDIR) M=$(PWD) clean 
+
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- all 
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- clean 
+
+$>vi Makfile 
+-------
+KBUILD_CFLAGS += -O0 -g3 -ggdb 
+PWD  := $(shell pwd)
+KDIR := /opt/shared/linux-<...>
+MDIR := /opt/shared/rootfs/lib/modules/<KERNEL VERSION,eg.4.19.261>
+KO   := <MODULE NAME,eg.char>
+
+obj-m += $(KO).o 
+$(KO)-y := x.o y.o z.o ... 
+
+.PHONY:all
+all:
+	$(MAKE) -C $(KDIR) M=$(PWD) modules 
+
+.PHONY:cp
+cp:
+	cp -f $(KO).ko $(MDIR)
+
+.PHONY:clean
+clean:
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
+
+$>touch /usr/bin/mk 
+$>chmod a+x /usr/bin/mk 
+$>vi /usr/bin/mk
+-------
+#!/bin/bash 
+
+make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- $1
+
+$>mk all 
+$>mk cp 
+$>mk clean 
+
+ARM Board
+-------
+$>busybox mkdir -pv /lib/modules/`uname -r`
+$>cp char.ko lib/modules/<...>
+$>depmod
+$>modprobe char 
+
+root(ARM Board)
+--------------
+$>adduser -u 0 -s /bin/sh -h /root root
+$>passwd root
+
+注意:需要重新启动开发板.
+
+telnetd(ARM Board)
+--------------
+$>telnetd 
+
+注意:验证成功后可以把命令加入到init文件中.
+
+$>vi Makefile
+---------------
+#### PROJECT SETTINGS ####
+# The name of the executable to be created
+BIN_NAME := BIN_NAME
+# Compiler used
+CC = arm-linux-gnueabihf-gcc 
+# Extension of source files used in the project
+SRC_EXT = c
+# Path to the source directory, relative to the makefile
+SRC_PATH = .
+# Space-separated pkg-config libraries used by this project
+LIBS =
+# General compiler flags
+COMPILE_FLAGS = -std=c99 -Wall -Wextra -D_GNU_SOURCE
+# Additional release-specific flags
+RCOMPILE_FLAGS = -D NDEBUG
+# Additional debug-specific flags
+DCOMPILE_FLAGS = -D DEBUG
+# Add additional include paths
+INCLUDES = -I $(SRC_PATH)
+# General linker settings
+LINK_FLAGS = -static
+# Additional release-specific linker settings
+RLINK_FLAGS =
+# Additional debug-specific linker settings
+DLINK_FLAGS = -g3 -O0 -gdwarf-4
+# Destination directory, like a jail or mounted system
+DESTDIR = /
+# Install path (bin/ is appended automatically)
+INSTALL_PREFIX = opt/shared/rootfs/
+#### END PROJECT SETTINGS ####
+
+# Optionally you may move the section above to a separate config.mk file, and
+# uncomment the line below
+# include config.mk
+
+# Generally should not need to edit below this line
+
+# Obtains the OS type, either 'Darwin' (OS X) or 'Linux'
+UNAME_S:=$(shell uname -s)
+
+# Function used to check variables. Use on the command line:
+# make print-VARNAME
+# Useful for debugging and adding features
+print-%: ; @echo $*=$($*)
+
+# Shell used in this makefile
+# bash is used for 'echo -en'
+SHELL = /bin/bash
+# Clear built-in rules
+.SUFFIXES:
+# Programs for installation
+INSTALL = install
+INSTALL_PROGRAM = $(INSTALL)
+INSTALL_DATA = $(INSTALL) -m 644
+
+# Append pkg-config specific libraries if need be
+ifneq ($(LIBS),)
+	COMPILE_FLAGS += $(shell pkg-config --cflags $(LIBS))
+	LINK_FLAGS += $(shell pkg-config --libs $(LIBS))
+endif
+
+# Verbose option, to output compile and link commands
+export V := true
+export CMD_PREFIX := @
+ifeq ($(V),true)
+	CMD_PREFIX :=
+endif
+
+# Combine compiler and linker flags
+release: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(RCOMPILE_FLAGS)
+release: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(RLINK_FLAGS)
+debug: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS)
+debug: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(DLINK_FLAGS)
+
+# Build and output paths
+release: export BUILD_PATH := build/release
+release: export BIN_PATH   := /opt/shared/rootfs/bin
+debug: export BUILD_PATH   := build/debug
+debug: export BIN_PATH     := /opt/shared/rootfs/bin
+install: export BIN_PATH   := /opt/shared/rootfs/bin
+
+# Find all source files in the source directory, sorted by most
+# recently modified
+ifeq ($(UNAME_S),Darwin)
+	SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' | sort -k 1nr | cut -f2-)
+else
+	SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' -printf '%T@\t%p\n' \
+						| sort -k 1nr | cut -f2-)
+endif
+
+# fallback in case the above fails
+rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
+						$(filter $(subst *,%,$2), $d))
+ifeq ($(SOURCES),)
+	SOURCES := $(call rwildcard, $(SRC_PATH), *.$(SRC_EXT))
+endif
+
+# Set the object file names, with the source directory stripped
+# from the path, and the build path prepended in its place
+OBJECTS = $(SOURCES:$(SRC_PATH)/%.$(SRC_EXT)=$(BUILD_PATH)/%.o)
+# Set the dependency files that will be used to add header dependencies
+DEPS = $(OBJECTS:.o=.d)
+
+# Macros for timing compilation
+ifeq ($(UNAME_S),Darwin)
+	CUR_TIME = awk 'BEGIN{srand(); print srand()}'
+	TIME_FILE = $(dir $@).$(notdir $@)_time
+	START_TIME = $(CUR_TIME) > $(TIME_FILE)
+	END_TIME = read st < $(TIME_FILE) ; \
+		$(RM) $(TIME_FILE) ; \
+		st=$$((`$(CUR_TIME)` - $$st)) ; \
+		echo $$st
+else
+	TIME_FILE = $(dir $@).$(notdir $@)_time
+	START_TIME = date '+%s' > $(TIME_FILE)
+	END_TIME = read st < $(TIME_FILE) ; \
+		$(RM) $(TIME_FILE) ; \
+		st=$$((`date '+%s'` - $$st - 86400)) ; \
+		echo `date -u -d @$$st '+%H:%M:%S'`
+endif
+
+# Version macros
+# Comment/remove this section to remove versioning
+USE_VERSION := false
+# If this isn't a git repo or the repo has no tags, git describe will return non-zero
+ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
+	USE_VERSION := true
+	VERSION := $(shell git describe --tags --long --dirty --always | \
+		sed 's/v\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)-\?.*-\([0-9]*\)-\(.*\)/\1 \2 \3 \4 \5/g')
+	VERSION_MAJOR := $(word 1, $(VERSION))
+	VERSION_MINOR := $(word 2, $(VERSION))
+	VERSION_PATCH := $(word 3, $(VERSION))
+	VERSION_REVISION := $(word 4, $(VERSION))
+	VERSION_HASH := $(word 5, $(VERSION))
+	VERSION_STRING := \
+		"$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(VERSION_REVISION)-$(VERSION_HASH)"
+	override CFLAGS := $(CFLAGS) \
+		-D VERSION_MAJOR=$(VERSION_MAJOR) \
+		-D VERSION_MINOR=$(VERSION_MINOR) \
+		-D VERSION_PATCH=$(VERSION_PATCH) \
+		-D VERSION_REVISION=$(VERSION_REVISION) \
+		-D VERSION_HASH=\"$(VERSION_HASH)\"
+endif
+
+# Standard, non-optimized release build
+.PHONY: release
+release: dirs
+ifeq ($(USE_VERSION), true)
+	@echo "Beginning release build v$(VERSION_STRING)"
+else
+	@echo "Beginning release build"
+endif
+	@$(START_TIME)
+	@$(MAKE) all --no-print-directory
+	@echo -n "Total build time: "
+	@$(END_TIME)
+
+# Debug build for gdb debugging
+.PHONY: debug
+debug: dirs
+ifeq ($(USE_VERSION), true)
+	@echo "Beginning debug build v$(VERSION_STRING)"
+else
+	@echo "Beginning debug build"
+endif
+	@$(START_TIME)
+	@$(MAKE) all --no-print-directory
+	@echo -n "Total build time: "
+	@$(END_TIME)
+
+# Create the directories used in the build
+.PHONY: dirs
+dirs:
+	@echo "Creating directories"
+	@mkdir -p $(dir $(OBJECTS))
+	@mkdir -p $(BIN_PATH)
+
+# Installs to the set path
+.PHONY: install
+install:
+	@echo "Installing to $(DESTDIR)$(INSTALL_PREFIX)/bin"
+	@$(INSTALL_PROGRAM) $(BIN_PATH)/$(BIN_NAME) $(DESTDIR)$(INSTALL_PREFIX)/bin
+
+# Uninstalls the program
+.PHONY: uninstall
+uninstall:
+	@echo "Removing $(DESTDIR)$(INSTALL_PREFIX)/bin/$(BIN_NAME)"
+	@$(RM) $(DESTDIR)$(INSTALL_PREFIX)/bin/$(BIN_NAME)
+
+# Removes all build files
+.PHONY: clean
+clean:
+	@echo "Deleting $(BIN_NAME) symlink"
+	@$(RM) $(BIN_NAME)
+	@echo "Deleting directories"
+	@$(RM) -r build
+	@$(RM) -r bin
+
+# Main rule, checks the executable and symlinks to the output
+all: $(BIN_PATH)/$(BIN_NAME)
+	@echo "Making symlink: $(BIN_NAME) -> $<"
+	@$(RM) $(BIN_NAME)
+	@ln -s $(BIN_PATH)/$(BIN_NAME) $(BIN_NAME)
+
+# Link the executable
+$(BIN_PATH)/$(BIN_NAME): $(OBJECTS)
+	@echo "Linking: $@"
+	@$(START_TIME)
+	$(CMD_PREFIX)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@echo -en "\t Link time: "
+	@$(END_TIME)
+
+# Add dependency files, if they exist
+-include $(DEPS)
+
+# Source file rules
+# After the first compilation they will be joined with the rules from the
+# dependency files to provide header dependencies
+$(BUILD_PATH)/%.o: $(SRC_PATH)/%.$(SRC_EXT)
+	@echo "Compiling: $< -> $@"
+	@$(START_TIME)
+	$(CMD_PREFIX)$(CC) $(CFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
+	@echo -en "\t Compile time: "
+	@$(END_TIME)
+
+$>make debug 
+$>make release 
+
+帮助
+--------------
+$>help 
+or 
+$>? 
+
+eg.
+ >? bootz
+ or 
+ >help bootz 
+ 
+信息查询
+--------------
+$>bdinfo          #查看板子信息
+$>printenv        #打印环境变量
+$>version   
+
+网络
+--------------
+ipaddr    --     开发板IP地址
+ethaddr   --     开发板的MAC地址
+gatewayip --     网关地址
+netmask   --     子网掩码
+serverip  --     服务器IP地址,用于调试
+
+$>setenv ipaddr 192.168.10.100
+$>setenv ethaddr 00:00:00:00:00:01
+$>setenv gatewayip 192.168.10.1 
+$>setenv netmask 255.255.255.0 
+$>setenv serverip 192.168.10.8 
+$>saveenv 
+$>ping 192.168.10.8 
+-------
+host 192.168.10.8 is alive
+
+网络下载文件(nfs) 
+--------------
+$>nfs <Address> <IP:FILE>
+
+eg.
+ >nfs 80800000 192.168.1.8:/opt/arm/zImage
+ 
+网络下载文件(tftp) 
+--------------
+$>tftpboot <Address> <IP:FILE>
+
+eg. 
+ >tftp 80800000 zImage 
+
+EMMC(SD)
+--------------
+$>? mmc             #获取帮助
+$>mmc info          #输出MMC设备信息
+$>mmc read          #读取MMC中的数据
+$>mmc write         #向MMC设备写入数据
+$>mmc rescan        #扫描MMC设备
+$>mmc part          #列出MMC设备的分区
+$>mmc dev           #切换MMC设备
+$>mmc list          #列出当前有效的所有MMC设备
+$>mmc hwpartition   #设置MMC设备的分区
+$>mmc bootbus       #设置指定MMC设备的BOOT_BUS_WITDH域的值
+$>mmc bootpart      #设置指定MMC设备的boot和RPMB分区的大小
+$>mmc partconf      #设置指定MMC设备的PARTITION_CONFG域的值
+$>mmc rst           #复位MMC设备
+$>mmc setdsr        #设置DSR寄存器的值
+
+eg.
+ >mmc info 
+ -------
+ Device: FSL_SDHC
+ Manufacturer ID: ea
+ OEM: 10e
+ Name: SPeMM 
+ Tran Speed: 52000000
+ Rd Block Len: 512
+ MMC version 5.0
+ High Capacity: Yes
+ Capacity: 7.3 GiB
+ Bus Width: 8-bit
+ Erase Group Size: 464 KiB
+ HC WP Group Size: 8 MiB
+ User Capacity: 7.3 GiB WRREL
+ Boot Capacity: 4 MiB ENH
+ RPMB Capacity: 4 MiB ENH
+
+ >mmc rescan                    #扫描当前开发上所有的MMC设备,包括EMMC和SD卡
+ >mmc list                      #查看当前开发板一共有几个MMC设备
+ -------
+ FSL_SDHC: 0
+ FSL_SDHC: 1 (eMMC)
+ 
+ >mmc dev <dev> <part>          #dev - 要切换的MMC设备号,part -- 分区号,不写默认分区为0
+ >mmc dev 0                     #切换到SD卡,0 -- SD卡,1 -- EMMC 
+ -------
+ switch to partitions #0, OK
+ mmc1(part 0) is current device
+ 
+ >mmc dev 1 2                   #切换到EMMC的第二分区
+ >mmc part                      #查看分区
+ >mmc read <addr> <blk> <cnt>   #addr - DRAM中的地址,blk - 块的起始地址(HEX),一个块512字节,cnt - 块数量(HEX)
+ >mmc read 80800000 600 10      #读取数据
+ -------
+ MMC read: dev # 1, block # 1536, count 16 ... 16 blocks read: OK
+ 
+ >md.b 80800000 2000            #mmc read并不能显示数据,需要借助md.b查看16*5128192(0x2000)个字节的数据
+ -------
+ ...
+ 
+ >mmc write <addr> <blk> <cnt>
+ >tftp 80800000 uboot.bin       #addr - DRAM中的地址,blk - 块的起始地址(HEX),一个块512字节,cnt - 块数量(HEX)
+ -------
+ ...
+ Bytes transferred = 379902     #可以看出uboot.bin大小为379904字节,379904/512=742(0x2e6) - 表示要向SD或EMMC中写入742个块
+ 
+ >mmc dev 1 0 
+ >mmc write 80800000 2 2e6      #注意:SD卡和EMMC的前两个块(扇区)保存着分区表,从EMMC分区0第2个块(扇区)开始烧写,一共烧写742(0x2e6)个块
+ >version 
+ 
+ >mmc dev 1 0
+ >mmc partconf 1 1 0 0          #分区配置
+ >mmc erase <addr> <blk> <cnt>  #addr - DRAM中的地址,blk - 块的起始地址(HEX),一个块512字节,cnt - 块数量(HEX)
+ 
+FAT 
+--------------
+1.fatinfo 
+-------
+$>fatinfo <interface> <dev:part>   #interface - 表示接口,比如mmc,dev - 查询的设备号,part - 要查询的分区
+
+eg. 
+ >fatinfo mmc 1:1   
+ 
+2.fatls 
+-------
+$>fatls <interface> <dev:part> <directory>    #interface - 表示接口,比如mmc,dev - 查询的设备号,part - 要查询的分区,directory - 要查询的目录
+
+eg. 
+ >fatls mmc 1:1 
+ 
+3.fstype 
+-------
+$>fstype <interface> <dev:part>               #interface - 表示接口,比如mmc,dev - 查询的设备号,part - 要查询的分区
+
+4.fatload 
+-------
+$>fatload <interface> <dev:part> <addr> <filename> <bytes> <pos>        #filename - 要读取的文件名字, bytes - 读取多少字节的数据(0 - 整个文件),pos - 要读取文件相对文件首地址的偏移(0 - 从文件首地址开始读取)
+
+eg.
+ >fatload mmc 1:1 80800000 zImage 0 0
+ 
+设备树
+--------------
+$>fdt addr 830000000
+$>fdt header 
+$>fdt print 
+
+启动
+--------------
+$>bootz <addr> <initrd:size> <fdt>           #addr - Linux镜像在DRAM中的位置,initrd - initrd文件在DRAM中的地址(如果不使用则用' - '代替即可),fdt - 设备树文件在DRAM中的地址
+
+eg. 
+ >tftp 80800000 zImage 
+ >tftp 83000000 xx.dtb 
+ >bootz 80800000 - 83000000
+ or 
+ >fatload 1:1 80800000 zImage 
+ >fatload 1:1 83000000 xx.dtb 
+ >bootz 80800000 - 83000000
+ 
+$>boot                                      #boot会读取环境变量bootcmd来启动Linux系统
+
+eg. 
+ >setenv bootcmd 'tftp 80800000 zImage; tftp 83000000 xx.dtb; bootz 808000000 - 83000000'                          #从网络启动
+ >saveenv 
+ >boot 
+ 
+ >setenv bootcmd 'fatload mmc 1:1 80800000 zImage; fatload mmc 1:1 83000000 xx.dtb; bootz 808000000 - 83000000'    #从EMMC启动
+ >saveenv 
+ >boot 
+
+移植DEBIAN文件系统
+--------------
+$>tar -xvf linaro-jessie-alip-20161117-32.tar.gz
+$>mv linaro-jessie-alip-20161117-32 armrootfs
+$>setenv bootargs 'console=tty0 console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/armrootfs,proto=tcp,vers=3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/sbin/init rootwait text'
+$>saveenv
+$>boot 
+
+注意:实验后串口正常使用.
+
+移植DEBIAN文件系统(jessie)
+--------------
+$>apt-get install qemu-user-static debootstrap binfmt-support libncurses5-dev
+$>mkdir jessie && cd jessie
+$>debootstrap --arch=armhf --include=vim,openssh-server,telnet,locales,build-essential,udev,mmc-utils --foreign --no-check-gpg jessie . <url,eg.http://192.168.10.66:81/debian>
+$>cp /usr/bin/qemu-arm-static usr/bin/
+$>LC_ALL=C LANG=C chroot . /debootstrap/debootstrap --second-stage
+$>LC_ALL=C LANG=C chroot . dpkg --configure -a
+$>LC_ALL=C LANG=C chroot . apt-get install locales
+$>LC_ALL=C LANG=C chroot . passwd
+$>echo "jessie" > etc/hostname
+$>rm -rf usr/bin/qemu-arm-static                                   #不需要chroot时删除掉"usr/bin/qemu-arm-static"即可.
+$>setenv bootargs 'console=tty0 console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/jessie,proto=tcp,vers=3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/sbin/init rootwait text'
+$>saveenv
+$>boot 
+
+注意:实验后串口无法使用.
+
+移植DEBIAN文件系统(buster)
+--------------
+$>apt-get install qemu-user-static debootstrap binfmt-support libncurses5-dev
+$>mkdir buster && cd buster
+$>debootstrap --arch=armhf --include=vim,openssh-server,telnet,locales,build-essential,udev,mmc-utils --foreign --no-check-gpg buster . <url,eg.http://192.168.10.66:81/debian>
+$>cp /usr/bin/qemu-arm-static usr/bin/
+$>LC_ALL=C LANG=C chroot . /debootstrap/debootstrap --second-stage
+$>LC_ALL=C LANG=C chroot . dpkg --configure -a
+$>LC_ALL=C LANG=C chroot . apt-get install locales
+$>LC_ALL=C LANG=C chroot . passwd
+$>echo "buster" > etc/hostname
+$>rm -rf usr/bin/qemu-arm-static                                   #不需要chroot时删除掉"usr/bin/qemu-arm-static"即可.
+$>setenv bootargs 'console=tty0 console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/buster,proto=tcp,vers=3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/sbin/init rootwait text'
+$>saveenv
+$>boot 
+
+注意:实验后串口正常使用,imx.6ull桌面无法启动.
+
+移植DEBIAN文件系统(buster)
+--------------
+$>apt-get install qemu-user-static debootstrap binfmt-support libncurses5-dev
+$>mkdir buster && cd buster
+$>debootstrap --arch=armhf --include=vim,tree,gawk,net-tools,valgrind,wireless-tools,net-tools,udhcpc,unar,p7zip-full,ethtool,openssh-server,telnet,locales,build-essential,udev,mmc-utils --foreign --no-check-gpg buster . http://192.168.10.22:80
+or 
+$>debootstrap --arch=arm64 --include=vim,tree,gawk,net-tools,valgrind,wireless-tools,net-tools,udhcpc,unar,p7zip-full,ethtool,openssh-server,telnet,locales,build-essential,udev,mmc-utils --foreign --no-check-gpg buster . http://192.168.10.22:80
+$>cp -afv /usr/bin/qemu-arm-static usr/bin/
+or 
+$>cp -afv /usr/bin/qemu-arm-static usr/bin/
+$>LC_ALL=C LANG=C chroot . /debootstrap/debootstrap --second-stage
+$>LC_ALL=C LANG=C chroot . dpkg --configure -a
+$>LC_ALL=C LANG=C chroot . apt-get install locales
+$>LC_ALL=C LANG=C chroot . passwd
+$>echo "buster" > etc/hostname
+$>rm -rf usr/bin/qemu-arm-static                                   #不需要chroot时删除掉"usr/bin/qemu-arm-static"即可.
+$>setenv bootargs 'console=tty0 console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/buster,proto=tcp,vers=3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/sbin/init rootwait text'
+$>saveenv
+$>boot 
+
+注意:实验后串口正常使用,imx.6ull桌面无法启动.
+
+USB-HOST设备
+--------------
+Device Drivers  --->
+ -> Input device support                                   
+   -*- Generic input layer (needed for keyboard, mouse, ...)       #CONFIG_INPUT,drivers/input/,Documentation/input/input.txt
+ [*] USB support  --->                                             #CONFIG_USB_SUPPORT,drivers/usb/
+  --- USB support
+  <*>   Support for Host-side USB                                  #CONFIG_USB,drivers/usb/,Documentation/usb/usb-help.txt
+  <*>     USB Mass Storage support                                 #CONFIG_USB_STORAGE,drivers/usb/storage/,USB大容量存储设备
+  <*>   USB Gadget Support  ----                                   #CONFIG_USB_GADGET,drivers/usb/gadget/
+   --- USB Gadget Support  
+   <M>   USB Gadget Drivers                                        #选择编译模块 -- imx.6ull专属驱动(参考OTG实验).
+    <M>     Mass Storage Gadget                                    #大容量存储   -- imx.6ull专属驱动(参考OTG从机实验-模拟U盘实验).
+	<M>     Audio Gadget                                           #声卡         -- imx.6ull专属驱动(参考OTG从机实验-USB声卡实验).
+	 [*]       UAC 1.0 (Legacy)                                    #选中UAC
+ HID support  ---> 
+  -*- HID bus support                                              #CONFIG_HID,drivers/hid/
+   <*>   Generic HID driver                                        #CONFIG_HID_GENERIC,drivers/hid/,使能通用HID驱动(Support for generic devices on the HID bus).
+   USB HID support  --->
+    <*> USB HID transport layer                                    #CONFIG_USB_HID,drivers/hid/usbhid/,Documentation/input/input.txt,USB键盘鼠标等HID设备驱动
+ SCSI device support  --->
+  -*- SCSI device support                                          #CONFIG_SCSI,drivers/scsi/,Documentation/scsi/scsi.txt
+  <*> SCSI device support                                          #CONFIG_BLK_DEV_SD,drivers/scsi/,Documentation/scsi/scsi.txt
+ <*> Sound card support  --->
+  --- Sound card support
+  <*>   Advanced Linux Sound Architecture  --->
+   <*>   ALSA for SoC audio support  --->
+    SoC Audio for Freescale CPUs  --->
+	 <*> SoC Audio support for i.MX boards with wm8960             #
+	 <*> Asynchronous Sample Rate Converter (ASRC) module support  #
+	 
+$>cp drivers/usb/gadget/libcomposite.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>cp drivers/usb/gadget/function/usb_f_mass_storage.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>cp drivers/usb/gadget/legacy/g_mass_storage.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>depmod 
+$>modprobe libcomposite
+$>modprobe usb_f_mass_storage
+$>modprobe g_mass_storage file=/dev/sda1 removable=1               #模拟U盘实验
+
+$>apt-get install alsa-utils                                       #在buster-rootfs中进行安装,默认alsa是没有声音(需要结合手册进行配置)
+$>amixer sset Headphone 100,100
+ >amixer sset Speaker 120,120
+ >amixer sset 'Right Output Mixer PCM' on
+ >amixer sset 'Left Output Mixer PCM' on
+$>aplay /media/<name>.wav -v                                       #播放wav
+$>cp drivers/usb/gadget/libcomposite.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>cp drivers/usb/gadget/function/usb_f_uac1.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>cp drivers/usb/gadget/legacy/g_audio.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>modprobe libcomposite
+$>modprobe usb_f_uac1
+$>modprobe g_audio                                                 #USB声卡实验,OTG接口连接电脑(扬声器 AC-interface)即可使用开发板的喇叭.
+
+alsa
+--------------
+$>mkdir -pv /usr/share/alsa                                        #主机和开发板中都建立一个这样的目录,应为alsa生成的配置过程用到了一些绝对路径.
+$>cp alsa-lib-1.2.8.tar.bz2 /opt/shared/
+$>cp alsa-utils-1.2.8.tar.bz2 /opt/shared/
+$>tar -vxjf alsa-lib-1.2.8.tar.bz2
+$>tar -vxjf alsa-utils-1.2.8.tar.bz2
+$>cd alsa-lib-1.2.8
+$>./configure --host=arm-linux-gnueabihf --with-configdir=/usr/share/alsa --prefix=/opt/shared/libalsa-1.2.8/
+$>make V=1 && make install 
+$>cp -af /opt/shared/libalsa-1.2.8/lib/* /opt/shared/rootfs/lib/ 
+$>cp -raf /usr/share/alsa/* /opt/shared/rootfs/usr/share/alsa/
+
+$>cd alsa-utils-1.2.8
+$>./configure --host=arm-linux-gnueabihf --with-alsa-inc-prefix=/opt/shared/libalsa-1.2.8/include/ --with-alsa-prefix=/opt/shared/libalsa-1.2.8/lib/ --prefix=/opt/shared/alsa-1.2.8/ --disable-alsamixer --disable-xmlto
+$>make V=1 && make install  
+$>cp -raf /opt/shared/alsa-1.2.8/bin/* /opt/shared/rootfs/bin/
+$>cp -raf /opt/shared/alsa-1.2.8/sbin/* /opt/shared/rootfs/sbin/
+$>cp -raf /opt/shared/alsa-1.2.8/share/* /opt/shared/rootfs/usr/share/
+
+$>amixer sset Headphone 100,100
+ >amixer sset Speaker 120,120
+ >amixer sset 'Right Output Mixer PCM' on
+ >amixer sset 'Left Output Mixer PCM' on
+$>alsactl -f /usr/share/alsa/state store                           #保存声卡配置
+$>alsactl -f /usr/share/alsa/state restore                         #还原声卡配置
+$>aplay /media/<name>.wav -v                                       #播放wav
+$>cp drivers/usb/gadget/libcomposite.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>cp drivers/usb/gadget/function/usb_f_uac1.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>cp drivers/usb/gadget/legacy/g_audio.ko /opt/shared/rootfs/lib/modules/4.1.15/
+$>modprobe libcomposite
+$>modprobe usb_f_uac1
+$>modprobe g_audio                                                 #USB声卡实验,OTG接口连接电脑(扬声器 AC-interface)即可使用开发板的喇叭.
+
+mplayer
+--------------
+$>cp zlib-1.2.13.tar.gz /opt/shared/
+$>tar -xvzf zlib-1.2.13.tar.gz
+$>cd zlib-1.2.13
+$>CC=arm-linux-gnueabihf-gcc LD=arm-linux-gnueabihf-ld AS=arm-linux-gnueabihf-as ./configure --prefix=/opt/shared/libz-1.2.13
+$>make && make install 
+$>cp -rfa /opt/shared/libz-1.2.13/lib/* /opt/shared/rootfs/lib/ 
+
+$>cp mplayer-1.5.tar.xz /opt/shared/
+$>tar -xvf mplayer-1.5.tar.xz
+$>cd MPlayer-1.5
+$>./configure --cc=arm-linux-gnueabihf-gcc --host-cc=gcc --target=arm-linux-gnueabihf --disable-ossaudio --disable-mencoder --enable-alsa --enable-fbdev --prefix=/opt/shared/mplayer --extra-cflags="-I /opt/shared/libz-1.2.13/include -I /opt/shared/libalsa-1.2.8/include" --extra-ldflags="-L /opt/shared/libz-1.2.13/lib -L /opt/shared/libalsa-1.2.8/lib -lasound"
+$>vi config.mak
+--------
+...
+INSTALLSTRIP =                                             #将原来"INSTALLSTRIP = -s"替换成"INSTALLSTRIP = "
+...
+
+$>make && make install 
+$>cp -f /opt/shared/mplayer/bin/mplayer /opt/shared/rootfs/bin/
+$>ffmpeg -y -i <name>.mp4 -pix_fmt yuvj420p -s 1024x600 -c h264 <name>.h264
+$>mplayer -fs <视频>                                       #居中播放视频
+$>mplayer -fs <name>.h264                                  #居中播放视频
+$>mplayer -fs <name>.h264 >/dev/null 2>&1                  #居中播放视频
+$>mplayer -loop 0 -fs <name>.h264 >/dev/null 2>&1          #居中循环播放视频
+
+触摸屏设备
+--------------
+Device Drivers  --->
+ Input device support  --->
+  -*- Generic input layer (needed for keyboard, mouse, ...)
+  [*]   Touchscreens  --->
+   --- Touchscreens
+   < >   Analog Devices AD7879-1/AD7889-1 touchscreen interface
+
+注意:源码存放路径为"drivers/input/touchscreen/".
+
+tslib-1.22
+--------------
+$>cp tslib-1.22.tar.xz /opt/shared/
+$>tar -xvzf tslib-1.22.tar.xz
+$>cd tslib-1.22
+$>./configure --host=arm-linux-gnueabihf ac_cv_func_malloc_0_nonnull=yes --prefix=/opt/shared/tslib
+$>make -j`nproc` && make install 
+$>rsync -avzHP /opt/shared/tslib/* /opt/shared/rootfs/usr/
+$>vi init 
+-------
+...
+export TSLIB_ROOT=/usr/
+export TSLIB_CONSOLEDEVICE=none 
+export TSLIB_FBDEVICE=/dev/fb0 
+export TSLIB_TSDEVICE=/dev/input/event<No.>
+export TSLIB_CONFFILE=$TSLIB_ROOT/etc/ts.conf 
+export TSLIB_CALIBFILE=/etc/pointercal
+export TSLIB_PLUGINDIR=$TSLIB_ROOT/lib/ts
+export LD_PRELOAD=$TSLIB_ROOT/lib/libts.so 
+...
+
+$>ts_test                             #单点触摸
+$>ts_test_mt                          #多点触摸
+$>touch /etc/pointercal               #创建电容屏校准配置文件
+$>ts_calibrate                        #校准
+
+qt-everywhere-src-5.12.12
+--------------
+$>cp qt-everywhere-src-5.12.12.tar.xz /opt/shared/
+$>tar -xvzf qt-everywhere-src-5.12.12.tar.xz
+$>cd qt-everywhere-src-5.12.12
+$>cp -rfv qtbase/mkspecs/linux-arm-gnueabi-g++ qtbase/mkspecs/linux-arm-gnueabihf-g++
+$>vi qtbase/mkspecs/linux-arm-gnueabihf-g++/qmake.conf
+-------
+...
+MAKEFILE_GENERATOR      = UNIX
+CONFIG                 += incremental
+QMAKE_INCREMENTAL_STYLE = sublib
+
+QT_QPA_DEFAULT_PLATFORM = linuxfb
+QMAKE_CFLAGS += -O2 -march=armv7-a -mtune=cortex-a7 -mfpu=neon -mfloat-abi=hard
+QMAKE_CXXFLAGS += -O2 -march=armv7-a -mtune=cortex-a7 -mfpu=neon -mfloat-abi=hard
+
+include(../common/linux.conf)
+include(../common/gcc-base-unix.conf)
+include(../common/g++-unix.conf)
+
+# modifications to g++.conf
+QMAKE_CC                = arm-linux-gnueabihf-gcc
+QMAKE_CXX               = arm-linux-gnueabihf-g++
+QMAKE_LINK              = arm-linux-gnueabihf-g++
+QMAKE_LINK_SHLIB        = arm-linux-gnueabihf-g++
+
+# modifications to linux.conf
+QMAKE_AR                = arm-linux-gnueabihf-ar cqs
+QMAKE_OBJCOPY           = arm-linux-gnueabihf-objcopy
+QMAKE_NM                = arm-linux-gnueabihf-nm -P
+QMAKE_STRIP             = arm-linux-gnueabihf-strip
+load(qt_config)
+...
+
+$>./configure -prefix /opt/shared/qt-everywhere-5.12.12 -opensource -confirm-license -release -strip -shared -optimized-qmake -c++std c++11 --rpath=no -pch -xplatform linux-arm-gnueabihf-g++ -skip qt3d -skip qtactiveqt -skip qtandroidextras -skip qtcanvas3d -skip qtconnectivity -skip qtdatavis3d -skip qtdoc -skip qtgamepad -skip qtlocation -skip qtmacextras -skip qtnetworkauth -skip qtpurchasing -skip qtremoteobjects -skip qtscript -skip qtscxml -skip qtsensors -skip qtspeech -skip qtsvg -skip qttools -skip qttranslations -skip qtwayland -skip qtwebengine -skip qtwebview -skip qtwinextras -skip qtx11extras -skip qtxmlpatterns -make libs -make examples -nomake tools -nomake tests -gui -widgets -dbus-runtime --glib=no --iconv=no --pcre=qt --zlib=qt -no-openssl --freetype=qt --harfbuzz=qt -no-opengl -linuxfb --xcb=no -tslib --libpng=qt --libjpeg=qt --sqlite=qt -plugin-sql-sqlite -I /opt/shared/tslib/include/ -L /opt/shared/tslib/lib/ -recheck-all
+$>make -j`nproc` && make install 
+$>rsync -avzHP /opt/shared/qt-everywhere-5.12.12/* /opt/shared/rootfs/usr/
+$>vi init 
+-------
+...
+export QT_ROOT=/usr 
+export QT_QPA_GENERIC_PLUGINS=tslib:/dev/input/event<No.>
+export QT_QPA_FONTDIR=/usr/share/fonts
+export QT_QPA_PLATFORM_PLUGIN_PATH=$QT_ROOT/plugins 
+export QT_QPA_PLATFORM=linuxfb:tty=/dev/fb0 
+export QT_QPA_TSLIB=1
+export QT_PLUGIN_PATH=$QT_ROOT/plugins
+export QML2_IMPORT_PATH=$QT_ROOT/qml 
+export LD_LIBRARY_PATH=$QT_ROOT/lib:$QT_ROOT/plugins/platforms:$LD_LIBRARY_PATH
+...
+
+$>/usr/examples/quick/animation/animation                                   #测试程序
+
+开发QT程序
+--------------
+$>apt-get install build-essential dh-autoreconf automake cmake dpkg-dev dh-make tree python3 python3-pip xserver-xorg-core xserver-xorg libxkbcommon-dev libxkbcommon-x11-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-render-util0-dev libxcb-util0-dev libxcb-keysyms1-dev 
+$>ln -sf /usr/lib/x86_64-linux-gnu/libxcb-util.so.0 /usr/lib/x86_64-linux-gnu/libxcb-util.so.1
+$>export QT_DEBUG_PLUGINS=1
+$>/opt/Qt5.12.12/Tools/QtCreator/bin/qtcreator
+$>/opt/shared/qt-everywhere-5.12.12/bin/qmake                               #armhf编译出来的qmake
+
+注意:以上内容都需要在动态库的rootfs上进行,静态编译的busybox组成的rootfs在遇到大型程序比如QT时可能就很麻烦.
+
+ncurses-6.3
+--------------
+$>cp ncurses-6.3.tar.gz /opt/shared/
+$>tar -xvzf ncurses-6.3.tar.gz
+$>cd ncurses-6.3
+$>./configure --prefix=/opt/shared/ncurses --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf --with-shared --without-profile --disable-stripping --without-progs --with-manpages --without-tests
+$>make -j`nproc` && make install 
+$>cp -rafv /opt/shared/ncurses/lib/* /opt/shared/rootfs/usr/lib/
+$>cp -rafv /opt/shared/ncurses/share/* /opt/shared/rootfs/usr/share/
+$>cp -rafv /opt/shared/ncurses/include/* /opt/shared/rootfs/usr/include/
+$>vi init 
+-------
+...
+export TERM=vt100
+export TERMINFO=/usr/share/terminfo
+...
+
+minicom-2.7.1
+--------------
+$>cp minicom-2.7.1.tar.gz /opt/shared/
+$>tar -xvzf minicom-2.7.1.tar.gz
+$>cd minicom-2.7.1
+$>CC=arm-linux-gnueabihf-gcc ./configure --prefix=/opt/shared/minicom --host=arm-linux-gnueabihf CPPFLAGS="-I /opt/shared/ncurses/include" LDFLAGS="-L /opt/shared/ncurses/lib" --enable-cfg-dir=/etc/minicom 
+$>make -j`nproc` && make install 
+$>cp -rafv /opt/shared/minicom/bin/* /opt/shared/rootfs/usr/bin/
+
+4G设备
+--------------
+Device Drivers  --->
+ [*] Network device support  --->
+  <*>   USB Network Adapters  --->
+   <*>   Multi-purpose USB Networking Framework
+ [*] Network device support  --->
+  <*>   PPP (point-to-point protocol) support
+  <*>     PPP BSD-Compress compression
+  <*>     PPP Deflate compression
+  [*]     PPP filtering
+  <*>     PPP MPPE compression (encryption)
+  [*]     PPP multilink support
+  <*>     PPP over Ethernet
+  <*>     PPP support for async serial ports
+  <*>     PPP support for sync tty ports
+ [*] USB support  --->
+  --- USB support
+  <*>   USB Serial Converter support  --->
+   --- USB Serial Converter support
+   <*>   USB driver for GSM and CDMA modems
+ [*] USB support  --->
+  --- USB support
+  <*>   Support for Host-side USB
+  <*>   USB Modem (CDC ACM) support
+
+注意:"ppp-2.4.7","2.4.8","2.4.9"编译都出现了问题,那么建议使用串口来直接设置ECM接口.
+
+CAN设备
+--------------
+[*] Networking support  --->
+ <*>   CAN bus subsystem support  ---> 
+  --- CAN bus subsystem support
+  CAN Device Drivers  --->
+   <*> Platform CAN drivers with Netlink support (NEW)
+
+iproute2
+--------------
+step.1 libmnl
+--------
+$>cp libmnl.tar.gz /opt/shared/
+$>tar -xvf libmnl.tar.gz
+$>cd libmnl
+$>git checkout libmnl-1.0.5 -fb v1.0.5
+$>./autogen.sh
+$>./configure --prefix=/opt/shared/libmnl --host=arm-linux-gnueabihf
+$>make -j`nproc` && make install 
+
+step.2 iproute2
+--------
+$>cp iproute2-6.0.0.tar.gz /opt/shared/
+$>tar -xvf iproute2-6.0.0.tar.gz
+$>cd iproute2-6.0.0
+$>nano ./configure
+-------
+...
+#echo -n "SELinux support: "
+#check_selinux
+
+#echo -n "libbpf support: "
+#check_libbpf
+
+#echo -n "ELF support: "
+#check_elf
+...
+
+$>PKG_CONFIG_PATH=/opt/shared/libmnl/lib/pkgconfig CC=arm-linux-gnueabihf-gcc AR=arm-linux-gnueabihf-ar ./configure
+$>make -j`nproc`
+$>cp -rafv ip/ip /opt/shared/rootfs/
+$>/ip -V
+$>/ip addr
+
+step.3 can-utils
+--------
+$>cp can-utils-2020.02.04.tar.gz /opt/shared/
+$>tar -xvzf can-utils-2020.02.04.tar.gz
+$>cd can-utils-2020.02.04
+$>./autogen.sh
+$>./configure --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf --disable-static --enable-shared --prefix=/opt/shared/can
+$>make -j`nproc` && make install 
+$>cp -rafv /opt/shared/can/bin/* /opt/shared/rootfs/usr/bin/
+
+$>/ip link set can0 type can bitrate 500000                           #500Kbit/s
+$>/ip link set can0 type can bitrate 500000  loopback on              #500Kbit/s,开启回环测试
+$>/ip link set can0 up/down
+$>candump can0 &                                                      #后台接收数据
+$>cansend can0 5A1#11.22.33.44.55.66.77.88                            #发送数据
+
+KEY设备
+--------------
+Device Drivers  --->
+ Input device support  ---> 
+  -*- Generic input layer (needed for keyboard, mouse, ...)
+  [*]   Keyboards  --->
+   <*>   GPIO Buttons
+
+LED设备
+--------------
+Device Drivers  --->
+ -*- LED Support  ---> 
+ <*>   LED Support for GPIO connected LEDs             -- 只有选择ARM编译器的时候才会出现.
+
+PWM设备
+--------------
+Device Drivers  --->
+ [*] Pulse-Width Modulation (PWM) Support  --->
+  --- Pulse-Width Modulation (PWM) Support
+  ...
+  
+IIO设备
+--------------
+Device Drivers  --->
+ <*> Industrial I/O support  --->
+  --- Industrial I/O support
+  -*-   Enable buffer support within IIO
+  {*}     Industrial I/O buffering based on kfifo
+
+ADC设备
+--------------
+Device Drivers  --->
+ <*> Industrial I/O support  --->
+  --- Industrial I/O support
+  Analog to digital converters  --->
+
+gdb-12.1
+--------------
+$>cp gdb-12.1.tar.gz /opt/shared/
+$>tar -xvf gdb-12.1.tar.gz
+
+step.1 gdb 
+--------
+$>cd gdb-12.1
+$>mkdir -pv tmp && cd tmp 
+$>../configure --enable-targets=all --prefix=/opt/shared/v12                               #支持所有架构和gdb-multiarch功能完全一样,例如"set architecture armv7".
+or 
+$>../configure --enable-targets=all --prefix=/opt/shared/v8                                #支持所有架构和gdb-multiarch功能完全一样,例如"set architecture armv7".
+$>make && make install 
+
+step.1 gdb & python
+--------
+$>/usr/bin/python --version
+$>cd gdb-12.1
+$>python ./gdb/python/python-config.py --includes
+$>python ./gdb/python/python-config.py --ldflags
+$>mkdir -pv tmp && cd tmp 
+$>../configure --with-python --enable-targets=all --prefix=/opt/shared/v12                               #支持所有架构和gdb-multiarch功能完全一样,例如"set architecture armv7".
+or 
+$>../configure --with-python --enable-targets=all --prefix=/opt/shared/v8                                #支持所有架构和gdb-multiarch功能完全一样,例如"set architecture armv7". 
+$>make V=1 -j`nproc` && make install
+
+注意:gdb-12.1不能用来调试内核,建议使用gdb-8.2.1.tar.gz.
+
+step.1.1 内核选项检查
+--------
+CONFIG_NETCONSOLE          -- on 
+CONFIG_NETCONSOLE_DYNAMIC  -- on 
+CONFIG_HAVE_ARCH_KGDB      -- on 
+CONFIG_KGDB                -- on 
+CONFIG_KGDB_SERIAL_CONSOLE -- on 
+CONFIG_GDB_SCRIPTS         -- on 
+CONFIG_DEBUG_INFO_REDUCED  -- off 
+CONFIG_FRAME_POINTER       -- on,架构如果支持建议使能(ARM默认不会使能)
+CONFIG_RANDOMIZE_BASE      -- off,架构如果支持KASLR,应该禁用该选项(ARM默认不会使能).
+
+step.1.2 使用方法
+--------
+$>/opt/shared/v12/bin/gdb --version 
+$>/opt/shared/v12/bin/gdb
+ >python sys.path.append("/usr/share/gcc/python/")
+ >python sys.path.append("/opt/shared/kernel/tmp/scripts/gdb/linux")
+ >set architecture armv7
+ >set debug auto-load on                          #进入Linux内核目录使能CONFIG_GDB_SCRIPTS make menuconfig,Enable CONFIG_GDB_SCRIPTS,make
+ >add-auto-load-safe-path /opt/shared/kernel/tmp/
+ >source /opt/shared/kernel/tmp/vmlinux-gdb.py    #将vmlinux链接到当前内核源码目录,ln -sf /opt/shared/kernel/tmp/vmlinux .
+ >apropos lx                                      #注意参考"Docs > Development tools for the kernel > Debugging kernel and modules via gdb"
+
+注意:--target -- 目标机交叉编译器前缀/使用的交叉编译器的前缀.
+
+step.1.3 网络启动Linux(带根文件系统,方便调试-KGDB) 
+--------
+$>setenv ipaddr 192.168.10.100
+$>setenv ethaddr 00:00:00:00:00:01
+$>setenv gatewayip 192.168.10.1 
+$>setenv netmask 255.255.255.0 
+$>setenv serverip 192.168.10.8 
+$>setenv bootcmd 'tftp 80800000 zImage; tftp 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb; bootz 80800000 - 83000000'
+$>setenv bootargs 'console=tty0 console=ttymxc0,115200 kgdboc=ttymxc1,115200 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init netconsole=+6666@192.168.10.100/eth0,6666@192.168.10.22/ rootwait kgdbwait text nokaslr'
+or 
+$>setenv bootargs 'console=tty0 console=ttymxc0,115200 kgdboc=ttymxc1,115200 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init netconsole=+6666@192.168.10.100/eth0,6666@192.168.10.8/ rootwait kgdbwait text nokaslr'
+$>saveenv
+$>boot 
+
+$>netcat -lup 6666 | tee /opt/shared/kernel.log
+
+注意:"192.168.10.88"是ARM开发板,"192.168.10.8"是Linux开发主机,"192.168.10.22"是Windows主机,然后在Windows执行"nc -l -u -p 6666 > kernel.log"进行监控日志输出即可(/home/vsftpd/windows/iso/tools/netcat-1.12.zip).
+
+$>vi debug/debug.cfg 
+--------
+...
+set debug auto-load on
+set substitute-path /opt/shared/kernel /opt/share/linux                          #ln -sf /opt/shared/kernel /opt/share/linux
+show substitute-path
+...
+add-auto-load-safe-path /opt/shared/linux/tmp/
+python sys.path.append("/opt/shared/linux/tmp/scripts/gdb/linux")
+source /opt/shared/linux/tmp/vmlinux-gdb.py
+...
+
+注意:--target -- 目标机交叉编译器前缀/使用的交叉编译器的前缀.
+
+step.2 gdbserver
+--------
+$>git clone https://git.savannah.gnu.org/git/gnulib.git or /home/vsftpd/linux/arm/gdb/gnulib
+$>git checkout 776af40e09b476a41073131a90022572f448c189 -fb v12.1
+$>cd gdb-12.1/gnulib
+$>vi update-gnulib.sh
+------
+AUTOMAKE_VERSION="1.16.1"                                                         #将"1.15.1"替换成"1.16.1".
+
+$>./update-gnulib.sh /opt/shared/gnulib
+$>./configure --target=arm-linux-gnueabihf --host=arm-linux-gnueabihf 
+$>CC=arm-linux-gnueabihf-gcc make 
+
+$>cd gdb-12.1/gdbsupport
+$>./configure --target=arm-linux-gnueabihf --host=arm-linux-gnueabihf 
+$>CC=arm-linux-gnueabihf-gcc make 
+
+$>cd gdb-12.1/libiberty
+$>./configure --target=arm-linux-gnueabihf --host=arm-linux-gnueabihf 
+$>CC=arm-linux-gnueabihf-gcc make 
+
+$>cd gdb-12.1/gdbserver
+$>./configure --target=arm-linux-gnueabihf --host=arm-linux-gnueabihf 
+$>CC=arm-linux-gnueabihf-gcc make 
+
+$>cp -rfa gdb-12.1/gdbserver/gdbserver /opt/shared/rootfs/bin/                    #拷贝程序到rootfs
+
+注意:--host -- 指定编译后的程序在哪里运行.
+
+openssh
+--------------
+step.1 zlib 
+--------
+$>cp zlib-1.2.13.tar.gz /opt/shared/
+$>tar -xvzf zlib-1.2.13.tar.gz
+$>cd zlib-1.2.13
+$>CC=arm-linux-gnueabihf-gcc LD=arm-linux-gnueabihf-ld AS=arm-linux-gnueabihf-as ./configure --prefix=/opt/shared/libz-1.2.13
+$>make && make install 
+$>cp -rfa /opt/shared/libz-1.2.13/lib/* /opt/shared/rootfs/lib/ 
+
+step.2 openssl
+--------
+$>cp openssl-1.1.1s.tar.gz /opt/shared/
+$>tar -xvf openssl-1.1.1s.tar.gz
+$>cd openssl-1.1.1s
+$>./Configure CROSS_COMPILE=arm-linux-gnueabihf- linux-armv4 shared no-asm --prefix=/opt/shared/openssl/ 
+$>make && make install 
+$>cp -rfa /opt/shared/openssl/lib/libcrypto.so* /opt/shared/rootfs/lib/                                            #拷贝库到rootfs
+$>cp -rfa /opt/shared/openssl/lib/libssl.so* /opt/shared/rootfs/lib/                                               #拷贝库到rootfs
+
+step.3 openssh 
+--------
+$>cp openssh-9.1.tar.gz /opt/shared/
+$>tar -xvf openssh-9.1.tar.gz
+$>cd openssh-9.1
+$>autoreconf
+$>CC=arm-linux-gnueabihf-gcc AR=arm-linux-gnueabihf-ar ./configure --bindir=/bin --sbindir=/sbin --libexecdir=/bin --sysconfdir=/etc --host=arm-linux-gnueabihf --disable-etc-default-login --with-libs --with-zlib=/opt/shared/libz-1.2.13 --with-ssl-dir=/opt/shared/openssl
+$>make 
+$>cp -rfa scp ssh ssh-add ssh-agent ssh-keygen ssh-keyscan ssh-keysign sftp sftp-server /opt/shared/rootfs/bin/     #拷贝程序到rootfs
+$>cp -rfa sshd /opt/shared/rootfs/sbin/                                                                             #拷贝程序到rootfs
+$>cp -rfa moduli ssh_config sshd_config /opt/shared/rootfs/etc/                                                     #拷贝配置到rootfs
+$>vi /opt/shared/rootfs/etc/sshd_config
+------
+...
+PermitRootLogin yes
+StrictModes yes
+...
+
+$>touch /etc/group                                        #board-cmd
+$>mkdir -pv /var/empty                                    #board-cmd
+$>passwd root                                             #board-cmd
+$>adduser -h /shared -u 1001 -s /bin/sh sshd              #board-cmd
+
+$>cd /etc/                                                #board-cmd 
+$>ssh-keygen -t rsa -f ssh_host_rsa_key -N ""             #board-cmd 
+$>ssh-keygen -t dsa -f ssh_host_dsa_key -N ""             #board-cmd 
+$>ssh-keygen -t ecdsa -f ssh_host_ecdsa_key -N ""         #board-cmd 
+$>ssh-keygen -t ed25519 -f ssh_host_ed25519_key -N ""     #board-cmd 
+
+$>/sbin/sshd &                                            #board-cmd,启动sshd服务.
+
+$>ssh sshd@<srv_ip>
+$>ssh root@<srv_ip>
+
+WIFI设备
+--------------
+Device Drivers  --->
+ [*] USB support  --->
+  --- USB support
+  <*>   Support for Host-side USB
+  <*>   EHCI HCD (USB 2.0) support
+  <*>   OHCI HCD (USB 1.1) support
+  <*>   ChipIdea Highspeed Dual Role Controller
+  [*]     ChipIdea device controller (NEW)              -- 只有选择ARM编译器的时候才会出现.
+  [*]     ChipIdea host controller
+ [*] Network device support  --->
+  --- Network device support
+  [*]   Wireless LAN  ---> 
+   --- Wireless LAN
+   <*>     IEEE 802.11 for Host AP (Prism2/2.5/3 and WEP/TKIP/CCMP)
+   [*]       Support downloading firmware images with Host AP driver
+   [*]         Support for non-volatile firmware download
+[*] Networking support  --->
+ -*-   Wireless  ---> 
+ <*>   cfg80211 - wireless configuration API
+ [*]     cfg80211 wireless extensions compatibility
+ <*>   Generic IEEE 802.11 Networking Stack (mac80211) 
+
+WIFI 
+--------------
+iwconfig  -- 设置无线网络相关参数
+iwlist    -- 扫描当前无线网络信息,获取WIFI热点
+iwspy     -- 获取每个节点链接的质量
+
+step.1 iwlist
+--------
+$>cp iwlist.tar.gz /opt/shared/
+$>cd iwlist
+$>vi Makefile 
+------
+...
+CC ?= gcc
+AR ?= ar
+RANLIB ?= ranlib
+...
+
+$>make clean
+$>CC=arm-linux-gnueabihf-gcc AR=arm-linux-gnueabihf-ar RANLIB=arm-linux-gnueabihf-ranlib make 
+$>cp -rfa iwlist iwconfig iwspy iwpriv ifrename /opt/shared/rootfs/bin/                                            #拷贝程序到rootfs
+$>cp -rfa libiw.so.29 /opt/shared/rootfs/usr/lib/                                                                  #拷贝库到rootfs
+
+$>modprobe 8188eu                    #board-cmd
+$>ifconfig wlan0 up                  #board-cmd
+$>iwlist wlan0 scan                  #board-cmd
+
+step.2 openssl
+--------
+$>cp openssl-1.1.1s.tar.gz /opt/shared/
+$>tar -xvf openssl-1.1.1s.tar.gz
+$>cd openssl-1.1.1s
+$>./Configure CROSS_COMPILE=arm-linux-gnueabihf- linux-armv4 shared no-asm --prefix=/opt/shared/openssl/ 
+$>make && make install 
+$>cp -rfa /opt/shared/openssl/lib/libcrypto.so* /opt/shared/rootfs/lib/                                            #拷贝库到rootfs
+$>cp -rfa /opt/shared/openssl/lib/libssl.so* /opt/shared/rootfs/lib/                                               #拷贝库到rootfs
+
+step.3 libnl
+--------
+$>cp libnl-3.7.0.tar.gz /opt/shared/
+$>tar -xvf libnl-3.7.0.tar.gz
+$>cd libnl-3.7.0
+$>./configure --host=arm-linux-gnueabihf --prefix=/opt/shared/libnl-v3.7.0
+$>make && make install 
+$>cp -rfa /opt/shared/libnl-v3.7.0/lib/* /opt/shared/rootfs/usr/lib/                                              #拷贝库到rootfs
+
+step.4 wpa_supplicant
+--------
+$>cp wpa_supplicant-2.7.tar.gz /opt/shared/
+$>tar -xvf wpa_supplicant-2.7.tar.gz
+$>cd wpa_supplicant-2.7/wpa_supplicant
+$>cp defconfig .config
+$>export PKG_CONFIG_PATH=/opt/shared/libnl-v3.7.0/lib/pkgconfig:$PKG_CONFIG_PATH
+$>CC=arm-linux-gnueabihf-gcc LIBS="-L/opt/shared/openssl/lib -L /opt/shared/libnl-v3.7.0/lib -lssl -lcrypto" CFLAGS="-I /opt/shared/openssl/include -I /opt/shared/libnl-v3.7.0/include/libnl3" make
+$>cp -rfa wpa_cli wpa_supplicant /opt/shared/rootfs/usr/bin/
+
+$>mkdir -pv /var/run/wpa
+$>vi /etc/wpa.conf 
+------
+ctrl_interface=/var/run/wpa
+ap_scan=1 
+network={
+ ssid="..."
+ psk="..."
+}
+
+$>wpa_supplicant -D wext -c /etc/wpa.conf -i wlan0 >/dev/null 2>&1&
+or 
+$>wpa_supplicant -D nl80211 -c /etc/wpa.conf -i wlan0 >/dev/null 2>&1&
+$>udhcpc -i wlan0
+$>ifconfig wlan0
+
+注意:wpa_supplicant-2.7以后的版本都需要dbus支持,所以当前版本是最理想的了.
+
+编译和使用MMC工具
+--------------
+linux-v4.19.261(安装mmc-utils所需要内核头文件)
+-------
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- headers_install INSTALL_HDR_PATH=/opt/gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf/arm-linux-gnueabihf/
+
+mmc-utils
+-------
+$>CC=arm-linux-gnueabihf-gcc prefix=/opt/shared/rootfs make
+$>CC=arm-linux-gnueabihf-gcc prefix=/opt/shared/rootfs make install 
+
+NFS-rootfs模式下更新uboot
+-------
+$>echo 0 > /sys/block/mmcblk1boot0/force_ro                                                  #先使能emmc启动分区,才能进行烧写
+$>dd if=u-boot-imx6ull-14x14-ddr512-emmc.imx of=/dev/mmcblk1boot0 bs=1024 seek=1 conv=fsync
+$>echo 1 > /sys/block/mmcblk1boot0/force_ro                                                  #烧写完成后，关闭要烧写的启动分区
+$>mmc bootpart enable 1 1 /dev/mmcblk1                                                       #使能启动分区
+$>mmc bootpart enable <boot_partition> <send_ack> <device>                                   #boot_partition-表示emmc boot分区,指令里的第一个字符1表示boot_partition为1(即emmc boot分区1);send_ack-表示是否应答,0代表不发送确认应答,1为在引导操作中发送确认应答(即指令中的第二个字符1);device-表示设备,指令中为/dev/mmcblk1(即emmc设备)
+
+NFS-rootfs模式下更新设备树
+-------
+$>mkdir -pv /mnt /update
+$>mount /dev/mmcblk1p1 /mnt
+$>cp -af /update/imx6ull-14x14-emmc-7-1024x600-c.dtb /mnt
+$>cp -af /update/zImage /mnt
+$>sync 
+
+NFS-rootfs模式下更新跟文件系统
+-------
+$>mkdir -pv /mnt /update
+$>mount /dev/mmcblk1p2 /mnt
+$>rm -rf /mnt/*
+$>tar -xvf /update/rootfs.tar.gz -C /mnt
+$>tar -xvf /update/modules.tar.gz -C /mnt/lib/modules/
+$>sync 
+
+FFMPEG
+--------------
+$>git checkout n5.1.2 v5.1.2
+$>nano build 
+--------
+#!/bin/bash
+
+# Don't build any neon version for now
+for version in armv5te armv7a; do
+	DEST=.
+	FLAGS="--target-os=linux --cross-prefix=arm-linux-gnueabihf- --arch=arm"
+	FLAGS="$FLAGS --disable-shared --disable-symver"
+	FLAGS="$FLAGS --enable-small"
+#	FLAGS="$FLAGS --optimization-flags=-O2"
+	FLAGS="$FLAGS --enable-static"
+	FLAGS="$FLAGS --disable-doc"
+#	FLAGS="$FLAGS --disable-ffmpeg"
+#	FLAGS="$FLAGS --disable-ffplay"
+#	FLAGS="$FLAGS --disable-ffprobe"
+#	FLAGS="$FLAGS --disable-ffserver"
+#	FLAGS="$FLAGS --disable-avdevice"
+#	FLAGS="$FLAGS --disable-swresample"
+#	FLAGS="$FLAGS --disable-postproc"
+#	FLAGS="$FLAGS --disable-avfilter"
+#	FLAGS="$FLAGS --disable-everything"
+#	FLAGS="$FLAGS --disable-gpl"
+	FLAGS="$FLAGS --enable-demuxer=aac,flac,h263,h264,m4v,matroska,mp3,mpegvideo,ogg,pcm_alaw,pcm_f32be,pcm_f32le,pcm_f64be,pcm_f64le,pcm_mulaw,pcm_s16be,pcm_s16le,pcm_s24be"
+	FLAGS="$FLAGS --enable-demuxer=pcm_s24le,pcm_s32be,pcm_s32le,pcm_s8,pcm_u16be,pcm_u16le,pcm_u24be,pcm_u24le,pcm_u32be,pcm_u32le,pcm_u8,rtp,rtsp,sdp,wav"
+	FLAGS="$FLAGS --enable-parser=aac,aac_latm,flac,h263,h264,mpeg4video,mpegaudio,mpegvideo,vorbis,vp8"
+	FLAGS="$FLAGS --enable-decoder=aac,aac_latm,flac,h264,mjpeg,mpeg4,mp3,vorbis,wmalossless,wmapro,wmav1,wmav2,wmavoice"
+	FLAGS="$FLAGS --enable-encoder=png"
+	FLAGS="$FLAGS --enable-protocol=file,http,https,mmsh,mmst"
+	FLAGS="$FLAGS --disable-debug"
+
+	case "$version" in
+		armv7a)
+			EXTRA_CFLAGS="-march=armv7-a -mfloat-abi=hard"
+			EXTRA_LDFLAGS=""
+			ABI="armeabi-v7a"
+			;;
+		*)
+			EXTRA_CFLAGS=""
+			EXTRA_LDFLAGS=""
+			ABI="armeabi"
+			;;
+	esac
+	DEST="$DEST/$ABI"
+	FLAGS="$FLAGS --prefix=$DEST"
+
+	mkdir -pv $DEST
+	echo $FLAGS --extra-cflags="$EXTRA_CFLAGS" --extra-ldflags="$EXTRA_LDFLAGS" > $DEST/flags.txt
+	./configure $FLAGS --extra-cflags="$EXTRA_CFLAGS" --extra-ldflags="$EXTRA_LDFLAGS" | tee $DEST/configure.txt
+	[ $PIPESTATUS == 0 ] || exit 1
+	make clean
+	make -j`nproc` || exit 1
+	make install || exit 1
+done
+
+设置时间
+--------------
+$>date -R                                #查看时区
+$>date -s "2022-11-12 16:13"             #设置时间
+$>hwclock -w                             #写入bios
+
+内核中的设备树API
+--------------
+step.1 核心函数
+-------
+include/linux/of.h
+include/linux/of_graph.h
+drivers/of/base.c
+drivers/of/property.c
+drivers/of/address.c
+drivers/of/irq.c
+drivers/of/fdt.c
+
+step.2 驱动模型函数
+-------
+include/linux/of_device.h
+include/linux/of_platform.h
+drivers/of/device.c
+drivers/of/platform.c
+
+step.3 覆盖和动态DT函数
+-------
+drivers/of/resolver.c
+drivers/of/dynamic.c
+drivers/of/overlay.c
+
+MISC
+--------------
+include/linux/miscdevice.h
+
+INPUT
+--------------
+include/uapi/linux/major.h
+include/uapi/linux/input.h
+include/linux/input.h
+drivers/input/input.c
+
+LCD 
+--------------
+include/linux/fb.h
+drivers/video/fbdev/core/fbmem.c        #/dev/fb<x>
+drivers/video/fbdev/mxsfb.c             #LCD驱动<开发板官方提供>
+
+RTC 
+--------------
+include/linux/rtc.h 
+drivers/rtc/rtc-dev.c                   #RTC通用字符设备驱动
+drivers/rtc/rtc-snvs.c                  #RTC驱动<开发板官方提供>       
+
+I2C
+--------------
+include/linux/i2c.h 
+drivers/i2c/i2c-core.c                  #I2C核心
+drivers/i2c/busses/*                    #I2C适配器/控制器驱动<开发板官方提供>
+
+arch/arm/mach-imx/mach-mx27_3ds.c       #在没有设备树的情况下,使用i2c_board_info来描述I2C设备
+drivers/mfd/da9055-i2c.c                #使用设备树来描述I2C设备
+
+SPI
+--------------
+include/linux/spi/spi.h
+drivers/spi/spi.c
+drivers/spi/spi-imx.c                   #SPI驱动<开发板官方提供>
+
+UART
+--------------
+include/linux/serial_core.h
+drivers/tty/serial/imx.c                #UART驱动<开发板官方提供>
+Documentation/serial/driver             #参考文档
+
+MT
+--------------
+include/uapi/linux/input.h
+drivers/input/touchscreen//st1232.c            #TYPE-A<多用于电阻屏-单点触摸>
+drivers/input/touchscreen//ili210x.c           #TYPE-B<多用于电容屏-多点触摸>
+Documentation/input/multi-touch-protocol.rst   #参考文档
+
+BLOCK
+--------------
+include/linux/fs.h
+include/linux/genhd.h
+include/linux/blkdev.h
+include/linux/blk_types.h
+drivers/block/z2ram.c                          #参考源文件
+drivers/block/zram/zram_drv.c                  #参考源文件
+
+NET 
+--------------
+include/linux/phy.h
+include/linux/skbuff.h
+include/linux/netdevice.h
+include/uapi/linux/netdevice.h
+net/core/dev.c
+net/core/skbuff.c
+drivers/net/ethernet/freescale/fec_main.c      #网络驱动<开发板官方提供> 
+drivers/net/phy/mdio_bus.c
+drivers/net/phy/phy_device.c                   #通用PHY驱动
+Documentation/devicetree/bindings/net/fsl-fec.txt
+Documentation/devicetree/bindings/net/phy.txt
+
+PWM 
+--------------
+include/linux/pwm.h
+drivers/pwm/core.c
+drivers/video/backlight/pwm_bl.c               #PWM背光控制
+
+REGMAP 
+--------------
+drivers/base/regmap/internal.h
+include/linux/regmap.h
+
+IIO
+--------------
+include/linux/iio/iio.h
+include/uapi/linux/iio/types.h
+
+网络启动Linux(带根文件系统,屏蔽日志打印) 
+--------------
+$>setenv ipaddr 192.168.10.100
+$>setenv ethaddr 00:00:00:00:00:01
+$>setenv gatewayip 192.168.10.1 
+$>setenv netmask 255.255.255.0 
+$>setenv serverip 192.168.10.8 
+$>setenv bootcmd 'tftp 80800000 zImage; tftp 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb; bootz 80800000 - 83000000'
+$>setenv bootargs 'console=ttymxc0,115200 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off net.ifnames=0 biosdevname=0 loglevel=0 init=/init noinitrd rootwait text'
+$>saveenv
+$>boot 
+
+网络启动Linux(带根文件系统,开启日志打印) 
+--------------
+$>setenv ipaddr 192.168.10.100
+$>setenv ethaddr 00:00:00:00:00:01
+$>setenv gatewayip 192.168.10.1 
+$>setenv netmask 255.255.255.0 
+$>setenv serverip 192.168.10.8 
+$>setenv bootcmd 'tftp 80800000 zImage; tftp 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb; bootz 80800000 - 83000000'
+$>setenv bootargs 'console=ttymxc0,115200 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off net.ifnames=0 biosdevname=0 loglevel=8 init=/init noinitrd rootwait text'
+$>saveenv
+$>boot
+
+网络启动Linux(带根文件系统,方便调试,内核启用早期打印,禁用部分功能等等) 
+--------------
+$>setenv ipaddr 192.168.10.100
+$>setenv ethaddr 00:00:00:00:00:01
+$>setenv gatewayip 192.168.10.1 
+$>setenv netmask 255.255.255.0 
+$>setenv serverip 192.168.10.8 
+$>setenv bootcmd 'tftp 80800000 zImage; tftp 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb; bootz 80800000 - 83000000'
+$>setenv bootargs 'earlyprintk=ttymxc0,115200n8 console=ttymxc0,115200n8 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init logo.nologo usbcore.nousb vt.global_cursor_default=0 net.ifnames=0 biosdevname=0 noinitrd rootwait text'
+$>setenv bootargs 'earlyprintk=serial,0x02020000,115200n8 console=ttymxc0,115200n8 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init logo.nologo usbcore.nousb vt.global_cursor_default=0 net.ifnames=0 biosdevname=0 noinitrd rootwait text'
+or 
+$>setenv bootargs 'console=tty0 earlyprintk=ttymxc0,115200n8 console=ttymxc0,115200n8 kgdboc=ttymxc1,115200n8 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init netconsole=+6666@192.168.10.100/eth0,6666@192.168.10.8/ logo.nologo usbcore.nousb vt.global_cursor_default=0 net.ifnames=0 biosdevname=0 noinitrd rootwait text nokaslr'
+$>setenv bootargs 'console=tty0 earlyprintk=serial,0x02020000,115200n8 console=ttymxc0,115200n8 kgdboc=ttymxc1,115200n8 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init netconsole=+6666@192.168.10.100/eth0,6666@192.168.10.8/ logo.nologo usbcore.nousb vt.global_cursor_default=0 net.ifnames=0 biosdevname=0 noinitrd rootwait text nokaslr'
+$>saveenv
+$>boot 
+
+注意:使用NFS,Linux内核网络驱动要工作正常,80800000和83000000多写了或少写了都会导致内核启动不了(不断重启/下载,周而复始).
+
+移植DEBIAN文件系统-I3桌面(buster)
+--------------
+$>apt-get install qemu-user-static debootstrap binfmt-support libncurses5-dev
+$>mkdir buster && cd buster
+$>debootstrap --arch=armhf --include=vim,openssh-server,telnet,locales,udev,mmc-utils,xorg,i3,dbus-x11 --foreign --no-check-gpg buster . <url,eg.http://192.168.10.66:81/debian>
+$>cp -afv /usr/bin/qemu-arm-static usr/bin/
+$>LC_ALL=C LANG=C chroot . /debootstrap/debootstrap --second-stage
+$>LC_ALL=C LANG=C chroot . dpkg --configure -a
+$>LC_ALL=C LANG=C chroot . apt-get install locales
+$>LC_ALL=C LANG=C chroot . passwd
+$>echo "buster" > etc/hostname
+$>rm -rf usr/bin/qemu-arm-static                                   #不需要chroot时删除掉"usr/bin/qemu-arm-static"即可.
+$>setenv bootargs 'console=tty0 console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/buster,proto=tcp,vers=3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/sbin/init rootwait text'
+$>saveenv
+$>boot 
+
+$>nano -w etc/i3/config
+-------
+bar { 
+ mode hide
+ tray_output none
+}
+
+exec <prog-name>
+#exec i3-sensible-terminal
+
+注意:实验后串口正常使用.
+
+I3启动命令
+--------------
+export DISPLAY=:0.0
+export XAUTHORITY=/root/.Xauthority
+
+/usr/bin/Xorg :0.0 -verbose vt7 >/dev/null 2>&1&
+/usr/bin/i3 -c /etc/i3/config >/dev/null 2>&1&
+
+bash脚本调试
+--------------
+$>set -vx
+
+删除内核架构无关的代码
+-----------------
+shopt -s
+shopt -s extglob
+rm -rf arch/!(x86|arm|Kconfig|) arch/x86/!(syscalls|) arch/x86/syscalls/!(Makefile|syscall_32.tbl) arch/arm/mach-!(imx) arch/arm/plat-* arch/arm/kvm arch/arm/xen arch/arm/nwfpe arch/arm/oprofile arch/arm/configs/!(imx_v7_defconfig) arch/arm/boot/dts/!(imx6ull.dtsi|skeleton.dtsi|imx6ull-14x14-evk.dts|imx6ull-14x14-evk-emmc.dts|imx6ull-14x14-emmc-7-1024x600-c.dts|imx6ul-pinfunc.h|imx6ull-*.h|include|Makefile) 
+
+$>nano arch/arm/Kconfig
+-----
+...
+source "arch/arm/mach-imx/Kconfig"
+...
+
+vi /usr/bin/build
+-----------------
+#!/bin/bash 
+
+make LOCALVERSION="" V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- imx_v7_defconfig
+make LOCALVERSION="" V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage
+make LOCALVERSION="" V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- imx6ull-14x14-emmc-7-1024x600-c.dtb
+cp arch/arm/boot/zImage arch/arm/boot/dts/imx6ull-14x14-emmc-7-1024x600-c.dtb /opt/shared/ -afv
+or 
+make LOCALVERSION="" C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- imx_v7_defconfig
+make LOCALVERSION="" C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage
+make LOCALVERSION="" C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- imx6ull-14x14-emmc-7-1024x600-c.dtb
+cp arch/arm/boot/zImage arch/arm/boot/dts/imx6ull-14x14-emmc-7-1024x600-c.dtb /opt/shared/ -afv
+
+vi /usr/bin/menu
+-----------------
+#!/bin/bash 
+
+make LOCALVERSION="" V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+make LOCALVERSION="" V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage
+make LOCALVERSION="" V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- imx6ull-14x14-emmc-7-1024x600-c.dtb
+cp arch/arm/boot/zImage arch/arm/boot/dts/imx6ull-14x14-emmc-7-1024x600-c.dtb /opt/shared/ -afv
+or 
+make LOCALVERSION="" C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+make LOCALVERSION="" C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage
+make LOCALVERSION="" C=2 V=1 ARCH=arm LOADADDR=80800000 O=./tmp CROSS_COMPILE=arm-linux-gnueabihf- imx6ull-14x14-emmc-7-1024x600-c.dtb
+cp arch/arm/boot/zImage arch/arm/boot/dts/imx6ull-14x14-emmc-7-1024x600-c.dtb /opt/shared/ -afv
+
+芯片手册检索关键字
+--------------
+UART1_URXD / UART Receiver Register / UART memory map / UART Memory Map/Register Definition
+
+MACRO
+--------------
+#define UART_PADDR	IMX_DEBUG_UART_BASE(IMX6SL)
+#define IMX_DEBUG_UART_BASE(soc) soc##_UART_BASE(CONFIG_DEBUG_IMX_UART_PORT)
+#define IMX6SL_UART_BASE(n)	IMX6SL_UART_BASE_ADDR(n)
+#define IMX6SL_UART_BASE_ADDR(n) IMX6SL_UART##n##_BASE_ADDR
+==>
+IMX6SL_UART_BASE(CONFIG_DEBUG_IMX_UART_PORT)
+==>
+IMX6SL_UART<n>_BASE_ADDR                                   #define IMX6SL_UART1_BASE_ADDR	0x02020000
+
+ASM
+-------
+(((UART_PADDR) & 0x80000000) >> 7) | (0xf4000000 + (((UART_PADDR) & 0x50000000) >> 6) + (((UART_PADDR) & 0x0b000000) >> 4) + (((UART_PADDR) & 0x000fffff)))
+.macro	addruart, rp, rv, tmp
+    ldr	\rp, =UART_PADDR	@ physical
+    ldr	\rv, =UART_VADDR	@ virtual
+    .endm
+
+    .macro	senduart,rd,rx
+    ARM_BE8(rev \rd, \rd)
+    str	\rd, [\rx, #0x40]	@ TXDATA
+    .endm
+
+    .macro	waituart,rd,rx
+    .endm
+
+    .macro	busyuart,rd,rx
+1002:		
+    ldr	\rd, [\rx, #0x98]	@ SR2
+    ARM_BE8(rev \rd, \rd)
+    tst	\rd, #1 << 3		@ TXDC
+    beq	1002b			@ wait until transmit done
+    .endm
+
+ARM内核早期打印
+--------------
+Kernel hacking  --->  
+ [*] Kernel low-level debugging functions (read help!)
+ Kernel low-level debugging port (i.MX6SL Debug UART)  --->
+  (X) i.MX6SL Debug UART
+ [*] Early printk
+ i.MX Debug UART Port Selection 
+  1 
+
+$>setenv bootargs 'console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init rootwait text earlyprintk'
+or
+$>setenv bootargs 'console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init rootwait text earlyprintk=serial,0x3f8,115200 keep'
+$>setenv bootargs 'console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=/init rootwait text earlyprintk=serial,ttymxc0,115200 keep'
+
+API: early_printk(const char *fmt, ...) : kernel/printk/printk.c
+API: pr_info(const char *fmt, ...) : include/linux/printk.h
+
+注意:"涉及到的相关文件<arch/arm/include/debug/imx-uart.h>"
+
+目录结构
+--------------
+arch          ：主要包含和硬件体系结构相关的代码，如arm、x86、MIPS，PPC，每种CPU平台占一个相应的目录，例如我们使用的imx系列CPU就在 arch/arm/mach-imx 目录下，Linux内核目前已经支持30种左右的CPU体系结构。arch中的目录下存放的是各个平台以及各个平台的芯片对Linux内核进程调度、 内存管理、 中断等的支持，以及每个具体的SoC和电路板的板级支持代码。
+block         ：在Linux中block表示块设备（以块（多个字节组成的整体，类似于扇区）为单位来整体访问），譬如说SD卡、Nand、硬盘等都是块设备，block目录下放的是一些Linux存储体系中关于块设备管理的代码。
+crypto        ：这个文件夹下存放的是常用加密和散列算法（如md5、AES、 SHA等） ，还有一些压缩和CRC校验算法。
+Documentation ：内核各部分的文档描述。
+drivers       ：设备驱动程序，里面列出了linux内核支持的所有硬件设备的驱动源代码，每个不同的驱动占用一个子目录，如char、 block、 net、 mtd、 i2c等。
+fs            ：fs就是file system，里面包含Linux所支持的各种文件系统，如EXT、 FAT、 NTFS、 JFFS2等。
+include       ：目录包括编译核心所需要的大部分头文件，例如与平台无关的头文件在 include/linux 子目录下，与cpu架构相关的头文件在include目录下对应的子目录中。
+init          ：内核初始化代码，这个目录下的代码就是linux内核启动时初始化内核的代码。
+ipc           ：ipc就是 inter process commuication ，进程间通信，该文件夹下都是linux进程间通信的代码。
+kernel        ：kernel就是Linux内核，是Linux中最核心的部分，包括进程调度、定时器等，而和平台相关的一部分代码放在arch/*/kernel目录下。
+lib           ：lib是库的意思，lib目录下存放的都是一些公用的有用的库函数，注意这里的库函数和C语言的库函数不一样的，因为在内核编程中是不能用C语言标准库函数的，所以需要使用lib中的库函数，除此之外与处理器结构相关的库函数代码被放在 arch/*/lib/ 目录下。
+mm            ：目录包含了所有独立于 cpu 体系结构的内存管理代码，如页式存储管理内存的分配和释放等，而与具体硬件体系结构相关的内存管理代码位于 arch/*/mm 目录下，例如 arch/arm/mm/fault.c 。
+net           ：网络协议栈相关代码，net目录下实现各种常见的网络协议。
+scripts       ：这个目录下全部是脚本文件，这些脚本文件不是linux内核工作时使用的，而是用了配置编译linux内核的。
+security      ：内核安全模型相关的代码，例如最有名的SELINUX。
+sound         ：ALSA、 OSS音频设备的驱动核心代码和常用设备驱动。
+usr           ：实现用于打包和压缩的cpio等。
+
+configs
+--------------
+$>vi arch\arm\configs\imx_v7_defconfig
+-------
+CONFIG_APM_EMULATION=y
+CONFIG_KERNEL_LZO=y
+CONFIG_SYSVIPC=y
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+CONFIG_LOG_BUF_SHIFT=18
+CONFIG_CGROUPS=y
+CONFIG_RELAY=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_EXPERT=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_PERF_EVENTS=y
+CONFIG_PRINTK_TIME=y
+# CONFIG_SLUB_DEBUG is not set
+# CONFIG_COMPAT_BRK is not set
+CONFIG_MODULES=y
+CONFIG_MODULE_UNLOAD=y
+CONFIG_MODVERSIONS=y
+CONFIG_MODULE_SRCVERSION_ALL=y
+# CONFIG_BLK_DEV_BSG is not set
+CONFIG_ARCH_MXC=y
+CONFIG_SOC_IMX6ULL=y
+# CONFIG_SWP_EMULATE is not set
+CONFIG_SMP=y
+CONFIG_HAVE_ARM_ARCH_TIMER=y
+CONFIG_VMSPLIT_2G=y
+CONFIG_PREEMPT=y
+CONFIG_AEABI=y
+CONFIG_HIGHMEM=y
+CONFIG_CMA=y
+CONFIG_CMDLINE="noinitrd console=ttymxc0,115200"
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+CONFIG_CPU_FREQ_GOV_USERSPACE=y
+CONFIG_CPU_FREQ_GOV_INTERACTIVE=y
+CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+CONFIG_ARM_IMX6Q_CPUFREQ=y
+CONFIG_ARM_IMX7D_CPUFREQ=y
+CONFIG_CPU_IDLE=y
+CONFIG_VFP=y
+CONFIG_NEON=y
+CONFIG_BINFMT_MISC=m
+CONFIG_PM_DEBUG=y
+CONFIG_PM_TEST_SUSPEND=y
+CONFIG_NET=y
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_INET=y
+CONFIG_IP_PNP=y
+CONFIG_IP_PNP_DHCP=y
+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
+# CONFIG_INET_XFRM_MODE_BEET is not set
+# CONFIG_INET_LRO is not set
+CONFIG_IPV6=y
+CONFIG_VLAN_8021Q=y
+CONFIG_LLC2=y
+CONFIG_CAN=y
+CONFIG_CAN_FLEXCAN=y
+CONFIG_CAN_M_CAN=y
+CONFIG_BT=y
+CONFIG_BT_RTKBTUSB=m
+CONFIG_BT_RFCOMM=y
+CONFIG_BT_RFCOMM_TTY=y
+CONFIG_BT_BNEP=y
+CONFIG_BT_BNEP_MC_FILTER=y
+CONFIG_BT_BNEP_PROTO_FILTER=y
+CONFIG_BT_HIDP=y
+CONFIG_BT_HCIBTUSB=y
+CONFIG_BT_HCIUART=y
+CONFIG_BT_HCIUART_BCSP=y
+CONFIG_BT_HCIUART_ATH3K=y
+CONFIG_BT_HCIBCM203X=y
+CONFIG_BT_ATH3K=y
+CONFIG_CFG80211=y
+CONFIG_CFG80211_WEXT=y
+CONFIG_USB_ZD1201=m
+CONFIG_MAC80211=y
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+# CONFIG_STANDALONE is not set
+CONFIG_DMA_CMA=y
+CONFIG_CMA_SIZE_MBYTES=0
+CONFIG_IMX_WEIM=y
+CONFIG_CONNECTOR=y
+CONFIG_MTD=y
+CONFIG_MTD_CMDLINE_PARTS=y
+CONFIG_MTD_BLOCK=y
+CONFIG_MTD_CFI=y
+CONFIG_MTD_JEDECPROBE=y
+CONFIG_MTD_CFI_INTELEXT=y
+CONFIG_MTD_CFI_AMDSTD=y
+CONFIG_MTD_CFI_STAA=y
+CONFIG_MTD_PHYSMAP_OF=y
+CONFIG_MTD_DATAFLASH=y
+CONFIG_MTD_M25P80=y
+CONFIG_MTD_SST25L=y
+CONFIG_MTD_NAND=y
+CONFIG_MTD_NAND_GPMI_NAND=y
+CONFIG_MTD_NAND_MXC=y
+CONFIG_MTD_SPI_NOR=y
+CONFIG_SPI_FSL_QUADSPI=y
+CONFIG_MTD_UBI=y
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_SIZE=65536
+CONFIG_SENSORS_FXOS8700=y
+CONFIG_SENSORS_FXAS2100X=y
+CONFIG_EEPROM_AT24=y
+CONFIG_EEPROM_AT25=y
+# CONFIG_SCSI_PROC_FS is not set
+CONFIG_BLK_DEV_SD=y
+CONFIG_SCSI_CONSTANTS=y
+CONFIG_SCSI_LOGGING=y
+CONFIG_SCSI_SCAN_ASYNC=y
+# CONFIG_SCSI_LOWLEVEL is not set
+CONFIG_ATA=y
+CONFIG_SATA_AHCI_PLATFORM=y
+CONFIG_AHCI_IMX=y
+CONFIG_PATA_IMX=y
+CONFIG_NETDEVICES=y
+# CONFIG_NET_VENDOR_BROADCOM is not set
+CONFIG_CS89x0=y
+CONFIG_CS89x0_PLATFORM=y
+# CONFIG_NET_VENDOR_FARADAY is not set
+# CONFIG_NET_VENDOR_INTEL is not set
+# CONFIG_NET_VENDOR_MARVELL is not set
+# CONFIG_NET_VENDOR_MICREL is not set
+# CONFIG_NET_VENDOR_MICROCHIP is not set
+# CONFIG_NET_VENDOR_NATSEMI is not set
+# CONFIG_NET_VENDOR_SEEQ is not set
+CONFIG_SMC91X=y
+CONFIG_SMC911X=y
+CONFIG_SMSC911X=y
+CONFIG_SMSC_PHY=y
+# CONFIG_NET_VENDOR_STMICRO is not set
+CONFIG_MICREL_PHY=y
+CONFIG_PPP=y
+CONFIG_PPP_BSDCOMP=y
+CONFIG_PPP_DEFLATE=y
+CONFIG_PPP_FILTER=y
+CONFIG_PPP_MPPE=y
+CONFIG_PPP_MULTILINK=y
+CONFIG_PPPOE=y
+CONFIG_PPP_ASYNC=y
+CONFIG_PPP_SYNC_TTY=y
+CONFIG_USB_PEGASUS=m
+CONFIG_USB_RTL8150=m
+CONFIG_USB_RTL8152=m
+CONFIG_USB_USBNET=y
+CONFIG_USB_NET_CDC_EEM=m
+CONFIG_BCMDHD=y
+CONFIG_BCMDHD_SDIO=y
+CONFIG_BCMDHD_FW_PATH="/lib/firmware/bcm/ZP_BCM4339/fw_bcmdhd.bin"
+CONFIG_BCMDHD_NVRAM_PATH="/lib/firmware/bcm/ZP_BCM4339/bcmdhd.ZP.OOB.cal"
+CONFIG_RTL_CARDS=m
+CONFIG_RTL8188EUS=m
+CONFIG_USB_GOBI_NET=m
+CONFIG_EXTRA_RTL8192CU=m
+CONFIG_BRIDGE=y
+CONFIG_RFKILL=y
+CONFIG_RFKILL_INPUT=y
+# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+CONFIG_INPUT_EVDEV=y
+CONFIG_INPUT_EVBUG=m
+CONFIG_KEYBOARD_GPIO=y
+CONFIG_KEYBOARD_IMX=y
+CONFIG_MOUSE_PS2=m
+CONFIG_MOUSE_PS2_ELANTECH=y
+CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_TOUCHSCREEN_ADS7846=y
+CONFIG_TOUCHSCREEN_EGALAX=y
+CONFIG_TOUCHSCREEN_ELAN_TS=y
+CONFIG_TOUCHSCREEN_MAX11801=y
+CONFIG_TOUCHSCREEN_IMX6UL_TSC=y
+CONFIG_TOUCHSCREEN_MC13783=y
+CONFIG_TOUCHSCREEN_TSC2007=y
+CONFIG_TOUCHSCREEN_STMPE=y
+CONFIG_TOUCHSCREEN_EDT_FT5X06=y
+CONFIG_TOUCHSCREEN_GT9XX=y
+CONFIG_INPUT_MISC=y
+CONFIG_INPUT_MMA8450=y
+CONFIG_INPUT_MPL3115=y
+CONFIG_SENSOR_FXLS8471=y
+CONFIG_INPUT_ISL29023=y
+CONFIG_SERIO_SERPORT=m
+# CONFIG_LEGACY_PTYS is not set
+# CONFIG_DEVKMEM is not set
+CONFIG_SERIAL_IMX=y
+CONFIG_SERIAL_IMX_CONSOLE=y
+CONFIG_SERIAL_FSL_LPUART=y
+CONFIG_SERIAL_FSL_LPUART_CONSOLE=y
+CONFIG_FSL_OTP=y
+CONFIG_LITEON_AP3216C=y
+CONFIG_HW_RANDOM_IMX_RNG=y
+# CONFIG_I2C_COMPAT is not set
+CONFIG_I2C_CHARDEV=y
+# CONFIG_I2C_HELPER_AUTO is not set
+CONFIG_I2C_ALGOPCF=m
+CONFIG_I2C_ALGOPCA=m
+CONFIG_I2C_IMX=y
+CONFIG_SPI=y
+CONFIG_SPI_GPIO=y
+CONFIG_SPI_IMX=y
+CONFIG_SPI_SPIDEV=y
+CONFIG_GPIO_SYSFS=y
+CONFIG_GPIO_MAX732X=y
+CONFIG_GPIO_PCA953X=y
+CONFIG_GPIO_74X164=y
+CONFIG_POWER_SUPPLY=y
+CONFIG_SABRESD_MAX8903=y
+CONFIG_POWER_RESET=y
+CONFIG_POWER_RESET_SYSCON_POWEROFF=y
+CONFIG_SENSORS_MAX17135=y
+CONFIG_SENSORS_MAG3110=y
+CONFIG_THERMAL=y
+CONFIG_CPU_THERMAL=y
+CONFIG_IMX_THERMAL=y
+CONFIG_DEVICE_THERMAL=y
+CONFIG_WATCHDOG=y
+CONFIG_IMX2_WDT=y
+CONFIG_MFD_DA9052_I2C=y
+CONFIG_MFD_MC13XXX_SPI=y
+CONFIG_MFD_MC13XXX_I2C=y
+CONFIG_MFD_MAX17135=y
+CONFIG_MFD_SI476X_CORE=y
+CONFIG_MFD_STMPE=y
+CONFIG_REGULATOR=y
+CONFIG_REGULATOR_FIXED_VOLTAGE=y
+CONFIG_REGULATOR_ANATOP=y
+CONFIG_REGULATOR_DA9052=y
+CONFIG_REGULATOR_GPIO=y
+CONFIG_REGULATOR_MAX17135=y
+CONFIG_REGULATOR_MC13783=y
+CONFIG_REGULATOR_MC13892=y
+CONFIG_REGULATOR_PFUZE100=y
+CONFIG_MEDIA_SUPPORT=y
+CONFIG_MEDIA_CAMERA_SUPPORT=y
+CONFIG_MEDIA_RADIO_SUPPORT=y
+CONFIG_MEDIA_RC_SUPPORT=y
+CONFIG_RC_DEVICES=y
+CONFIG_IR_GPIO_CIR=y
+CONFIG_MEDIA_USB_SUPPORT=y
+CONFIG_USB_VIDEO_CLASS=m
+CONFIG_V4L_PLATFORM_DRIVERS=y
+CONFIG_VIDEO_MXC_OUTPUT=y
+CONFIG_VIDEO_MXC_CAPTURE=m
+CONFIG_MXC_CAMERA_OV5640=m
+CONFIG_MXC_CAMERA_OV5642=m
+CONFIG_MXC_CAMERA_OV5640_MIPI=m
+CONFIG_MXC_TVIN_ADV7180=m
+CONFIG_MXC_IPU_DEVICE_QUEUE_SDC=m
+CONFIG_VIDEO_MXC_IPU_OUTPUT=y
+CONFIG_VIDEO_MXC_PXP_V4L2=y
+CONFIG_VIDEO_MXC_CSI_CAMERA=m
+CONFIG_MXC_VADC=m
+CONFIG_MXC_MIPI_CSI=m
+CONFIG_MXC_CAMERA_OV5647_MIPI=m
+CONFIG_SOC_CAMERA=y
+CONFIG_VIDEO_MX3=y
+CONFIG_V4L_MEM2MEM_DRIVERS=y
+CONFIG_VIDEO_CODA=y
+CONFIG_RADIO_SI476X=y
+CONFIG_SOC_CAMERA_OV2640=m
+CONFIG_SOC_CAMERA_OV772X=m
+CONFIG_DRM=y
+CONFIG_DRM_VIVANTE=y
+CONFIG_FB=y
+CONFIG_FB_MXS=y
+CONFIG_FB_MXC_SYNC_PANEL=y
+CONFIG_FB_MXC_MIPI_DSI=y
+CONFIG_FB_MXC_MIPI_DSI_SAMSUNG=y
+CONFIG_FB_MXC_TRULY_WVGA_SYNC_PANEL=y
+CONFIG_FB_MXC_TRULY_PANEL_TFT3P5079E=y
+CONFIG_FB_MXC_TRULY_PANEL_TFT3P5581E=y
+CONFIG_FB_MXC_LDB=y
+CONFIG_FB_MXC_HDMI=y
+CONFIG_FB_MXS_SII902X=y
+CONFIG_FB_MXC_DCIC=m
+CONFIG_HANNSTAR_CABC=y
+CONFIG_FB_MXC_EINK_PANEL=y
+CONFIG_FB_MXC_EINK_V2_PANEL=y
+CONFIG_LCD_CLASS_DEVICE=y
+CONFIG_LCD_L4F00242T03=y
+CONFIG_LCD_PLATFORM=y
+CONFIG_BACKLIGHT_PWM=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+CONFIG_LOGO=y
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_USB_AUDIO=m
+CONFIG_SND_SOC=y
+CONFIG_SND_IMX_SOC=y
+CONFIG_SND_SOC_EUKREA_TLV320=y
+CONFIG_SND_SOC_IMX_WM8960=y
+CONFIG_SND_SOC_IMX_SII902X=y
+CONFIG_SND_SOC_IMX_WM8958=y
+CONFIG_SND_SOC_IMX_CS42888=y
+CONFIG_SND_SOC_IMX_WM8962=y
+CONFIG_SND_SOC_IMX_SGTL5000=y
+CONFIG_SND_SOC_IMX_MQS=y
+CONFIG_SND_SOC_IMX_SPDIF=y
+CONFIG_SND_SOC_IMX_MC13783=y
+CONFIG_SND_SOC_IMX_SI476X=y
+CONFIG_SND_SOC_IMX_HDMI=y
+CONFIG_USB=y
+CONFIG_USB_OTG_WHITELIST=y
+CONFIG_USB_OTG_FSM=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_MXC=y
+CONFIG_USB_HCD_TEST_MODE=y
+CONFIG_USB_ACM=m
+CONFIG_USB_STORAGE=y
+CONFIG_USB_CHIPIDEA=y
+CONFIG_USB_CHIPIDEA_UDC=y
+CONFIG_USB_CHIPIDEA_HOST=y
+CONFIG_USB_SERIAL=m
+CONFIG_USB_SERIAL_GENERIC=y
+CONFIG_USB_SERIAL_FTDI_SIO=m
+CONFIG_USB_SERIAL_OPTION=m
+CONFIG_USB_EHSET_TEST_FIXTURE=y
+CONFIG_NOP_USB_XCEIV=y
+CONFIG_USB_MXS_PHY=y
+CONFIG_USB_GADGET=y
+CONFIG_USB_CONFIGFS=m
+CONFIG_USB_CONFIGFS_SERIAL=y
+CONFIG_USB_CONFIGFS_ACM=y
+CONFIG_USB_CONFIGFS_OBEX=y
+CONFIG_USB_CONFIGFS_NCM=y
+CONFIG_USB_CONFIGFS_ECM=y
+CONFIG_USB_CONFIGFS_ECM_SUBSET=y
+CONFIG_USB_CONFIGFS_RNDIS=y
+CONFIG_USB_CONFIGFS_EEM=y
+CONFIG_USB_CONFIGFS_MASS_STORAGE=y
+CONFIG_USB_CONFIGFS_F_LB_SS=y
+CONFIG_USB_CONFIGFS_F_FS=y
+CONFIG_USB_ZERO=m
+CONFIG_USB_ETH=m
+CONFIG_USB_G_NCM=m
+CONFIG_USB_GADGETFS=m
+CONFIG_USB_MASS_STORAGE=m
+CONFIG_USB_G_SERIAL=m
+CONFIG_USB_SERIAL_CH341=m
+CONFIG_USB_SERIAL_CP210X=m
+CONFIG_MMC=y
+CONFIG_MMC_SDHCI=y
+CONFIG_MMC_SDHCI_PLTFM=y
+CONFIG_MMC_SDHCI_ESDHC_IMX=y
+CONFIG_MXC_IPU=y
+CONFIG_MXC_IPU_V3_PRE=y
+CONFIG_MXC_GPU_VIV=y
+CONFIG_MXC_SIM=y
+CONFIG_MXC_MIPI_CSI2=y
+CONFIG_MXC_HDMI_CEC=y
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+CONFIG_LEDS_GPIO=y
+CONFIG_LEDS_TRIGGERS=y
+CONFIG_LEDS_TRIGGER_TIMER=y
+CONFIG_LEDS_TRIGGER_ONESHOT=y
+CONFIG_LEDS_TRIGGER_HEARTBEAT=y
+CONFIG_LEDS_TRIGGER_BACKLIGHT=y
+CONFIG_LEDS_TRIGGER_GPIO=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_INTF_DEV_UIE_EMUL=y
+CONFIG_RTC_DRV_MC13XXX=y
+CONFIG_RTC_DRV_MXC=y
+CONFIG_RTC_DRV_SNVS=y
+CONFIG_DMADEVICES=y
+CONFIG_MXC_PXP_V2=y
+CONFIG_MXC_PXP_V3=y
+CONFIG_IMX_SDMA=y
+CONFIG_MXS_DMA=y
+CONFIG_DMATEST=m
+CONFIG_STAGING=y
+CONFIG_STAGING_MEDIA=y
+# CONFIG_IOMMU_SUPPORT is not set
+CONFIG_IIO=y
+CONFIG_IMX7D_ADC=y
+CONFIG_VF610_ADC=y
+CONFIG_PWM=y
+CONFIG_PWM_IMX=y
+CONFIG_EXT2_FS=y
+CONFIG_EXT2_FS_XATTR=y
+CONFIG_EXT2_FS_POSIX_ACL=y
+CONFIG_EXT2_FS_SECURITY=y
+CONFIG_EXT3_FS=y
+CONFIG_EXT3_FS_POSIX_ACL=y
+CONFIG_EXT3_FS_SECURITY=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+CONFIG_QUOTA=y
+CONFIG_QUOTA_NETLINK_INTERFACE=y
+# CONFIG_PRINT_QUOTA_WARNING is not set
+CONFIG_AUTOFS4_FS=y
+CONFIG_FUSE_FS=y
+CONFIG_ISO9660_FS=m
+CONFIG_JOLIET=y
+CONFIG_ZISOFS=y
+CONFIG_UDF_FS=m
+CONFIG_MSDOS_FS=m
+CONFIG_VFAT_FS=y
+CONFIG_TMPFS=y
+CONFIG_JFFS2_FS=y
+CONFIG_UBIFS_FS=y
+CONFIG_NFS_FS=y
+CONFIG_NFS_V3_ACL=y
+CONFIG_NFS_V4=y
+CONFIG_ROOT_NFS=y
+CONFIG_NLS_DEFAULT="cp437"
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_FAT_DEFAULT_IOCHARSET="utf8"
+CONFIG_NLS_ASCII=y
+CONFIG_NLS_ISO8859_1=y
+CONFIG_NLS_ISO8859_15=m
+CONFIG_NLS_UTF8=y
+CONFIG_DEBUG_FS=y
+CONFIG_MAGIC_SYSRQ=y
+# CONFIG_SCHED_DEBUG is not set
+# CONFIG_DEBUG_BUGVERBOSE is not set
+# CONFIG_FTRACE is not set
+CONFIG_SECURITYFS=y
+CONFIG_CRYPTO_USER=y
+CONFIG_CRYPTO_TEST=m
+CONFIG_CRYPTO_CTS=y
+CONFIG_CRYPTO_LRW=y
+CONFIG_CRYPTO_XTS=y
+CONFIG_CRYPTO_MD4=y
+CONFIG_CRYPTO_MD5=y
+CONFIG_CRYPTO_MICHAEL_MIC=y
+CONFIG_CRYPTO_RMD128=y
+CONFIG_CRYPTO_RMD160=y
+CONFIG_CRYPTO_RMD256=y
+CONFIG_CRYPTO_RMD320=y
+CONFIG_CRYPTO_SHA512=y
+CONFIG_CRYPTO_TGR192=y
+CONFIG_CRYPTO_WP512=y
+CONFIG_CRYPTO_BLOWFISH=y
+CONFIG_CRYPTO_CAMELLIA=y
+CONFIG_CRYPTO_DES=y
+CONFIG_CRYPTO_TWOFISH=y
+# CONFIG_CRYPTO_ANSI_CPRNG is not set
+CONFIG_CRYPTO_DEV_FSL_CAAM=y
+CONFIG_CRYPTO_DEV_FSL_CAAM_SM=y
+CONFIG_CRYPTO_DEV_FSL_CAAM_SM_TEST=y
+CONFIG_CRYPTO_DEV_FSL_CAAM_SECVIO=y
+CONFIG_CRYPTO_DEV_MXS_DCP=y
+CONFIG_CRC_CCITT=m
+CONFIG_CRC_T10DIF=y
+CONFIG_CRC7=m
+CONFIG_LIBCRC32C=m
+CONFIG_FONTS=y
+CONFIG_FONT_8x8=y
+CONFIG_FONT_8x16=y
+
+打印栈信息
+--------------
+dump_stack()
+
+封装PRINTK
+--------------
+#define ll(fmt, arg...) printk(KERN_INFO "[%s][%d] "fmt"\r\n", __FUNC__, __LINE__, ##arg);
+
+FMT
+--------------
+1.1 常见类型
+-------
+int                %d   / %x
+unsigned int       %u   / %x
+long               %ld  / %lx 
+unsigned long      %lu  / %lx 
+long long          %lld / %llx 
+unsigned long long %llu / %llx 
+size_t             %zu  / %zx 
+ssize_t            %zd  / %zx
+
+1.2 指针
+-------
+%pS/%pF           #打印对应的符号名/函数名和偏移量
+%ps/%pf           #打印对应的符号名/函数名 
+
+1.3 结构体
+-------
+%pr               #打印结构体资源
+%pR               #打印结构体资源,包含一个解码标记
+%pV               #打印结构的各个成员名称和值
+
+1.4 地址
+-------
+%pa               #物理地址
+
+1.5 RAW BUFFER <64字节一下,超过必须使用print_hex_dump>
+-------
+%*ph              #空格分割,eg.00 01 02
+%*phC             #冒号分割,eg.00:01:02
+%*phD             #横杠分割,eg.00-01-02
+%*phN             #无分割符,eg.000102
+
+1.6 IPV4地址
+-------
+%pI4              #IPV4,192.168.1.1
+ eg. u8 a = 192;
+     u8 b = 168;
+	 u8 c = 31;
+	 u8 d = 25;
+	 
+	 int ip_addr = (d << 24) | (c << 16) | (b << 8) | a;
+	 
+	 pr_info("ip_addr =%pI4\n", &ip_addr);         #ip_addr =192.168.31.25
+	 
+%pI6              #IPV6
+
+根文件系统
+-------------
+$>apt-get install qemu qemu-user-static debootstrap binfmt-support debian-archive-keyring growisofs genisoimage debootstrap vim openssh-server telnet gawk libtool autoconf automake bison flex gdb make net-tools tree ttyrec cscope valgrind build-essential libgmp-dev libmpfr-dev libmpc-dev libreadline-dev libssl-dev libjpeg-dev libncurses-dev libncurses5-dev 
+$>mkdir -pv /mnt/arm && cd /mnt/arm
+$>mkdir {bin,dev,etc,home,lib64,proc,sbin,sys,tmp,usr,var}
+$>mkdir usr/{bin,lib,sbin}
+$>mkdir dev/pts/
+$>mkdir var/log
+
+$>ln -s lib64 lib
+$>chown -R root:root *
+$>cd ../
+$>debootstrap --arch=armhf --include=vim,openssh-server,net-tools,gawk,tree,locales,mmc-utils --foreign --no-check-gpg buster ./arm http://mirrors.tuna.tsinghua.edu.cn/debian
+$>LC_ALL=C LANGAGE=C LANG=C /sbin/chroot ./arm debootstrap/debootstrap --second-stage
+$>mount --bind /dev /mnt/arm/dev && mount --bind /sys /mnt/arm/sys/ && mount --bind /proc /mnt/arm/proc/ && mount --bind /dev/pts /mnt/arm/dev/pts/ && mount --bind /tmp /mnt/arm/tmp
+$>cp /usr/bin/qemu-arm-static /mnt/arm/usr/bin/
+$>chroot /mnt/arm /bin/bash
+$>echo "buster" > etc/hostname
+$>apt-get update --allow-releaseinfo-change                            #镜像升级
+$>exit
+$>umount /mnt/arm/{dev/pts,dev,sys,proc,tmp}

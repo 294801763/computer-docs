@@ -1,0 +1,227 @@
+材料
+--
+linux    X2
+B210     X2 
+4G模组   X1
+LTE白卡  X1 
+写卡器   X1 
+
+PC - 1
+--
+B210 + EPC + ENB
+
+PC - 2
+--
+B210 + UE
+
+名词
+--
+srsUE - a full-stack SDR 4G/5G-NSA UE application (5G-SA coming soon)                  - UE,相当于手机
+srsENB - a full-stack SDR 4G eNodeB application (5G-NSA and 5G-SA coming soon)         - 接入网,相当于基站,是EPC和UE桥梁
+srsEPC - a light-weight 4G core network implementation with MME, HSS and S/P-GW        - 核心网
+
+all 
+--
+$>apt-get install autoconf automake build-essential ccache cmake cpufrequtils doxygen ethtool g++ git inetutils-tools libboost-all-dev libncurses5 libncurses5-dev libusb-1.0-0 libusb-1.0-0-dev libusb-dev python3-dev python3-mako python3-numpy python3-requests python3-scipy python3-setuptools python3-ruamel.yaml cmake libfftw3-dev libmbedtls-dev libboost-program-options-dev libconfig++-dev libsctp-dev libzmq3-dev
+
+注意:如果安装了"libzmq3-dev"包之后,则无需再编译"libzmq(libzmq-4.3.5.tar.gz) - step.2"和"czmq(czmq-4.2.1.tar.gz) - step.3".
+
+uhd(uhd-4.6.0.0.tar.gz) - step.1 
+--
+$>apt-get install autoconf automake build-essential ccache cmake cpufrequtils doxygen ethtool g++ git inetutils-tools libboost-all-dev libncurses5 libncurses5-dev libusb-1.0-0 libusb-1.0-0-dev libusb-dev python3-dev python3-mako python3-numpy python3-requests python3-scipy python3-setuptools python3-ruamel.yaml 
+$>cd <repo>/host/
+$>mkdir build && cd build
+$>cmake -DLIB_SUFFIX=64 ../
+$>cmake -DCMAKE_INSTALL_PREFIX=/opt/uhd ../
+$>cmake -DCMAKE_FIND_ROOT_PATH=/usr ../
+$>cmake -DENABLE_STATIC_LIBS=ON <...>                   #Static Builds
+$>cmake -DNEON_SIMD_ENABLE=OFF <...>                    #ARM platforms
+$>cmake -DCMAKE_FIND_ROOT_PATH=/usr -DCMAKE_INSTALL_PREFIX=/usr/ ../
+or 
+$>cmake -DLIB_SUFFIX=64 -DCMAKE_FIND_ROOT_PATH=/usr -DCMAKE_INSTALL_PREFIX=/usr/ ../
+$>make -j`nproc` 
+$>make -j`nproc` test 
+$>make install 
+$>ldconfig
+$>mkdir -p /usr/share/uhd/images
+$>cp -afv uhd-images_4.6.0.0/* /usr/share/uhd/images
+$>uhd_find_devices
+$>uhd_usrp_probe
+$>uhd_config_info --version
+
+如果版本不兼容情况下使用如下命令烧录镜像
+-
+$>uhd_images_downloader
+$>uhd_image_loader --args=serial=31C9235,type=b200
+$>uhd_usrp_probe
+$>uhd_config_info --version
+
+让普通用户也能操作usrp设备
+-
+$>cd /usr/lib/uhd/utils
+$>cp -afv uhd-usrp.rules /etc/udev/rules.d/
+$>udevadm control --reload-rules
+$>udevadm trigger
+
+注意:必须用系统自带的GCC编译器编译才能通过.
+
+libzmq(libzmq-4.3.5.tar.gz) - step.2
+--
+$>apt-get install build-essential cmake libfftw3-dev libmbedtls-dev libboost-program-options-dev libconfig++-dev libsctp-dev
+$>./autogen.sh 
+$>./configure --prefix=/usr/
+$>make -j`nproc` 
+$>make install 
+$>ldconfig 
+
+注意:必须用系统自带的GCC编译器编译才能通过.
+
+czmq(czmq-4.2.1.tar.gz) - step.3
+--
+$>./autogen.sh 
+$>./configure --prefix=/usr/
+$>make -j`nproc` 
+$>make install 
+$>ldconfig 
+
+注意:必须用系统自带的GCC编译器编译才能通过.
+
+srsRAN_4G(srsRAN_4G-release_23_11.tar.gz) - step.4
+--
+$>apt-get install build-essential cmake libfftw3-dev libmbedtls-dev libboost-program-options-dev libconfig++-dev libsctp-dev
+$>mkdir build && cd build
+$>cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr/ ../ && make -j`nproc`
+$>make test 
+$>make install
+$>srsran_install_configs.sh user 
+$>srsepc_if_masq.sh <能上网的接口即可,eg.eth0>
+$>srsepc
+$>srsenb
+
+注意:必须用系统自带的GCC编译器编译才能通过.
+
+cmd 
+-
+$>ip netns add UE<NO.>       #创建网络命名空间
+$>ip netns list              #验证网络命名空间是否存在
+
+user_db.csv文件格式
+-
+(ue_name),(algo),(imsi),(K),(OP/OPc_type),(OP/OPc_value),(AMF),(SQN),(QCI),(IP_alloc)ue3,mil,221010123456789,6874736969202073796D4B2079650A76,opc,504F20634F6320504F50206363500A4F,8000,000000001234,7,dynamic
+
+提升CPU性能,禁用CPU频率动态调整
+-
+$>nano /usr/bin/cpu 
+-
+#!/bin/bash 
+
+for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_governor
+do 
+	echo performance > $f 
+done
+
+$>chmod a+x /usr/bin/cpu 
+
+srsGUI - step.5
+--
+$>apt-get install libboost-system-dev libboost-test-dev libboost-thread-dev libqwt-qt5-dev qtbase5-dev
+
+设置当前GCC版本
+--
+$>dpkg -l | grep gcc
+$>update-alternatives --config gcc
+$>update-alternatives --remove gcc /usr/bin/gcc-9 
+$>update-alternatives --remove gcc /usr/bin/gcc-11
+
+防火墙
+--
+$>apt-get install iptables-persistent                            #安装
+$>apt-get purge iptables netfilter-persistent+                   #移除
+
+修改 INPUT 和 FORWARD 链默认规则为DROP
+-
+iptables -P INPUT DROP            #INPUT链拒绝所有流量进入
+iptables -P FORWARD DROP          #FORWARD链拒绝所有流量转发
+netfilter-persistent save         #保存进配置文件
+
+修改 INPUT 和 FORWARD 链默认规则为ACCEPT
+-
+iptables -P INPUT ACCEPT 
+iptables -P FORWARD ACCEPT 
+netfilter-persistent save
+netfilter-persistent reload
+
+放开端口
+-
+iptables -F
+iptables -P INPUT DROP
+iptables -P FORWARD DROP 
+iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT 
+iptables -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
+iptables -A INPUT -p tcp --dport 22 --jump ACCEPT
+iptables-save > /etc/iptables/rules.v4  
+netfilter-persistent save 
+
+保存和还原
+-
+iptables-legacy-save > /etc/iptables/rules.v4    
+iptables-legacy-restore -n < /etc/iptables/rules.v4
+
+查看防火墙
+-
+iptables -L --line-numbers          #查看防火墙
+iptables -F                         #清空防火墙
+iptables -t filter -L INPUT -v --line-numbers
+iptables -t filter -L OUTPUT -v --line-numbers
+iptables --table filter --list INPUT --verbose --line-numbers
+
+禁止ICMP
+-
+iptables -F
+iptables -P INPUT ACCEPT 
+iptables -P FORWARD ACCEPT 
+iptables -A INPUT -p icmp --icmp-type echo-request -j DROP 
+iptables -A OUTPUT -p icmp --icmp-type echo-reply -j DROP
+
+放行ICMP
+-
+iptables -F
+iptables -P INPUT ACCEPT 
+iptables -P FORWARD ACCEPT 
+iptables -D INPUT -p icmp --icmp-type echo-request -j DROP
+iptables -D OUTPUT -p icmp --icmp-type echo-reply -j DROP
+netfilter-persistent save                   #将规则保存进配置文件
+
+放行ICMP
+-
+iptables -p icmp -h
+iptables -D INPUT -p icmp -j ACCEPT
+iptables -D INPUT -p icmp -j DROP -v
+iptables -D INPUT -p icmp -j REJECT -v
+
+查看防火墙软件
+-
+iptables --version
+update-alternatives --display iptables
+
+清空防火墙 
+-
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+
+iptables -F
+ 
+iptables -X
+ 
+iptables -Z 
+
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+iptables -t raw -F
+iptables -t raw -X
+
+netfilter-persistent save
+netfilter-persistent reload

@@ -1,0 +1,675 @@
+VMWARE调试Linux内核
+-------------------
+step.1
+--------------
+1.使用VMWARE安装/vsftpd/web/nginx-1.2.1/v1.4/v1.4.iso
+2./vsftpd/web/nginx-1.2.1/v1.4/v1.4.iso屏蔽互联网连接然后进行系统安装,否则会导致镜像源不可用.
+3.内核启动失败后要先删除之前已安装的内核版本,然后才能继续安装当前版本编译后的内核安装包.
+4.CONFIG_SECTION_MISMATCH_WARN_ONLY=y选项一定要开启否则会导致内核编译失败,血的教训.
+5.如果正确安装带有python的gdb程序则会自动编译scripts/gdb/linux/目录下的python程序. 
+
+注意:VMWARE必须安装在Linux系统中,否则步骤2成功不了;VMWARE中编译内核基本条件是内存必须大于4G,文件分区必须大于或等于80G.
+
+step.2 
+--------------
+$>vi <VM name>.vmx
+--------
+...
+debugStub.listen.guest32 = "TRUE"
+debugStub.listen.guest64 = "TRUE"
+debugStub.hideBreakpoints = "TRUE"
+bios.bootDelay = "100000"
+
+注意:VMWARE 调试首选需要成功进入系统,然后使用target remote 127.1:8864连接 VMWARE 进行重启即可进入断点.
+
+step.3 - 调试环境的构建
+--------------
+gdb
+ >file </path>/vmlinux 
+ >target remote <ip>:<32bit-8832,64bit-8864> 
+
+注意:先启动gdb,执行target remote <ip>:<32bit-8832,64bit-8864>之后,CTRL+C都会中断VMWARE执行进入调试模式.
+
+让gdb支持内核的python脚本
+--------------
+$>apt-get build-dep linux
+$>apt-get install texinfo python2 python2.7-dev dpkg-dev dh-make devscripts ttyrec cscope imagemagick v4l-utils git samba virtualenv -y
+$>/usr/bin/python --version
+$>python ./gdb/python/python-config.py --includes
+$>python ./gdb/python/python-config.py --ldflags
+$>mkdir build 
+$>cd build 
+$>../configure --with-python 
+$>make -j`nproc` && make install 
+/usr/local/bin/gdb
+ >python sys.path.append("/usr/share/gcc/python/")
+ >python sys.path.append("/mnt/x86_64/vbuild/scripts/gdb/linux")
+ >set debug auto-load on                      #进入Linux内核目录使能CONFIG_GDB_SCRIPTS make menuconfig,Enable CONFIG_GDB_SCRIPTS,make
+ >add-auto-load-safe-path /mnt/x86_64/vbuild/
+ >source /mnt/x86_64/vbuild/vmlinux-gdb.py    #将vmlinux链接到当前内核源码目录,ln -sf /mnt/x86_64/vbuild/vmlinux .
+ >apropos lx                                  #注意参考"Docs > Development tools for the kernel > Debugging kernel and modules via gdb"
+
+注意:以上内容必须使用"make install"否则gdb-python将会出现问题,gdb实施过程参考了/vsftpd/linux/qemu-x86_64_v4.19.196.tar.gz.
+
+$>vi debug/debug.cfg 
+--------
+set debug auto-load on
+...
+add-auto-load-safe-path /mnt/x86_64/vbuild/
+python sys.path.append("/mnt/x86_64/vbuild/scripts/gdb/linux")
+source /mnt/x86_64/vbuild/vmlinux-gdb.py
+
+$>vi g 
+--------
+#!/bin/bash 
+
+ttyrec ./rec/$1_`date +%Y%m%d-%H.%M.%S` -e '/usr/local/bin/gdb -x ./debug/debug.cfg /mnt/x86_64/vbuild/vmlinux -d .'
+
+$>vi senv     #安装编译Linux的环境,用ROOT用户执行
+--------
+#!/bin/bash
+
+cat>/etc/apt/sources.list<<EOF
+deb http://192.168.10.88:81/v1.4 buster main contrib
+deb-src http://192.168.10.88:81/v1.4 buster main contrib
+EOF
+
+apt-get update
+apt-get install dpkg-dev dh-make devscripts ttyrec cscope imagemagick v4l-utils git samba virtualenv -y
+apt-get build-dep ssh linux
+
+step.4 - 生成deb包
+--------------
+$>make deb-pkg 
+or 
+$>vi arch/x86/Kconfig 
+--------
+...
+config X86
+        def_bool y
+        #
+        # Note: keep this list sorted alphabetically
+        #
+        ...
+		
+		#注释/删掉以下内容
+        #select ARCH_HAS_STRICT_KERNEL_RWX 
+        ...
+...
+
+注意:"ARCH_HAS_STRICT_MODULE_RWX"不能被删掉,如果删掉会导致系统启动不起来.
+
+$>vi arch/x86/lib/getuser.S
+--------
+...
+ENTRY(__get_user_bad)
+	xor %edx,%edx
+	mov $(-EFAULT),%_ASM_AX
+	ASM_CLAC
+	ret
+ENDPROC(__get_user_bad)
+EXPORT_SYMBOL(__get_user_bad)
+...
+
+注意:Git版本为"v1.9->v4.19.181/linux-4.19.x"以上内容是去掉drivers/char优化,修改后测试成功.
+
+v4l2 
+--------
+Device Drivers
+  <*> Multimedia support  --->  
+   [*]   Cameras/video grabbers support
+   [*]   Media Controller API
+   [*]   V4L2 sub-device userspace API
+   [*]   Media USB Adapters  --->
+   [*]   Media PCI Adapters  --->
+   [*]   V4L platform devices  --->
+   [*]   Memory-to-memory multimedia devices  --->
+
+$>make O=/mnt/x86_64/vbuild/ menuconfig
+--------
+{                                 #必选部分
+CONFIG_ANDROID                    #禁用.
+MODULE_SIG                        #禁用.
+CONFIG_JUMP_LABEL                 #禁用.
+CONFIG_DYNAMIC_DEBUG              #禁用.
+CONFIG_RANDOMIZE_BASE             #禁用,让内核模块的地址每次都能唯一.
+CONFIG_DEBUG_INFO_REDUCED         #禁用.
+CONFIG_DEBUG_SECTION_MISMATCH     #禁用,启用会造成"target remote 127.0.0.1:8864"大量__section信息阻塞调试进度.
+CONFIG_SYSTEM_TRUSTED_KEYS        #清空证书.
+CONFIG_GDB_SCRIPTS                #使能.
+DEBUG_INFO_DWARF4                 #使能.
+CONFIG_SECTION_MISMATCH_WARN_ONLY #使能,内核在编译时链接时会遇上section mismatch错误用此选项可忽略错误继续未完成的任务.
+CONFIG_UNWINDER_ORC               #选择,Kernel hacking -> Choose kernel unwinder:ORC unwinder.
+CONFIG_SLUB                       #选择,General setup->Choose SLAB allocator->SLUB (Unqueued Allocator).
+}
+{                                 #VMWARE依赖项.
+CONFIG_EXT4_FS                    #使能.
+CONFIG_E1000                      #使能.
+CONFIG_VMWARE_VMCI                #使能.
+CONFIG_VMWARE_BALLOON             #使能.
+CONFIG_DRM                        #使能.
+CONFIG_DRM_VMWGFX                 #使能.
+CONFIG_DRM_TTM                    #使能.
+CONFIG_DRM_KMS_HELPER             #使能.
+}
+{                                 #可以选项.
+CONFIG_DEBUG_VM                   #使能.
+CONFIG_DEBUG_INFO                 #使能.
+CONFIG_DEBUG_DRIVER               #使能.
+CONFIG_DEBUG_DEVRES               #使能.
+CONFIG_DEBUG_OBJECTS              #使能.
+CONFIG_DEBUG_VM_VMACACHE          #使能.
+CONFIG_DEBUG_VM_RB                #使能.
+CONFIG_DEBUG_VM_PGFLAGS           #使能.
+CONFIG_DEBUG_KERNEL               #使能.
+CONFIG_DEBUG_PAGEALLOC            #使能.
+CONFIG_DEBUG_SPINLOCK             #使能.
+CONFIG_DEBUG_ENTRY                #使能.
+CONFIG_DEBUG_KOBJECT              #使能.
+CONFIG_ACPI_DEBUG                 #使能.
+}
+
+$>export PATH=/usr/sbin/:$PATH
+$>export KBUILD_OUTPUT=/mnt/x86_64/vbuild/
+$>make O=/mnt/x86_64/vbuild/ V=1 -j`nproc` 2>&1 | tee build.log
+$>make bindeb-pkg 2>&1 | tee deb.log
+$>make ARCH=x86_64 V=1 headers_install INSTALL_HDR_PATH=/mnt/hdr/ 2>&1 | tee header-`date +%Y%m%d-%H.%M.%S`.log
+
+注意:
+    1.编译安装的内核启动不了后需要对/boot/,/lib/modules目录下的版本进行清除.
+    2../bmenu会使用系统当前的config配置,可借助此功能持续对对config项进行修改.
+    3.VMWARE不支持 CONFIG_FRAME_POINTER 启动,否则会导致系统启动不起来[重点].
+
+生成/清除文档
+--------------
+$>make SPHINXOPTS=-v htmldocs     #生成文档在Documentation/output目录下. 
+$>make cleandocs
+
+Git回退
+--------------
+$>git reset --hard <commit id>     #回退到指定的<commit id>,丢失已修改的代码.
+$>git reset --soft <commit id>     #回退到指定的<commit id>,不会丢失已修改的代码
+
+Git创建TAG 
+--------------
+$>git tag -a "v1.0" -m "VMWARE v1.0" <commit id>
+
+禁止休眠
+--------------
+$>systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+
+同步代码
+--------------
+$>sshpass -p '123456' rsync -e 'ssh -p 22' -avzHP --exclude='kernel/.git' --exclude='exe' --exclude-from='/kern.list' root@192.168.10.88:/home/vsftpd/linux/Linux/* .
+$>sshpass -p '123456' rsync -e 'ssh -p 22' -avzHP Linux root@192.168.10.88:/home/vsftpd/linux/
+
+创建vmware共享虚拟磁盘
+--------------
+$>vmware-mount -p <shared.vmdk>
+$>vmware-mount <shared.vmdk> <分区NUM,eg.1,2等等表示第几个分区> -o rw </挂载点> 
+$>lsof </挂载点>                  #查看有哪些进程在使用</挂载点>.
+$>vmware-mount -X 
+
+日志
+--------------
+$>dmesg -c > /dev/null            #清空日志缓冲区.
+$>dmesg                           #读取日志缓冲区.
+
+v4l2 
+--------------
+$>v4l2-ctl --all
+$>cheese                          #摄像头测试程序.
+
+解决"Python Exception <class 'gdb.MemoryError'> Cannot access memory at address 0xffffc900022bd018"
+--------------
+$>export PATH=/usr/sbin/:$PATH
+$>update-grub 
+$>reboot 
+
+成果物
+--------------
+/home/vsftpd/linux/Linux
+/home/vsftpd/linux/Linux.tar.gz
+
+注意:成果物是经过了严格长时间测试通过的产物,以上内容的形成经历2个月的不懈努力需要极度珍惜.
+
+编写测试模块
+--------------
+$>mkdir demos 
+$>vi Makefile
+--------
+KBUILD_CFLAGS       := $(filter-out -O2, $(KBUILD_CFLAGS))
+KBUILD_HOSTCFLAGS   := $(filter-out -O2, $(KBUILD_HOSTCFLAGS))
+KBUILD_HOSTCXXFLAGS := $(filter-out -O2, $(KBUILD_HOSTCXXFLAGS))
+
+KBUILD_HOSTCFLAGS := -v -g3 -O0 -Wall -Wmissing-prototypes -Wstrict-prototypes -fomit-frame-pointer -std=gnu89 $(HOST_LFS_CFLAGS) $(HOSTCFLAGS)
+KBUILD_HOSTCXXFLAGS := -v -g3 -O0 $(HOST_LFS_CFLAGS) $(HOSTCXXFLAGS)
+KBUILD_CFLAGS += -v -O0 -g3
+
+obj-m := demos.o
+PWD := $(shell pwd)
+
+modules:
+	$(MAKE) -C /mnt/x86_64/vbuild M=$(PWD) modules
+	
+modules_install:
+	$(MAKE) -C /mnt/x86_64/vbuild M=$(PWD) modules_install
+
+$>vi demo.c 
+--------
+#pragma GCC optimize ("O0")
+/******************************************************************************
+* 动态查看系统日志#tail -f /var/log/syslog
+******************************************************************************/
+#include <linux/init.h>
+#include <linux/module.h>
+
+static int demo_init(void)
+{
+      printk(KERN_ERR"demo_init\n");
+      return 0;
+}
+
+static void demo_exit(void)
+{
+      printk(KERN_ERR"demo_exit\n");
+}
+
+module_init(demo_init);
+module_exit(demo_exit);
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+do_one_initcall
+--------------
+1.1 基地址和支持模块个数
+-------
+base_addr:0xffffffff82e84e1c  offset:14bcac  pure     : 20 个
+base_addr:0xffffffff82e84edc  offset:17aafc  core     : 192个
+base_addr:0xffffffff82e84f48  offset:157ad9  postcore : 108个
+base_addr:0xffffffff82e84f98  offset:17bc24  arch     : 80 个
+base_addr:0xffffffff82e8512c  offset:17e51a  subsys   : 404个
+base_addr:0xffffffff82e85230  offset:174b32  fs       : 260个
+base_addr:0xffffffff82e85588  offset:17e729  device   : 856个
+base_addr:0xffffffff82e85664  offset:16efff  late     : 220个
+
+注意:x86 因为使能了 CONFIG_HAVE_ARCH_PREL32_RELOCATIONS ,do_initcall_level中的fn计算了偏移之后才是fn函数的地址.
+
+1.2 偏移计算
+-------
+b do_initcall_level:952
+p fn 
+p *fn 
+求函数地址:fn - *fn 
+
+1.3 通过函数地址求取initcall_levels和对应的initcall_level_names
+-------
+b do_one_initcall:884
+p fn 
+initcall_levels和initcall_level_names为fn + <1.2 章节的 *fn 值>
+
+1.4 do_one_initcall:884 函数列表
+-------
+bpf_jit_charge_init           #kernel/bpf/core.c 
+ipc_ns_init                   #ipc/shm.c 
+init_mmap_min_addr            #security/main_addr.c 
+pci_realloc_setup_params      #drivers/pci/pci.c 
+net_ns_init                   #net/core/net_namespace.c 
+xen_pvh_gnttab_setup          #arch/x86/xen/grant-table.c 
+e820__register_nvs_regions    #arch/x86/kernel/e820.c 
+cpufreq_register_tsc_scaling  #arch/x86/kernel/tsc.c 
+init_cpu_syscore              #arch/x86/kernel/cpu/common.c 
+reboot_init                   #arch/x86/kernel/reboot.c 
+init_lapic_sysfs              #arch/x86/kernel/apic/apic.c 
+alloc_frozen_cpus             #kernel/cpu.c 
+cpu_hotplug_pm_sync_init      #kernel/cpu.c 
+wq_sysfs_init                 #kernel/workqueue.c 
+ksysfs_init                   #kernel/ksysfs.c 
+pm_init                       #kernel/power/main.c
+pm_disk_init                  #kernel/power/hibernate.c
+swsusp_header_init            #kernel/power/swap.c
+rcu_set_runtime_mode          #kernel/rcu/update.c
+init_jiffies_clocksource      #kernel/time/jiffies.c
+futex_init                    #kernel/futex.c
+cgroup_wq_init                #kernel/cgroup/cgroup.c
+cgroup1_wq_init               #kernel/cgroup/cgroup-v1.c
+ftrace_mod_cmd_init           #kernel/trace/ftrace.c
+init_graph_trace              #kernel/trace/trace_functions_graph.c
+memory_failure_init           #mm/memory-failure.c
+fsnotify_init                 #fs/notify/fsnotify.c
+filelock_init                 #fs/locks.c
+init_script_binfmt            #fs/binfmt_script.c
+init_elf_binfmt               #fs/binfmt_elf.c
+init_compat_elf_binfmt        #fs/binfmt_elf.c
+debugfs_init                  #fs/debugfs/inode.c
+tracefs_init                  #fs/tracefs/inode.c
+...
+
+1.5 initcall_levels数据来源
+-------
+cat arch/x86/kernel/vmlinux.lds
+----
+SECTIONS
+{
+    . = (0xffffffff80000000 + ALIGN(0x1000000, 0x200000));
+    phys_startup_64 = ABSOLUTE(startup_64 - 0xffffffff80000000);
+    .text : AT(ADDR(.text) - 0xffffffff80000000) 
+    {
+        ...
+    }
+
+    ...
+
+    .init.data : AT(ADDR(.init.data) - 0xffffffff80000000) 
+    { 
+        KEEP(*(SORT(___kentry+*))) *(.init.data init.data.*) . = ALIGN(8); 
+        __start_mcount_loc = .; 
+        
+        KEEP(*(__mcount_loc))
+        __stop_mcount_loc = .; 
+        *(.init.rodata .init.rodata.*) . = ALIGN(8); 
+        __start_ftrace_events = .; 
+        
+        KEEP(*(_ftrace_events)) __stop_ftrace_events = .; 
+        __start_ftrace_eval_maps = .; 
+        
+        KEEP(*(_ftrace_eval_map)) __stop_ftrace_eval_maps = .; 
+        . = ALIGN(8); 
+        __start_syscalls_metadata = .;
+        
+        KEEP(*(__syscalls_metadata)) __stop_syscalls_metadata = .;
+        . = ALIGN(8); 
+        __start_kprobe_blacklist = .;
+        
+        KEEP(*(_kprobe_blacklist)) __stop_kprobe_blacklist = .;
+        . = ALIGN(32); 
+        __start_error_injection_whitelist = .; 
+        
+        KEEP(*(_error_injection_whitelist)) __stop_error_injection_whitelist = .;
+        . = ALIGN(8); 
+        __clk_of_table = .; 
+        
+        KEEP(*(__clk_of_table)) KEEP(*(__clk_of_table_end)) . = ALIGN(8);
+        __cpu_method_of_table = .; 
+        
+        KEEP(*(__cpu_method_of_table)) KEEP(*(__cpu_method_of_table_end)) . = ALIGN(8); 
+        __cpuidle_method_of_table = .; 
+        
+        KEEP(*(__cpuidle_method_of_table)) KEEP(*(__cpuidle_method_of_table_end)) . = ALIGN(32); 
+        __dtb_start = .; 
+        
+        KEEP(*(.dtb.init.rodata)) __dtb_end = .;
+        . = ALIGN(8);
+        __irqchip_acpi_probe_table = .; 
+        
+        KEEP(*(__irqchip_acpi_probe_table)) __irqchip_acpi_probe_table_end = .; 
+        . = ALIGN(8); 
+        __timer_acpi_probe_table = .;
+        
+        KEEP(*(__timer_acpi_probe_table)) __timer_acpi_probe_table_end = .;
+        . = ALIGN(8);
+        __earlycon_table = .;
+        
+        KEEP(*(__earlycon_table)) __earlycon_table_end = .;
+        . = ALIGN(16); 
+        __setup_start = .; 
+        
+        KEEP(*(.init.setup)) __setup_end = .; 
+        __initcall_start = .;
+        
+        KEEP(*(.initcallearly.init)) __initcall0_start = .; 
+        KEEP(*(.initcall0.init)) KEEP(*(.initcall0s.init)) __initcall1_start = .; 
+        KEEP(*(.initcall1.init)) KEEP(*(.initcall1s.init)) __initcall2_start = .; 
+        KEEP(*(.initcall2.init)) KEEP(*(.initcall2s.init)) __initcall3_start = .; 
+        KEEP(*(.initcall3.init)) KEEP(*(.initcall3s.init)) __initcall4_start = .; 
+        KEEP(*(.initcall4.init)) KEEP(*(.initcall4s.init)) __initcall5_start = .; 
+        
+        KEEP(*(.initcall5.init)) KEEP(*(.initcall5s.init))
+        __initcallrootfs_start = .; 
+        
+        KEEP(*(.initcallrootfs.init)) KEEP(*(.initcallrootfss.init)) __initcall6_start = .; 
+        
+        KEEP(*(.initcall6.init)) KEEP(*(.initcall6s.init)) __initcall7_start = .; 
+        
+        KEEP(*(.initcall7.init)) KEEP(*(.initcall7s.init)) __initcall_end = .;
+        __con_initcall_start = .; 
+        
+        KEEP(*(.con_initcall.init)) __con_initcall_end = .;
+        __security_initcall_start = .; 
+        
+        KEEP(*(.security_initcall.init)) __security_initcall_end = .;
+        . = ALIGN(4); 
+        __initramfs_start = .; 
+        
+        KEEP(*(.init.ramfs)) . = ALIGN(8); 
+        
+        KEEP(*(.init.ramfs.info)) 
+    }
+}
+
+extern initcall_entry_t __initcall_start[];
+extern initcall_entry_t __initcall0_start[];
+extern initcall_entry_t __initcall1_start[];
+extern initcall_entry_t __initcall2_start[];
+extern initcall_entry_t __initcall3_start[];
+extern initcall_entry_t __initcall4_start[];
+extern initcall_entry_t __initcall5_start[];
+extern initcall_entry_t __initcall6_start[];
+extern initcall_entry_t __initcall7_start[];
+extern initcall_entry_t __initcall_end[];
+
+static initcall_entry_t *initcall_levels[] __initdata = {
+	__initcall0_start,
+	__initcall1_start,
+	__initcall2_start,
+	__initcall3_start,
+	__initcall4_start,
+	__initcall5_start,
+	__initcall6_start,
+	__initcall7_start,
+	__initcall_end,
+};
+
+/* Keep these in sync with initcalls in include/linux/init.h */
+static char *initcall_level_names[] __initdata = {
+	"pure",
+	"core",
+	"postcore",
+	"arch",
+	"subsys",
+	"fs",
+	"device",
+	"late",
+};
+
+static void __init do_initcall_level(int level)
+{
+	initcall_entry_t *fn;
+
+	strcpy(initcall_command_line, saved_command_line);
+	parse_args(initcall_level_names[level],initcall_command_line, __start___param, __stop___param - __start___param, level, level, NULL, &repair_env_string);
+
+	trace_initcall_level(initcall_level_names[level]);
+	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
+		do_one_initcall(initcall_from_entry(fn));
+}
+
+static void __init do_initcalls(void)
+{
+	int level;
+
+	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++)
+		do_initcall_level(level);
+}
+
+调用栈
+----
+do_initcalls
+do_basic_setup
+kernel_init_freeable
+kernel_init
+rest_init
+start_kernel
+
+相关宏
+----
+#ifndef __ASSEMBLY__
+typedef int initcall_entry_t;                                                                                 #引用include/linux/init.h 
+#else 
+typedef initcall_t initcall_entry_t;
+#endif 
+
+#define __section(S) __attribute__((__section__(#S)))                                                      #引用include/linux/comiler_types.h 
+#define __initdata   __section(.init.data)                                                                 #引用include/linux/init.h             
+#define __init       __section(.init.text) __attribute__((cold)) __attribute__((indirect_branch("keep")))  #引用include/linux/init.h 
+
+#define __define_initcall(fn, id) ___define_initcall(fn, id, .initcall##id)
+#define ___define_initcall(fn, id, __sec)                       \
+        __ADDRESSABLE(fn)                                       \
+        asm(".section   \"" #__sec ".init\", \"a\"      \n"     \
+        "__initcall_" #fn #id ":                        \n"     \
+            ".long      " #fn " - .                     \n"     \
+            ".previous                                  \n");
+#define pure_initcall(fn)               __define_initcall(fn, 0)
+#define core_initcall(fn)               __define_initcall(fn, 1)
+#define core_initcall_sync(fn)          __define_initcall(fn, 1s)
+#define postcore_initcall(fn)           __define_initcall(fn, 2)
+#define postcore_initcall_sync(fn)      __define_initcall(fn, 2s)
+#define arch_initcall(fn)               __define_initcall(fn, 3)
+#define arch_initcall_sync(fn)          __define_initcall(fn, 3s)
+#define subsys_initcall(fn)             __define_initcall(fn, 4)
+#define subsys_initcall_sync(fn)        __define_initcall(fn, 4s)
+#define fs_initcall(fn)                 __define_initcall(fn, 5)
+#define fs_initcall_sync(fn)            __define_initcall(fn, 5s)
+#define rootfs_initcall(fn)             __define_initcall(fn, rootfs)
+#define device_initcall(fn)             __define_initcall(fn, 6)
+#define device_initcall_sync(fn)        __define_initcall(fn, 6s)
+#define late_initcall(fn)               __define_initcall(fn, 7)
+#define late_initcall_sync(fn)          __define_initcall(fn, 7s)
+#define __initcall(fn) device_initcall(fn)
+
+演算之后的结果如下
+----
+extern initcall_entry_t __initcall_start[];
+extern initcall_entry_t __initcall0_start[];
+extern initcall_entry_t __initcall1_start[];
+extern initcall_entry_t __initcall2_start[];
+extern initcall_entry_t __initcall3_start[];
+extern initcall_entry_t __initcall4_start[];
+extern initcall_entry_t __initcall5_start[];
+extern initcall_entry_t __initcall6_start[];
+extern initcall_entry_t __initcall7_start[];
+extern initcall_entry_t __initcall_end[];
+
+static initcall_entry_t *initcall_levels[] __attribute__((__section__(.init.data))) = {  //initcall_levels放到了.init.data数据段中. 
+	__initcall0_start,
+	__initcall1_start,
+	__initcall2_start,
+	__initcall3_start,
+	__initcall4_start,
+	__initcall5_start,
+	__initcall6_start,
+	__initcall7_start,
+	__initcall_end,
+};
+
+/* Keep these in sync with initcalls in include/linux/init.h */
+static char *initcall_level_names[] __attribute__((__section__(.init.data))) = {      //initcall_level_names放到了.init.data数据段中. 
+	"pure",
+	"core",
+	"postcore",
+	"arch",
+	"subsys",
+	"fs",
+	"device",
+	"late",
+};
+
+static int __init bpf_jit_charge_init(void){ ... }
+==>static int __section(.init.text) __attribute__((cold)) __attribute__((indirect_branch("keep"))) bpf_jit_charge_init(void){ ... }
+
+注意:来源于编译后的arch/x86/kernel/vmlinux.lds,gcc支持通过使用 __attribute__((__section__(x))) 将函数,变量放到指定的数据段中;这过程是编译器帮我们完成的.
+
+VMware后台启动
+----------------
+$>vi /etc/rc.local 
+----------
+su - <普通用户名> -s /bin/bash -c "vmrun -T ws start "/path/*.vmx" nogui"
+
+$>chmod 777 /etc/rc.local
+or 
+$>cat>/etc/rc.local<<EOF
+#!/bin/bash -e 
+
+su - <普通用户名> -s /bin/bash -c "vmrun -T ws start "/path/*.vmx" nogui"
+exit 0 
+EOF
+
+$>chmod 777 /etc/rc.local
+
+修改grub默认启动参数
+----------------
+$>cat>/etc/default/grub<<EOF
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 console=ttyS0,115200 text debug"
+GRUB_CMDLINE_LINUX=""
+EOF
+
+$>/sbin/update-grub
+
+vmware断不住的问题
+-------------------
+1.用系统自带的gdb是无法断住内核的,需要重新编译带python的gdb才能调试内核.
+
+注意:不依赖于kgdb,内核参数只需使用"net.ifnames=0 biosdevnamne=0 console=tty0 text"即可
+
+断do_initcalls
+-------------------
+1.启动vmware
+2./usr/local/bin/gdb /mnt/x86_64/vbuild/vmlinux -d .
+3.等待进入Linux
+4.target remote 127.0.0.1:8864             #在进入Linux系统后,输入此条命令会使内核进入断点.
+5.b do_initcalls
+6.contine 
+7.进入系统后reboot
+8.重启完成后即可自动进入do_initcalls断点 
+
+gdb阻止信号中断
+-------------------
+step.1 查看信号列表
+----
+info signals
+info handle
+
+step.2 设置gdb
+----
+handle SIGTRAP nostop noprint
+
+注意:在内核中使用是有效的,同时还需设定单线程运行.
+
+gdb设置单线程运行
+-------------------
+set scheduler-locking on 
+
+注意:经测试有效. 
+
+mqueue_get_inode(堆栈)
+------------------
+mqueue_get_inode                --        ipc/mqueue.c:219
+mqueue_fill_super               --        ipc/mqueue.c:337
+mount_ns                        --        fs/super.c:1075
+mqueue_mount                    --        fs/super.c:1261
+vfs_kern_mount                  --        fs/namespace.c:961
+vfs_kern_mount                  --        fs/namespace.c:3255
+mq_init_ns                      --        ipc/mqueue.c:1566
+init_mqueue_fs                  --        ipc/mqueue.c:1604
+do_one_initcall                 --        init/main.c:884
+do_initcall_level               --        init/main.c:952
+do_initcalls                    --        init/main.c:960
+do_basic_setup                  --        init/main.c:978
+kernel_init_freeable            --        init/main.c:1145
+kernel_init                     --        init/main.c:1062
+ret_from_fork                   --        arch/x86/entry/entry_64.S:415 
+

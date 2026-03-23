@@ -1,0 +1,198 @@
+NFS
+--------------
+$>mkdir -pv /opt/shared /opt/shared/static /opt/shared/share
+$>vi /etc/exports
+---------
+/opt/shared *(insecure,rw,sync,fsid=0,crossmnt,no_subtree_check,no_root_squash)
+
+配置网络
+--------------
+$>nano /etc/network/interfaces 
+---------
+allow-hotplug tap
+auto tap
+iface tap inet static
+address 192.168.8.8
+netmask 255.255.255.0
+gateway 192.168.8.1
+hwaddress 00:00:00:00:00:01
+dns-nameservers 192.168.8.1
+pre-up ip link set tap promisc on
+up route add -net 192.168.8.0/24 gw 192.168.8.1 metric 30
+down route del -net 192.168.8.0/24 gw 192.168.8.1 metric 30
+
+更改GCC
+--------------
+$>cd /usr/bin
+$>mv gcc gcc-11.2
+$>ln -sf gcc-4.7 gcc
+$>gcc -v 
+-------
+Using built-in specs.
+COLLECT_GCC=gcc
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/4.7/lto-wrapper
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 4.7.2-5' --with-bugurl=file:///usr/share/doc/gcc-4.7/README.Bugs --enable-languages=c,c++,go,fortran,objc,obj-c++ --prefix=/usr --program-suffix=-4.7 --enable-shared --enable-linker-build-id --with-system-zlib --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --with-gxx-include-dir=/usr/include/c++/4.7 --libdir=/usr/lib --enable-nls --with-sysroot=/ --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --enable-gnu-unique-object --enable-plugin --enable-objc-gc --with-arch-32=i586 --with-tune=generic --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 4.7.2 (Debian 4.7.2-5) 
+
+编译内核
+--------------
+$>cd /github/unix/kernel
+$>git checkout v3.2.102 -fb v3.2.102
+$>ls -alh include/linux/compiler-gcc*.h
+$>vi Makfile 
+-------
+...
+KBUILD_CFLAGS += $(call cc-option, -fno-pie)
+KBUILD_CFLAGS += $(call cc-option, -no-pie)
+KBUILD_AFLAGS += $(call cc-option, -fno-pie)
+KBUILD_CPPFLAGS += $(call cc-option, -fno-pie)
+...
+
+$>make V=1 O=./tmp -j`nproc` defconfig
+$>make V=1 O=./tmp -j`nproc` menuconfig
+-------
+Kernel hacking  --->
+ [*] Compile the kernel with debug info
+ [*] KGDB: kernel debugger  --->
+  <*> KGDB: use kgdb over the serial console (NEW)
+  [*] KGDB: Allow debugging with traps in notifiers
+
+$>make V=1 O=./tmp -j`nproc`
+$>ls -alh ./tmp/vmlinux ./tmp/arch/x86/boot/bzImage
+
+编译工具箱
+--------------
+$>cd /github/unix/tools/busybox
+$>git checkout 1_20_2 -fb v1.20.2
+$>make V=1 O=./tmp -j`nproc` defconfig
+$>make V=1 O=./tmp -j`nproc` menuconfig
+----
+Settings  --->    
+ --- Build Options 
+  [x] Build static binary (no shared libs)
+--- Applets
+ Shells  ---> 
+  [ ]   Job control                           #去掉勾选,为了解决'sh: can't access tty; job control turned off'
+
+$>make V=1 O=./tmp -j`nproc` install 
+
+根文件系统
+----------
+$>cd /github/unix/tools/busybox
+$>dd if=/dev/zero of=rootfs.img bs=1M count=256
+$>mkfs.ext3 rootfs.img
+$>mount -o loop $PWD/rootfs.img /mnt/lfs
+$>cp -avf $PWD/tmp/_install/* /mnt/lfs
+$>pushd /mnt/lfs
+$>mkdir -pv proc/ sys/ etc/ mnt/ usr/sbin/ usr/bin/ usr/lib/ lib/ dev/ root/ tmp/ media/ usr/share/alsa etc/init.d/ var/run/wpa/ var/empty/ 
+$>touch init etc/fstab etc/passwd etc/group etc/pointercal
+$>chmod a+x init
+$>nano init
+-------
+#!/bin/busybox sh
+
+export PATH=/sbin:/bin:/usr/sbin:usr/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib
+
+export TERM=vt100
+export TERMINFO=/usr/share/terminfo
+
+busybox mount -t proc none /proc
+busybox mount -t sysfs none /sys
+busybox mount -t tmpfs none /dev
+
+busybox mkdir /dev/pts
+busybox mount -t devpts none /dev/pts
+busybox mount -a 
+
+busybox mknod /dev/console c 5 1
+busybox mknod /dev/null c 1 3
+
+busybox echo "busybox mdev" > /proc/sys/kernel/hotplug
+busybox mdev -s -d
+
+busybox mkdir -p /lib/modules/`uname -r` >/dev/null 2>&1&
+
+busybox adduser -u 0 -s /bin/sh -h /root root >/dev/null 2>&1&
+busybox echo "root:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox telnetd >/dev/null 2>&1&
+
+busybox cat <<!
+Boot took $(busybox cut -d' ' -f1 /proc/uptime) seconds
+        _       _     __ _                  
+  /\/\ (_)_ __ (_)   / /(_)_ __  _   ___  __
+ /    \| | '_ \| |  / / | | '_ \| | | \ \/ /
+/ /\/\ \ | | | | | / /__| | | | | |_| |>  < 
+\/    \/_|_| |_|_| \____/_|_| |_|\__,_/_/\_\ 
+
+Welcome to MINI Linux
+!
+
+exec /bin/busybox sh
+
+$>popd
+$>umount /mnt/lfs
+
+编译虚拟机
+--------------
+$>cd /home/vsftpd/linux/
+$>tar -xvf qemu-2.12.1.tar.gz 
+$>./configure --prefix=/opt/v2.12.1 --sysconfdir=/etc --enable-debug --target-list=x86_64-softmmu,x86_64-linux-user,arm-softmmu,arm-linux-user
+$>make -j`nproc` && make install 
+$>nano /etc/profile 
+-------
+PATH=/opt/v2.12.1/bin/:$PATH
+
+运行
+--------------
+$>cd /github/unix/kernel
+$>qemu-system-x86_64 -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap,script=no,downscript=no -kernel ./tmp/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 root=/dev/sda' -boot c -hda /github/unix/tools/busybox/rootfs.img 
+or
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap,script=no,downscript=no -kernel ./tmp/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 root=/dev/sda' -boot c -hda /github/unix/tools/busybox/rootfs.img 
+or 
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap,script=no,downscript=no -kernel ./tmp/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 root=/dev/sda' -boot c -hda /github/unix/tools/busybox/rootfs.img 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+运行NFS 
+--------------
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap,script=no,downscript=no -kernel ./tmp/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.8.8:/opt/shared/static,proto=tcp,v3,nolock rw ip=192.168.8.100:192.168.8.8:192.168.8.1:255.255.255.0::eth0:off rootwait text' -boot c 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+or 
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap,script=no,downscript=no -kernel ./tmp/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.8.8:/opt/shared/share,proto=tcp,v3,nolock rw ip=192.168.8.100:192.168.8.8:192.168.8.1:255.255.255.0::eth0:off rootwait text' -boot c 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+调试内核
+--------------
+$>cp -ravf /home/vsftpd/linux/Linux/scripts/debug /github/unix/kernel
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap,script=no,downscript=no -kernel ./tmp/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.8.8:/opt/shared/static,proto=tcp,v3,nolock rw ip=192.168.8.100:192.168.8.8:192.168.8.1:255.255.255.0::eth0:off rootwait text' -boot c -S -gdb tcp::8888 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+or 
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap,script=no,downscript=no -kernel ./tmp/arch/x86/boot/bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.8.8:/opt/shared/share,proto=tcp,v3,nolock rw ip=192.168.8.100:192.168.8.8:192.168.8.1:255.255.255.0::eth0:off rootwait text' -boot c -S -gdb tcp::8888 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+$>ttyrec ./tmp/kernel_`date +%Y%m%d-%H.%M.%S` -e 'gdb -x ./debug/debug.cfg ./tmp/vmlinux -d .'
+ >b do_init_module
+ >print  mod->sect_attrs->attrs[1].name
+ ---
+ $82 = 0xffff880006109ad8 <__this_cpu_preempt_check> ".text"
+ 
+ >print  mod->sect_attrs->attrs[5].name
+ ---
+ $86 = 0xffff880006109ad0 <__phys_addr_nodebug+10> ".rodata"
+ 
+ >print  mod->sect_attrs->attrs[12].name
+ ---
+ $93 = 0xffff880006109ac8 <__phys_addr_nodebug+2> ".bss"
+ 
+ >print /x  mod->sect_attrs->attrs[1]->address
+ ---
+ $96 = 0xffffffffa0005000
+ 
+ >print /x  mod->sect_attrs->attrs[5]->address
+ ---
+ $97 = 0xffffffffa0006040
+ 
+ >print /x  mod->sect_attrs->attrs[12]->address
+ ---
+ $98 = 0xffffffffa0007380
+ 
+ >add-symbol-file /path/to/module/xxx.ko 0xffffffffa0005000 -s .data 0xffffffffa0006040 -s .bss 0xffffffffa0007380
+ 

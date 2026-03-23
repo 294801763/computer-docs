@@ -1,0 +1,35 @@
+LVM分区
+----------------
+$>pvcreate /dev/sda5
+$>vgcreate DEBIAN /dev/sda5
+
+$>lvcreate -n swap_1 -L 4G DEBIAN
+$>lvcreate -n root -l 100%VG DEBIAN
+
+$>mkfs.ext4 /dev/DEBIAN/root
+
+扩展磁盘空间
+----------------
+$>pvcreate /dev/sdb
+$>vgextend DEBIAN /dev/sdb
+$>lvresize -l +100%FREE /dev/DEBIAN/root
+$>lvextend -l 100%VG /dev/DEBIAN/root
+$>pvs
+$>pvscan
+$>df -Th
+$>resize2fs /dev/DEBIAN/root                     #增加root分区容量,并继承文件系统类型.
+
+当扩展lvm - root分区出问题时以下几条命令可以彻底解决<需使用pxe进入维护模式才可以>
+-------------------
+nano /usr/bin/dvms
+--
+#!/bin/bash 
+
+pvs
+vgs -v
+vgs --noheadings -o pv_name vms-vg
+pvs -o +uuid | grep unknown
+vgreduce --removemissing --force vms-vg
+vgreduce --force vms-vg /dev/$1
+vgs -o +pv_name vms-vg
+echo "当扩展lvm - root分区出问题时以下几条命令可以彻底解决<需使用pxe进入维护模式才可以>"

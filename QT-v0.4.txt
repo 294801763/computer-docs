@@ -1,0 +1,687 @@
+install
+--------------
+QT
+ QT 5.12.12
+  MinGW 7.3.0 64bit
+  Qt Virtual Keyboard
+ Developer and Designer Tools 
+  QT Creator 5.0.2 CDB Debugger support for QtCreator
+  MinGW 7.3.0 64bit 
+
+.PRO
+--------------
+#xxx               -- 注释,从#开始
+SOURCES            -- 指定源文件
+HEADERS            -- 指定头文件
+CONFIG             -- 编译器标志
+TARGET             -- 指定目标文件名
+INTERFACES         -- 添加界面文件
+TEMPLATE           -- 模块设置,app<生成应用程序,默认>,subdirs<生成Makefile文件,编译subdirs指定子文件夹>,lib<生成库文件>
+DESTDIR            -- 指定生成的应用程序放置目录
+
+app模板
+--------
+SOURCES            -- 指定源文件
+HEADERS            -- 指定头文件
+FORMS              -- 应用程序的所有.ui文件列表
+LEXSOURCES         -- 应用程序中的所有lex源文件列表
+YACCSOURCES        -- 应用程序中所有yacc源文件列表
+TARGET             -- 可执行应用名称
+DESTDIR            -- 放置可执行程序目标目录
+DEFINES            -- 应用程序所需的额外预处理程序定义列表
+INCLUDEPATH        -- 应用程序所需的额外包含路径列表
+DEPENDPATH         -- 应用程序所依赖的搜索路径
+VPATH              -- 寻找补充文件的搜索路径
+
+操作符
+--------
+=                  -- 分配一个值给一个变量
++=                 -- 向一个变量的值列表中添加一个值
+-=                 -- 从一个变量的值列表中移除一个值
+*=                 -- 仅仅在一个值不存在于一个变量的值列表中的时候把他添加进去
+~=                 -- 替换任何与指定值得正则表达式匹配的任何值
+
+作用域
+--------
+
+函数
+-------- 
+include(...)        -- 包含这个文件名的内容
+message("string")   -- 在控制台上输出消息
+error("string")     -- 输出所给定的字符串,qmake退出
+
+函数 & 作用域
+--------
+exists(...){}
+isempty(...){}
+system(...){}
+win32{
+ SOURCES += hellowin.cpp
+}
+unix {
+ SOURCES += hellounix.cpp
+}
+
+帮助
+--------
+帮助->索引: qmake 
+帮助->索引: qmake Language
+
+常用信息
+--------
+DESTDIR = $$PWD/bin/
+
+message(Qt version: $$[QT_VERSION])
+message(Qt is installed in $$[QT_INSTALL_PREFIX])
+message(Qt resources can be found in the following locations:)
+message(Documentation: $$[QT_INSTALL_DOCS])
+message(Header files: $$[QT_INSTALL_HEADERS])
+message(Libraries: $$[QT_INSTALL_LIBS])
+message(Binary files (executables): $$[QT_INSTALL_BINS])
+message(Plugins: $$[QT_INSTALL_PLUGINS])
+message(Data files: $$[QT_INSTALL_DATA])
+message(Translation files: $$[QT_INSTALL_TRANSLATIONS])
+message(Settings: $$[QT_INSTALL_CONFIGURATION])
+message(Examples: $$[QT_INSTALL_EXAMPLES])
+message(PWD: $$PWD)
+message(OUT_PWD: $$OUT_PWD)
+message(_PRO_FILE_: $$_PRO_FILE_)
+message(_PRO_FILE_PWD_: $$_PRO_FILE_PWD_)
+
+库设置
+--------
+QT += \
+ ...
+
+INCLUDEPATH += \
+ <DIR1> \
+ <DIR2>
+
+win32:INCLUDEPATH += "..."
+unix:INCLUDEPATH += "..."
+
+win32:LIBS += "<...>/<name>.lib"
+unix:LIBS += "-L<...>" -l<name>
+
+
+SOURCES += \
+ ...
+
+FORMS += \
+ ...
+
+RESOURCES += \
+ ...
+
+LIBS += \
+ -L<DIR1> -lx \
+ -L<DIR2> -ly
+
+DESTDIR = $$PWD/out/bin/
+MOC_DIR = $$PWD/out/moc/
+RCC_DIR = $$PWD/out/rcc/
+UI_DIR  = $$PWD/out/ui/
+OBJECTS_DIR = $$PWD/out/objs
+
+工程设置
+--------
+#if defined(ARM_ARCH) //如果是在开发板上运行，那么需要隐藏鼠标指针
+    QApplication::setOverrideCursor(Qt::BlankCursor); // 隐藏鼠标
+#endif
+
+杂项
+--------------
+工程嵌套参考: 欢迎->Analog Clock Window Example
+
+多语言
+--------------
+step.1 创建语言文件
+--------
+$>nano -w <name>.pro 
+-----
+TRANSLATIONS += \
+ lang/<name ,eg.translation>_zh.ts \
+ lang/<name ,eg.translation>_en.ts \
+ lang/<name ,eg.translation>_de.ts
+
+step.2 更新语言文件
+--------
+$>lupdate <name>.pro             #Tools->External->Linguist->lupdate 
+
+step.3 添加语言文件到工程
+--------
+<工程名>->添加现有文件...-><选择生成的语言文件即可>
+
+step.4 编辑语言文件
+--------
+$>linguist                       #<选择生成的语言文件>->用...打开->Qt Linguist
+
+step.5 部署翻译文件
+--------
+$>lrelease <name>.pro            #Tools->External->Linguist->lrelease
+
+step.6 添加到资源文件
+--------
+<选择资源文件>->添加现有文件-><选择新生成的".qm"后缀的文件即可>
+
+step.7 代码
+--------
+$>nano -w mainwindow.h 
+--------
+...
+#include <QTranslator>
+...
+
+$>nano -w mainwindow.cpp 
+--------
+//中文
+QTranslator *zh_cn = new QTranslator(this);
+zh_cn->load(":/lang/<name ,eg.translation>_zh.qm");
+
+//英文
+QTranslator *en_us = new QTranslator(this);
+en_us->load(":/lang/<name ,eg.translation>_en.qm");
+
+//德文
+QTranslator *de = new QTranslator(this);
+de->load(":/lang/<name ,eg.translation>_de.qm");
+
+//设置语言为德文
+qApp->installTranslator(de);
+
+拷贝图片
+--------------
+$>find . -path ./png -prune -type d -o -name "*_48pt_3x.png" -exec cp -avf {} ./imgs \;
+
+样式表 
+--------------
+非常满意: Ubuntu.qss,Aqua.qss,MacOS.qss
+
+添加样式表
+--------------
+文件->新建文件或项目->文件和类->Qt->Qt Resource File: <name>->Add Prefix...->: /
+$>tar -xvf QSS-1.1.0.tar.gz
+$>mv QSS-1.1.0 style
+$>cp -afv style <工程目录>
+$>文件->新建文件或项目->文件和类->Qt->Qt Resource File: <name>->Add Files: <选择style目录下的文件即可>
+
+使用样式表
+--------------
+$>nano -w mainwindow.h 
+--------
+...
+#include <QFile>
+...
+
+$>nano -w mainwindow.cpp 
+--------
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	QFile *style;
+    style  = new QFile(":/style/Ubuntu.qss", this);  //获取资源文件的对象
+    style->open(QFile::ReadOnly);                        //只读模式
+    QString css = QString(style->readAll());             //读出的数据转成字符串
+    qApp->setStyleSheet(css);                            //qApp 程序的唯一全局指针 设置样式
+    style->close();                                      //最后关闭这个文件
+	...
+}
+...
+
+窗口设置
+--------------
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	//让程序无边框
+	setWindowFlags(Qt::FramelessWindowHint);
+
+	//让程序背景透明
+	setAttribute(Qt::WA_TranslucentBackground,true);
+	
+	//
+	setAttribute(Qt::WA_StyledBackground,true);
+}
+...
+
+背景
+-----------
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	...
+	QPalette pal = this->palette();
+	pal.setBrush(QPalette::Window,QBrush(QPixmap(":/bg.png").scaled(this->size(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+	this->setPalette(pal);
+	this->setAutoFillBackground(true);
+	...
+}
+
+Logo背景动画
+--------------
+$>nano -w mainwindow.h
+--------
+...
+#include <QMovie>
+...
+
+$>nano -w mainwindow.cpp
+--------
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+...
+	//让程序无边框
+    setWindowFlags(Qt::FramelessWindowHint);
+	
+	//设置窗口固定大小
+    setFixedSize(1024,1366);
+
+    //动态播放
+    QMovie *ico = new QMovie(":/中国风.gif");
+
+    //设置固定大小
+    ui-><label name>->setFixedSize(1024,1366);
+
+    //将label z-index 设置到窗口控件的最底层
+    ui-><label name>->lower();
+
+    //移动label位置
+    ui-><label name>->move(0,0);
+
+    //设置关联
+    ui-><label name>->setMovie(ico);
+	
+	//图片自适应窗口控件大小
+    ui-><label name>->setScaledContents(true);
+
+    //设置缩放
+    ico->setScaledSize(QSize(1024,1366));
+
+    //启动
+    ico->start();
+...
+}
+or 
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+...
+    //让程序无边框和窗口最上层显示
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+	
+	//设置窗口固定大小
+    setFixedSize(1024,1366);
+
+    //动态播放
+    QMovie *ico = new QMovie(":/中国风.gif");
+
+    //设置固定大小
+    ui-><label name>->setFixedSize(1024,1366);
+
+    //将label z-index 设置到窗口控件的最底层
+    ui-><label name>->lower();
+
+    //移动label位置
+    ui-><label name>->move(0,0);
+
+    //设置关联
+    ui-><label name>->setMovie(ico);
+	
+	//图片自适应窗口控件大小
+    ui-><label name>->setScaledContents(true);
+
+    //设置缩放
+    ico->setScaledSize(QSize(1024,1366));
+
+    //启动
+    ico->start();
+...
+}
+
+设置应用程序字体
+--------------
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+...
+	QFont font("<字体名称>",10,QFont::Normal,false);
+	QApplication::setFont(font);
+...
+}
+
+字体设置
+--------------
+QFont font = this->font();
+
+//字体名称
+font.setFamily("<字体名称>");
+
+//点大小
+font.setPixelSize(16);
+
+//像素大小
+font.setPointSize(18);
+
+//是否加粗
+font.setBold(true);
+
+//是否斜体
+font.setItalic(false);
+
+//是否下划线
+font.setUnderline(false);
+
+this->setFont(font);
+
+开场动画
+--------------
+$>nano -w xx.h
+--------
+#ifndef _SPLASHSCREEN_H_
+#define _SPLASHSCREEN_H_
+
+#include <QSplashScreen>
+#include <QMovie>
+
+class QPixmap;
+class QPainter;
+ 
+class CSplashScreen : public QSplashScreen
+{
+	Q_OBJECT
+public:
+	CSplashScreen(const QPixmap & pixmap);
+	CSplashScreen(const QString gifname);
+	~CSplashScreen();
+	void setGif(QString filename);
+
+protected:
+	virtual void drawContents(QPainter *painter);
+ 
+private slots:
+	void slot_update();
+	
+private:
+	QMovie *m_move;
+	int m_rotate;
+	
+};
+ 
+#endif // _SPLASHSCREEN_H_
+
+$>nano -w xx.cpp 
+--------
+#include <QLabel>
+#include <QTimer>
+#include <QPixmap>
+#include <QPainter>
+#include "xx.h"
+
+CSplashScreen::CSplashScreen(const QPixmap & pixmap) : QSplashScreen(pixmap)
+{
+	
+}
+ 
+CSplashScreen::CSplashScreen( const QString gifname )
+{
+	setGif(gifname);
+}
+ 
+CSplashScreen::~CSplashScreen()
+{
+ 
+}
+ 
+void CSplashScreen::slot_update()
+{
+	setPixmap(m_move->currentPixmap());
+	repaint();
+}
+ 
+void CSplashScreen::drawContents(QPainter *painter)
+{
+	painter->setFont(QFont("SimHei", 40));
+	painter->setPen(QColor(213, 218, 220));
+	painter->drawText(QPointF(20, 100), "教员系统");
+	
+	painter->setFont(QFont("SimHei", 18));
+	painter->setPen(QColor(213, 218, 220));
+	painter->drawText(QPointF(30, 140), "Version: 1.0.0");
+ 
+	painter->setFont(QFont("Helvetica", 16));
+	painter->setPen(QColor(Qt::white));
+	QRect r = rect();
+	r.setRect(r.x(), r.y(), r.width(), r.height() -12);
+	painter->drawText(r, Qt::AlignBottom | Qt::AlignCenter, "测试");
+ 
+	painter->setFont(QFont("Verdana", 11));
+	QSplashScreen::drawContents(painter);
+}
+ 
+void CSplashScreen::setGif( QString filename )
+{
+	m_move = new QMovie(filename);
+	m_move->start();
+	
+	QTimer *timer = new QTimer(this);
+	connect(timer, SIGNAL(timeout()), this, SLOT(slot_update()));
+	timer->start(100);
+}
+
+$>nano -w main.cpp 
+--------
+...
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+	CSplashScreen *splashscream = new CSplashScreen(":/中国风.gif");
+	splashscream->show();
+	...
+}
+
+SVG
+--------------
+$>nano -w <name>.pro 
+--------
+QT += core gui svg
+
+$>nano -w mainwindow.h 
+--------
+...
+#include <QPainter>
+#include <QSvgRenderer>
+...
+
+$>nano -w mainwindow.cpp 
+--------
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	...
+	QString str = ":/24px.svg";
+	QSvgRenderer *svg = new QSvgRenderer();
+	svg->load(str);
+
+	QPixmap *pixmap = new QPixmap(32,32);
+	pixmap->fill(Qt::transparent);        //设置背景透明
+
+	QPainter p(pixmap);
+	svg->render(&p);
+
+	QLabel *label = new QLabel();
+	label->setPixmap(*pixmap);
+	label->setAlignment(Qt::AlignCenter);
+	label->show();
+	...
+	QIcon ico(*pixmap);
+	...
+	free(svg);
+	...
+}
+or 
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	...
+	QString str = ":/24px.svg";
+	QSize sico(400,400);
+	QPixmap ico(str);
+	ico = ico.scaled(sico,Qt::KeepAspectRatio);
+
+	QPainter p(&ico);
+	p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+	p.fillRect(ico.rect(),QColor(Qt::red));
+	p.end();
+
+	QLabel *label = new QLabel();
+	label->setPixmap(ico);
+	label->setAlignment(Qt::AlignCenter);
+	label->show();
+	...
+}
+or 
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	...
+	QString str = ":/24px.svg";
+	QSize sico(400,400);
+	QPixmap ico(str);
+	ico = ico.scaled(sico,Qt::KeepAspectRatio);
+
+	//更改颜色
+	QPainter p(&ico);
+	p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+	p.fillRect(ico.rect(),QColor(Qt::red));
+	p.end();
+	
+	QLabel *label = new QLabel();
+	label->setPixmap(ico);
+	label->setAlignment(Qt::AlignCenter);
+	label->show();
+	...
+}
+or 
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	...
+	QString str = ":/24px.svg";
+	QSize sico(400,400);
+	QPixmap ico(str);
+	ico = ico.scaled(sico,Qt::KeepAspectRatio);
+	
+	//设置渐变色
+    QLinearGradient l(QPointF(80,80),QPointF(150,150));
+    l.setColorAt(0,Qt::black);
+    l.setColorAt(1,Qt::white);
+
+    //设置显示模式
+    l.setSpread(QGradient::PadSpread);
+
+	//更改颜色
+	QPainter p(&ico);
+	p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+	//p.setRenderHint(QPainter::Antialiasing,true);
+	p.fillRect(ico.rect(),l);
+	p.end();
+	
+	QLabel *label = new QLabel();
+	label->setPixmap(ico);
+	label->setAlignment(Qt::AlignCenter);
+	label->show();
+	...
+}
+or 
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	...
+	QString str = ":/24px.svg";
+	QSize sico(400,400);
+	QPixmap ico(str);
+	ico = ico.scaled(sico,Qt::KeepAspectRatio);
+	
+	//设置渐变色
+    QRadialGradient l(QPointF(80,80),50,QPointF(150,150));
+    l.setColorAt(0,Qt::black);
+    l.setColorAt(1,Qt::white);
+
+    //设置显示模式
+    l.setSpread(QGradient::ReflectSpread);
+
+	//更改颜色
+	QPainter p(&ico);
+	p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+	//p.setRenderHint(QPainter::Antialiasing,true);
+	p.fillRect(ico.rect(),l);
+	p.end();
+	
+	QLabel *label = new QLabel();
+	label->setPixmap(ico);
+	label->setAlignment(Qt::AlignCenter);
+	label->show();
+	...
+}
+or 
+...
+//构造函数
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	...
+	QString str = ":/24px.svg";
+	QSize sico(400,400);
+	QPixmap ico(str);
+	ico = ico.scaled(sico,Qt::KeepAspectRatio);
+	
+	//设置渐变色
+    QConicalGradient l(QPointF(80,80),50);
+    l.setColorAt(0,Qt::black);
+    l.setColorAt(1,Qt::white);
+
+	//更改颜色
+	QPainter p(&ico);
+	p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+	p.fillRect(ico.rect(),l);
+	p.end();
+	
+	QLabel *label = new QLabel();
+	label->setPixmap(ico);
+	label->setAlignment(Qt::AlignCenter);
+	label->show();
+	...
+}
+

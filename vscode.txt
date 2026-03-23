@@ -1,0 +1,165 @@
+代码标记与折叠
+---------------
+step.1 安装SantaCodes.santacodes-region-viewer-1.1.1.vsix
+step.2 查看region-viewer-1.1.1.png
+step.4 快捷键,折叠所有标记的代码(Ctrl+K Ctrl+8),打开所有标记的代码(Ctrl+K Ctrl+9),创建折叠区域(Ctrl+K Ctrl+,)，移除折叠区域(Ctrl+K Ctrl+.)
+
+代码折叠快捷键
+---------------
+CTRL + SHIFT + [               - 折叠,当前鼠标位置 
+CTRL + SHIFT + ]               - 关闭折叠,当前鼠标位置
+Ctrl+K Ctrl+L                  - 折叠,配合"#pragma region <...>",当前鼠标位置
+Ctrl+K Ctrl+[                  - 折叠当前鼠标位置的全部代码
+Ctrl+K Ctrl+]                  - 关闭折叠当前鼠标位置的全部代码
+
+Ctrl+K Ctrl+0                  - 折叠,当前编辑文件
+Ctrl+K Ctrl+J                  - 关闭折叠,当前编辑文件
+Ctrl+K Ctrl+2                  - 折叠级别2,当前编辑文件
+Ctrl+K Ctrl+/                  - 折叠注释,当前编辑文件
+
+Ctrl+K Ctrl+8                  - 折叠所有标记的代码
+Ctrl+K Ctrl+9                  - 打开所有标记的代码
+Ctrl+K Ctrl+,                  - 创建折叠区域
+Ctrl+K Ctrl+.                  - 移除折叠区域
+
+vscode开发设置
+---------------
+CTRL+SHIFT+P                          #输入settings打开settings.json.
+$>vi settings.json 
+--------
+{
+    "files.exclude":{
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+		"**/.vscode": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.o": true,
+        "**/*.a": true,
+        "**/*.so": true,
+        "**/*_dev": true,
+        "**/Makefile": true,
+    },
+	"editor.fontSize": 10,
+	"editor.rulers": [ 80 ],
+	"editor.minimap.maxColumn": 80,
+    "window.menuBarVisibility": "toggle",
+    "editor.minimap.enabled": false,
+    "workbench.activityBar.visible": false,
+	"workbench.statusBar.visible": false,
+}
+
+$>vi Makefile
+----------
+CC=gcc
+CFLAGS=-g3 -O0 -Wl,-Bstatic -I. -I/home/vsftpd/cxx/static/x11/include
+
+#programe
+targets := $(shell pwd | rev | awk -F \/ '{print $$1}' | rev)_dev
+
+objects = $(wildcard *.c)
+files = $(notdir $(objects))
+objs = $(patsubst %.c, %.o, $(files))
+
+#librarys
+boost=-lboost_unit_test_framework
+
+all:$(objs)
+	$(CC) -o $(targets) $^ $(boost)
+
+%.o:%.c
+	$(CC) $(CFLAGS) -c  $^
+
+.PHONY:clean
+clean:
+	rm $(objs) $(targets)
+	
+注意:以上内容配置完成后就可以在vscode中愉快编写代码啦.
+
+vscode打开目录
+---------------
+$>vscode /dir/
+
+vscode快捷键
+---------------
+CTRL+~                   #打开/隐藏控制台.
+ALT+z                    #自动换行.
+CTRL+k+0                 #折叠代码.
+CTRL+k+o                 #打开目录,CTRL+SHIFT+p:File:OpenFolder.
+
+打开/隐藏菜单
+---------------
+步骤1,F1/shift+ctrl+p
+步骤2,View:Toggle Menu bar
+步骤3,View:Toggle Minimap
+步骤4,View:Toggle Activity Bar Visibility
+
+常用视图
+---------------
+步骤1,F1/shift+ctrl+p
+步骤2,Explorer:Focus on OutLine View 
+      Explorer:Focus on Open Editors View 
+	  Explorer:Focus on Folders View
+
+快速打开设置
+---------------
+步骤1,F1/shift+ctrl+p
+步骤2,Preferences:Open User Settings
+
+标签页
+---------------
+User->Workbench->Editor Management->Show Tabs:勾选或不勾选 
+
+快速打开终端
+---------------
+CTRL+`
+
+全屏
+---------------
+F11
+
+编译命令
+---------------
+$>clang
+
+代码行缩进
+---------------
+CTRL+[/]
+
+代码注释
+---------------
+CTRL+/                          #注释/取消,单行注释.
+ALT+SHIFT+A                     #注释/取消,多行注释
+or 
+CTRL+SHIFT+A                    #注释/取消,多行注释 
+
+删除上一个单词
+---------------
+CTRL+Backspace
+
+代码格式化
+---------------
+ALT+SHIFT+F 
+
+高亮显示选中的内容
+---------------
+CTRL+SHIFT+L
+
+快速到文件的开头或末尾
+---------------
+CTRL+HOME/END
+
+代码的搜索
+---------------
+$>apt-get install global
+$>gtags
+
+CTRL+P
+---------------
+步骤1,打开源代码的文件.
+步骤2,?                         #列出当前和执行的动作.
+      !                         #显示ERROR和WARN.
+      :                         #跳转到行数.
+      @                         #跳转到对应的符号表(变量/函数).
+      #                         #根据名字查找符号表.

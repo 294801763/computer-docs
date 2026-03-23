@@ -1,0 +1,1722 @@
+php语法
+----
+PHP脚本以<?php 开头,以?>结尾.
+<?php //此处是PHP代码  ?>
+
+<?php 
+//此处是php代码
+?>
+
+PHP语句以分号结尾(;)
+<?php 
+echo "this is php script!";
+?>
+
+输出方法: echo 和 print
+echo   -    能够输出一个以上的字符串,英文逗号隔开
+print  -    只能输出一个字符串,并始终返回1 
+echo比print稍快,并且开销低
+
+<?php 
+echo "<h2>one</h2>";
+echo "one<br/>";
+echo "one","two","three",1,"2";
+?>
+
+注释
+----
+<?php 
+//单行注释
+
+#单行注释
+
+/*
+多行注释
+*/
+?>
+
+变量
+----
+$x = 5;
+$y = 1;
+$z = $x + $y
+echo $z
+
+变量命名规则
+--
+变量以$符号开头,其后变量的名称
+变量名称必须以字母或下划线开头
+变量名称不能以数字开头,不能有空格
+变量名称只能包含字母数字和下划线(A-z,0-9以及_)
+变量名称对大小写敏感($y与$Y是两个不同的变量)
+
+注意:PHP变量名称对大小写敏感!!!
+
+小知识
+----
+所有用户定义的函数,类和关键词(eg.if,else,echo等等)都对大小写不敏感
+
+空白符
+----
+<?php 
+echo "你好!
+
+在干嘛呢？
+";
+
+$a = echo "你好!
+
+在干嘛呢？
+";
+
+echo $a
+
+/**
+你好! 在干嘛呢？
+*/
+?>
+
+命令行的使用
+----
+<?php 
+$input = readline("please input:");
+echo "content:" . $input;
+
+echo "please input:";
+$input = fgets(STDIN);
+echo "content" . $input
+?>
+
+数据类型
+----
+字符串,整数,浮点数,逻辑(布尔类型),数组,对象,NULL,资源类型
+用var_dump()回返回变量的数据类型和值,一般用于开发调试使用
+只获取数据类型 echo gettype($x);
+
+字符串 
+--
+字符串是字符序列
+字符串可以是引号内的任何文本,可以使用单引号或双引号
+
+<?php 
+$x = "X";
+
+echo $x;
+echo "<br/>"
+
+$x = 'XY';
+var_dump($x);
+?>
+
+整数
+--
+和数学里整数有些区别
+整数必须有至少一个数字(0-9)
+整数不能包含逗号或空格
+整数不能有小数点
+整数正负均可
+可以用三种格式规定整数:十进制,十六进制(0x开头)或八进制(0开头)
+
+<?php 
+$x = 1;
+var_dump($x);
+
+$x = 11;           //负数
+var_dump($x);
+
+$x = 0x1;          //十六进制
+var_dump($x);
+
+$x = 09;           //八进制
+var_dump($x);
+?>
+
+浮点数 
+--
+浮点数是有小数点或指数形式的数字
+
+<?php 
+$x = 3.14;
+var_dump($x);
+
+$x = 3.14e3;           
+var_dump($x);
+
+$x = 8e-4;         
+var_dump($x);
+?>
+
+逻辑(布尔值)
+--
+<?php 
+$x = true;
+var_dump($x);
+
+$x = false;           
+var_dump($x);
+?>
+
+数组 
+--
+在一个变量中存储多个值
+有一维数组和多维数组
+
+<?php 
+$x = array("one","two","three");
+var_dump($x);
+
+$x = ["one","two","three"];           
+var_dump($x);
+?>
+
+Null
+--
+特殊的NULL值表示变量无值,NULL是数据类型
+变量可以通过设置NULL来清空变量数据
+
+<?php 
+$x = array("one","two","three");
+var_dump($x);
+
+$x = null;           
+var_dump($x);
+?>
+
+定界符
+----
+以<<<EOF开始标记,以EOF标记结束
+结束标记必须顶头写,独自占一行,不能有缩进和空格
+在结束标记末尾要有分号
+
+EOF可以用任意其他字符代替,开始标记和结束标记相同即可,比如常用大写的EOT,EOD,EOF来表示,但是不只限于那几个(也可以用:JSON,HTML等等),只需保证开始标记和结束标记不在正文中出现即可
+
+位于开始标记和结束标记之间的变量可以被正常解析,但是函数则不可以;在定界符中,变量不需要用连接符"."或","来拼接
+
+当内容需要内嵌引号(单引号或双引号)时,不需要加转义符号,本身对单双引号转义
+
+
+<?php 
+echo <<<EOF            #<<<EOF后面不能有空格
+
+EOF;                   #EOF必须顶头写
+?>
+
+<?php 
+echo <<<EOT
+
+EOT;
+?>
+
+<?php 
+echo <<<EOD
+
+EOD;
+?>
+
+<?php 
+echo <<<EOD
+
+EOD;
+?>
+
+<?php 
+$x = <<<EOF
+
+EOF;
+
+echo $x
+?>
+
+算术运算符
+----
+x + y         加              x+y的和
+x - y         减              x和y的差
+x*y           乘              x和y的积
+x/y           除              x和y的商
+-x            负数            取x的相反符号
+~x            取反            x取反,按二进制位进行取反运算
+a.b           并置            连接两个字符串 
+intdiv(x,y)   整除            整数之间整除,参数也必须是整数,向下取整
+
+赋值运算符
+----
+x = y           x = y               左操作数被设置为右侧表达式的值
+x += y          x = x + y           加
+x -= y          x = x - y           减
+x *= y          x = x * y           乘
+x /= y          x = x / y           除
+x %= y          x = x % y           模(除法的余数)
+x .= y          x = x . y           连接两个字符串 
+
+递增/递减运算符
+-----
+++x    预递增    x加1,然后返回x
+x++    后递增    返回x,然后x加1
+--x    预递减    x减1,然后返回x
+x--    后递减    返回x,然后x减1
+
+比较运算符
+----
+x == y      等于            如果x等于y,则返回true
+x === y     绝对等于        如果x等于y,且他们类型相同,则返回true 
+x != y      不等于          如果x不等于y,则返回true 
+x <> y      不等于          如果x不等于y,则返回true
+x !== y     不绝对等于      如果x不等于y,且他们类型不相同,则返回true 
+x > y       大于            如果x大于y,则返回true 
+x < y       小于            如果x小于y,则返回true
+x >= y      大于等于        如果x大于或者等于y,则返回true
+x < = y     小于等于        如果x小于或者等于y,则返回true
+
+逻辑运算符
+----
+x and y        与             如果x和y都为true,则返回true 
+x or y         或             如果x和y至少一个为true,则返回true 
+x xor y        异或           如果x和y有且仅有一个为true,则返回true 
+x && y         与             如果x和y都为true,则返回true 
+x || y         或             如果x和y至少一个为true,则返回true 
+!x             非             如果x不为true,则返回true
+
+and和&&的区别
+--
+&& 运算符优先级比and高
+
+or和||的区别 
+--
+|| 运算符优先级比or高
+
+条件语句
+----
+<?php 
+if(条件)
+{
+  条件成立时立即执行
+}
+
+if(条件)
+{
+  条件成立时立即执行
+}
+else 
+{
+  条件不成立时立即执行
+}
+
+if(条件)
+{
+  条件成立时立即执行
+}
+else if(条件1)
+{
+  elseif条件1成立时立即执行
+}
+else if(条件2)
+{
+  elseif条件2成立时立即执行
+}
+else 
+{
+  条件不成立时立即执行
+}
+
+switch(x)
+{
+  case label:
+    ... 
+	break;
+  case label:
+    ... 
+	break;
+  default:
+    ...
+}
+?>
+
+循环
+----
+<?php 
+for(初始值; 条件; 增量)
+{
+  要执行的代码;
+}
+
+while(条件)
+{
+  要执行的代码;
+}
+
+do{
+  要执行的代码;
+}while(条件)
+?>
+
+循环控制关键字
+--
+continue 
+break
+continue $number
+break $number              #跳出第number层循环
+
+PHP常量
+--
+PHP_EOL
+
+数组 
+----
+数值数组
+--
+<?php 
+$x = array("one","two","threee",1,2,3);
+$y = ["one","two","threee",1,2,3];
+$z = [];
+$z[1] = "one";
+
+var_dump($x[0]);
+var_dump($y);
+var_dump($z);
+
+print_r($x[0]);
+print_r($y);
+print_r($z);
+?>
+
+关联数组
+--
+<?php 
+$a = ["x" => "1","y" => 2];
+
+$y["x"] = "1";
+$y["y"] = 2;
+
+print_r($a);
+print_r($y);
+?>
+
+数值+关联数组
+--
+<?php 
+$a = ["x" => "1","y" => 2,3,4];
+
+$y["x"] = "1";
+$y["y"] = 2;
+$y[0] = 3;
+$y[1] = 4;
+
+print_r($a);
+print_r($y);
+?>
+
+获取数组长度(count()函数)
+--
+<?php 
+$a = ["x" => "1","y" => 2];
+
+$y["x"] = "1";
+$y["y"] = 2;
+
+print_r($a);
+print_r($y);
+echo count($x);
+?>
+
+遍历数组 
+--
+<?php 
+$a = ["x" => "1","y" => 2];
+
+for($i = 0; $i < count($a); $i++)    #只适合数值数组
+{
+  echo $a[$i];
+}
+
+foreach($a as $value)
+{
+  echo $value
+}
+
+foreach($a as $key => $value)
+{
+  echo $key . ' -- ' . $value
+}
+?>
+
+多维数组
+--
+<?php 
+$a = [
+  [
+    "key1" => [
+      "value",
+	  "value",
+	  "value"
+    ],
+	"key2" => [
+	  "value",
+	  "value",
+	  "value",
+	],
+	...
+  ],
+  [
+    "key3" => [
+	  ...
+	],
+	"key4" => [
+	  ...
+	],
+  ],
+  ...
+];
+
+print_r($a);
+print_r($a[0][key1]);
+
+<?php 
+$a = [
+  "k1" => [
+    "key1" => [
+      "value",
+	  "value",
+	  "value"
+    ],
+	"key2" => [
+	  "value",
+	  "value",
+	  "value",
+	],
+	...
+  ],
+  "k2" => [
+    "key3" => [
+	  ...
+	],
+	"key4" => [
+	  ...
+	],
+  ],
+  ...
+];
+
+print_r($a);
+print_r($a[k1]);
+print_r($a[k1][key1]);
+
+foreach($a as $key => $value)
+{
+  echo $key . ' -- ' . $value
+  
+  foreach($value as $k => $v)
+  {
+    echo $k . ' -- ' . $v
+  }
+}
+?>
+
+函数 
+----
+函数是一段可重复使用的代码块,可以将一系列操作封装起来使代码更加模块化,可维护和可重用,来大大节省开发时间和代码量,提高编程效率
+
+内置函数
+--
+内置函数有很多,比如:print_r(),count()等等
+获取当前时间time(),date("Y-m-d H:i:s")
+
+创建自定义函数和调用
+--
+函数准则:
+ 函数名称应该提示出他的功能
+ 函数名称以字母或下划线开头(不能以数字开头)
+
+<?php 
+//函数定义格式
+function <name>(){
+
+}
+
+//函数定义格式,参数
+function <namev>($v){
+
+}
+
+//函数定义格式,参数
+function <namevv>($v,$vx){
+
+}
+
+//严格模式
+declare(strict_type = 1);
+function <namevvv>(int $a, int $b)
+{
+  echo $a + $b;
+}
+
+返回值
+--
+return 可有可无,单一般都有的
+
+function <namevvvv>($a, $b)
+{
+  return $a + $b;
+}
+
+//调用
+<name>();
+<namev>($v);
+<namevv>($v, $vx);
+<namevvv>(1, 2);
+echo <namevvvv>(1, 2);
+var_dump(namev($v));
+var_dump(<namevvvv>(1, 2));
+?>
+
+<?php 
+//函数定义格式
+function nowTime(){
+  echo date("Y-m-d H:i:s");
+}
+
+function name($v){
+  echo "My name is:" . $v;
+}
+
+//调用
+nowTime();
+name("Tom");
+?>
+
+作用域
+----
+局部和全局(global)作用域 
+ 在所有函数外部定义的变量,拥有全局作用域
+ 除了函数外,全局变量可以被脚本中任何部分访问
+ 要在一个函数中访问一个全局变量,需要使用global关键字
+ 函数内部声明的变量是局部变量,仅能在函数内部访问
+ 
+<?php 
+$a = "1";
+
+function x()
+{
+  global $a;
+  $z = "2";
+  
+  echo $a;
+}
+?>
+
+static作用域
+--
+当一个函数完成时,他的所有变量通常都会被删除;然后有时候希望某个局部变量不要被删除
+只需在第一次声明变量时使用static关键字
+
+每次调用该函数时,该变量将会保留着函数前一次被调用时的值,但是该变量仍然是函数的局部变量
+
+<?php 
+function x(){
+  static $a = 0;
+  
+  echo $a;
+  $a++;
+  echo PHP_EOL;
+}
+
+x();
+x();
+x();
+?>
+
+函数的参数作用域
+--
+参数是通过调用代码将值传递给函数的局部变量
+
+<?php 
+function x($a)
+{
+  echo $a;
+}
+
+x("Tom");
+var_dump($a);
+?>
+
+<?php 
+$a = "1";
+
+unset($a);      #unset()内置函数,删除变量a
+
+var_dump($a);
+var_dump(isset($a));   #isset()内置函数,判断变量是否存在
+?>
+
+超级全局变量
+----
+$GLOBALS
+$_SERVER
+$_REQUEST
+$_POST
+$_GET
+$_FILES
+$_ENV
+$_COOKIE
+$_SESSION
+
+$GLOBALS
+--
+包含了全部变量的全局组合数组,变量的名字就是数组的键
+
+<?php 
+print_r($GLOBALS);
+
+$a = "1";
+$x = "2";
+
+function y()
+{
+  global $a,$x;
+  $a = 3;
+  $x = "4";
+}
+
+y();
+echo $a;
+echo $x;
+?>
+
+<?php 
+print_r($GLOBALS);
+
+$a = "1";
+$x = "2";
+
+function y()
+{
+  $GLOBALS["a"] = 3;
+  $GLOBALS["x"] = "4";
+}
+
+y();
+echo $a;
+echo $x;
+?>
+
+die()            #内置函数 
+
+$_SERVER 
+--
+包含了头部信息,路径,脚本位置等等信息的数组
+这个数组中的项目是web服务器创建的
+不能保证每个服务器都提供全部项目;服务器可能会忽略一些或者提供一些没有列举的项目
+
+<?php 
+print_r($_SERVER);
+?>
+
+数组运算符和三元运算符
+----
++号运算符(合并)
+只会保留第一个数组中的键值对,而忽略后面数组中相同的键名的元素,如果想要合并两个数组并覆盖相同键名的元素可以使用arry_merge()函数
+
+<?php 
+$a = [
+  "m" => "1",
+  "n" => "2",
+];
+
+$b = [
+  "m" => "3",
+  "o" => "4",
+];
+
+$c = [
+  "m" => "5",
+  "c" => "6",
+  "d" => [
+    "dd" ==> 7,
+  ],
+];
+
+print_r($a + $b + $c);
+?>
+
+<?php 
+$a = [
+  "m" => "1",
+  "n" => "2",
+];
+
+$b = [
+  "m" => "3",
+  "o" => "4",
+];
+
+$c = [
+  "m" => "5",
+  "c" => "6",
+  "d" => [
+    "dd" ==> 7,
+  ],
+];
+
+print_r(array_merge($a, $b, $c));
+?>
+
+== 
+===     #有相同的键/值对,且顺序相同,类型相同
+--
+<?php 
+$a = [1,2,3];
+$b = [1,2,"3"];
+
+var_dump($a == $b);
+var_dump($a === $b);
+
+$a = [
+  "m" => "1",
+  "n" => "2",
+];
+
+$b = [
+  "n" => "2",
+  "m" => "1",
+];
+
+var_dump($a == $b);
+var_dump($a === $b);
+?>
+
+三元运算符(?:)
+--
+<?php 
+$name = isset($x)?$x:"Tom";
+var_dump($name);
+?>
+
+空合并运算和组合比较运算符
+----
+空合并运算(??)
+--
+用于简化处理可能为null的变量或数组元素的情况
+他的作用是判断一个变量是否未定义或者为null,如果未定义或者为null则返回指定的默认值;否则返回该变量的值
+
+<?php 
+$name = $x ?? "Tom";
+var_dump($name);
+?>
+
+组合比较运算符(<=>)
+--
+可比较整型,浮点型,字符串 
+
+<?php 
+$a = "1";
+$b = "2";
+
+$c = $a <=> $b;
+
+var_dump($c);
+
+如果$a > $b,则$c的值为1
+如果$a == $b,则$c的值为0
+如果$a < $b,则$c的值为-1
+?>
+
+比较
+----
+松散比较
+--
+使用两个等号 == 比较,只比较值,不比较类型
+
+严格比较
+--
+用三个等号(全等) === 比较,除了比较值,也比较类型
+
+比较undefined,0,false,null,空值
+----
+<?php 
+var_dump(!isset($name));
+var_dump(is_null($name));
+?>
+
+<?php
+$name = null; 
+
+var_dump(!isset($name));
+var_dump(is_null($name));
+var_dump(empty($name));
+?>
+
+empty()函数对于未定义的变量也会返回true,因此在使用empty()之前应该确保变量已经被定义
+
+<?php
+$v1 = "";        //空字符串
+$v2 = 0;         //整数0
+$v3 = null;      //null
+$v4 = false;     //false
+$v5 = array();   //空数组[]
+
+var_dump(empty($v1));
+var_dump(empty($v2));
+var_dump(empty($v3));
+var_dump(empty($v4));
+var_dump(empty($v5));
+?>
+
+字符串常用函数
+----
+strlen()     获取字符串长度
+strpos()     在字符串内查找一个字符或一段指定的文本,返回第一次出现的位置或false
+stripos()    同上,但不区分大小写
+strrpos()    同上,返回最后一次出现的位置或false
+strripos()   同上,但是不区分大小写
+
+explode()    把字符串打散成数组
+implode()    把数组拼接成字符串 
+
+strtoupper()   把字符串转成大写
+strtolower()   把字符串转成小写 
+
+ucfirst()      将单词的首字母转成大写
+lcfirst()      将单词的首字母转成小写
+ucwords()      将字符串中每个单词的首字母转成大写
+
+str_replace($search,$replace,$string) 将字符串中的某个子字符串替换为另一个字符串
+strrev()                              将字符串反转
+
+trim()                                 去除字符串两端空格
+substr()                               截取字符串的一部分
+mb_substr()                            截取字符串的一部分(中文),需要安装扩展mbstring
+
+数组相关的常用函数
+----
+$array = ["1","2","3","4"];
+
+array()          创建一个数组
+count()          返回数组中元素的数量
+array_push($array, $newElement)     将一个或多个元素添加到数组的末尾
+array_unshift($array, $newElement)  将一个或多个元素添加到数组的开头 
+array_pop()                         删除并返回数组中的最后一个元素
+array_shift()                       删除并返回数组中的第一个元素
+
+array_slice()                       从数组中提取一部分元素,组成新的数组
+array_merge()                       合并两个或多个数组
+array_reverse()                     反转数组中的元素的顺序
+
+in_array()                          检查数组中是否存在某个值
+array_key_exists()                  检查数组中是否存在某个键
+array_keys()                        返回数组中的所有键,组成新数组
+array_values()                      返回数组中的所有值,组成新数组
+array_search()                      在数组中搜索给定的值,并返回对应的键
+array_unique()                      移除数组中的重复值
+
+max()                               最大值
+min()                               最小值
+
+sort()                              数组排序
+array_sum()                         数组求和 
+
+时间日期相关函数
+----
+time()                                获取当前时间戳(10位)
+microtime(true)                       返回一个浮点数时间戳(秒数和微秒数的总和)
+date(格式,时间戳)                     日期格式化
+strtotime(string)            
+mktime($hour,$minute,$second,$month,$day,$year)    生成时间戳
+date_create()                                      创建一个日期时间对象
+date_format()                                      将日期和时间格式化为指定的字符串格式
+date_diff()                                        计算两个日期之间的差
+
+%Y     完整年份的差异
+%y     年份的差异
+%m     月份的差异
+%d     天数的差异
+%a     总共的天数差异
+%H     小时的差异
+%h     小时的差异(12小时制)
+%I     分钟的差异
+%S     秒数的差异
+%R     正负
+%r     正负(必须是负的才会显示)
+
+strftime($format,$timestamp)        根据指定的格式,将时间戳格式为可读的日期和时间字符串,支持本地化的日期和时间格式(php8已废弃)
+gmdate(($format,$timestamp)         根据指定的格式,将GMT时间戳格式化为可读的日期和时间字符串
+
+gmdate()和date()的区别 
+--
+gmdate()函数使用格林威治标准时间(GMT)作为默认的日期/时间基准,会忽略服务器的时区设置,始终返回格林威治标准时间(GMT)的日期和时间
+date()函数则使用本地时间作为基准,它会根据当前服务器的时区设置来格式化日期和时间
+
+date_default_timezone_set($timezone)  设置默认的时区,UTC,localtime - 本地时区,"Asia/Shanghai" - 上海
+timezones_identifiers_list()               返回所有可用时区标识符的数组
+
+时间日期类相关对象(DateTime)
+----
+<?php
+$datetime = new DateTime("2023-11-01 00:00:00");
+
+//增加或减少指定的时间间隔
+$datetime->modify("+1 day");
+$datetime->modify("-1 hour");
+
+//设置日期部分 setDate($year,$month,$day)
+$datetime->setDate(2024,1,3);
+
+//设置时间部分 setTime($hour,$month,$second)
+$datetime->setTIme(13,1,5);
+
+//设置时区
+$datetime->setTImezone(new DateTimeZone("Asia/Shanghai"));
+
+//获取时区
+$datetimezone = $datetime->getTimezone();
+print_r($datetimezone->getName());
+print_r($datetimezone->getLocation());
+
+//将日期格式化为指定字符串格式
+echo $datetime->format("Y-m-d H:i:s") . PHP_EOL; 
+
+//获取时间戳
+$timestamp = $datetime->getTimestamp();
+echo $timestamp();
+
+//计算时间差
+$datetimev2=new DateTime("2023-12-05");
+$diff = $datetime->diff(datetimev2);
+echo $d->format("%R %m %d %h %i %s");
+
+$datetime = new DateTime("2024-01-01");
+$interval = new DateInterval("P1D");  //一天的时间间隔
+$datetime->add($interval);
+//$datetime->sub($interval);
+echo $datetime->format("Y-m-d");
+?>
+
+常量声明方法
+----
+被定义后,在脚本的其他任何地方都不能被改变
+默认是全局的,可以再整个运行脚本的任何地方使用
+
+<?php 
+define("baidu","www.baidu.com");
+echo baidu;
+
+$a = "map";
+define("baidu".$a,"map.baidu.com");
+echo constant("baidu".$a);
+?>
+
+<?php 
+const baidu = "www.baidu.com";
+echo baidu;
+?>
+
+const与define区别
+--
+const不能再条件语句中定义常量
+const用于类成员变量的定义,define不可以用于类成员变量的定义,可用于全局常量
+const可在类中使用,define不能
+
+常量和变量的区别
+--
+常量前面没有($)符号,而且不能有
+常量可以不用理会变量的作用域,可以再任何地方定义和访问
+常量一旦定义就不能重新定义或取消定义
+常量的值只能是标量(字符串,整数,浮点数,布尔值)
+
+<?php 
+//获取所有常量
+get_defined_constants();
+get_defined_constants(true);
+get_defined_constants(true)["name"];
+?>
+
+魔术常量
+----
+随着他在代码中的位置改变而改变
+
+__LINE__         文件中的当前行号
+__FILE__         文件的完整路径和文件名,包含(盘符)根目录
+__DIR__          文件所在的目录
+__FUNCTION__     该函数被定义时的名字(区分大小写)
+__CLASS__        该类被定义时的名字(区分大小写)
+__NAMESPACE__    命名空间
+__METHOD__       包含了命名空间,类名,函数名
+__TRAIT__        当前使用的trait名称
+
+<?php 
+echo "Line number" . __LINE__;
+?>
+
+包含文件(include和require)
+----
+在当前文件内引入其他php文件,HTML文件或文本文件等,一般用于包含公共方法,公共页面等
+
+include和require语句区别
+--
+include和require除了处理错误的方式不同外,在其他方面都是相同的:
+require 生成一个致命错误(E_COMPILE_ERROR),在错误发生后脚本会停止执行
+include 生成一个警告(E_WARNING),在错误发生后脚本会继续执行
+因此如果希望被包含的文件是必须得且缺少文件会导致脚本无法正常运行,应使用require
+    如果希望被包含的文件是可选的,或者即使缺少文件也希望脚本继续执行,可以使用include
+
+<?php 
+include "./<script>.php";
+?>
+
+include_once和require_once语句
+-- 
+和上面一样,但只会调用一次,防止重复调用
+
+<?php 
+include_once "./<script>.php";
+?>
+
+面向对象
+----
+一种编程思想和方法,它将程序中的数据和操作数据的方法封装在一起,形成对象并通过对象之间的交互和消息传递来完成程序的功能
+面向对象编程(OOP)强调数据的封装,继承,多态,动态绑定等特性,使得程序具有更好的可扩展性,可维护性,可重用性
+
+对象的特性
+--
+对象的行为   -   对象可以执行的操作
+对象的形态   -   对象不同行为是如何响应的
+对象的表示   -   对象的表示类似于身份证,具体区分在相同的行为与状态下有什么不同(在面向对象编程中,对象的表示通常通过类来实现)
+
+面向对象编程的特性
+--
+封装         -   将对象的属性和方法封装在一起,使得外部无法直接访问和修改对象的内部状态;通过使用访问控制修饰符(public,private,protected)来限制属性和方法的访问权限,从而实现封装
+继承         -   可以创建一个新的类,该类继承(extends)了父类的属性和方法,并且可以添加自己的属性和方法;通过继承可以避免重复编写相似的代码并且可以实现代码的重用
+多态         -   可以使用一个父类类型的变量来引用不同子类类型的对象,从而实现对不同对象的统一操作;多态可以使得代码更加灵活具有更好的可以扩展性和可维护性.在php中,多态可以通过接口实现(interface)和使用抽象类(abstract class)来实现.
+
+类(class)
+--
+定义了一件事物的抽象特点
+类的定义包含了数据的形式以及对数据的操作
+
+类的定义和调用
+--
+<?php 
+//类的定义 
+class Animal{
+ public $name = "Tom";
+ public function eat()
+ {
+   echo "eating";
+ }
+}
+
+//类的调用,new 实例化对象
+$x = new Animal;
+//$x = new Animal();
+echo $x->name;
+$x->eat();
+
+//方法和属性 - 类方法(函数)
+class Animal{
+ public $name = "Tom";
+ 
+ public function eat()
+ {
+   echo "eating";
+ }
+ 
+ public say()
+ {
+   echo "say";
+ }
+}
+
+//$this - 代表自身的对象
+class Animal{
+ public $name = "Tom";
+ 
+ public function eat()
+ {
+   echo $this->name . "eating";
+ }
+ 
+ public say()
+ {
+   echo $this->name . "say";
+ }
+}
+
+$x = new Animal();
+$x->name = "Hone";
+$x->say();
+?>
+
+访问控制
+--
+关键字(public,private,protected)
+public(公有)         公有的类成员可以再任何地方被调用
+protected(受保护)     受保护的类成员则可以被其自身以及其子类和父类访问
+private(私有)          私有的类成员则只能被其定义所在的类访问(只属于自己)
+
+构造函数(__construct)
+--
+构造函数是一种特殊的方法,在创建一个新对象时它会被自动调用
+它可以用来初始化对象的属性或执行其他必要的操作
+没有返回值
+
+<?php 
+class Animal{
+ public $name = "Tom";
+ 
+ public function __construct()
+ {
+ 
+ }
+ 
+ public function __construct($v1,$v2,...)
+ {
+ 
+ }
+}
+?>
+
+析构函数(__destruct)
+--
+析构函数是一种特殊的方法,它在对象被销毁时自动调用
+它可以用来执行一些清理操作,例如释放资源或关闭数据库连接
+当对象不再被引用或脚本执行结束时,析构函数会被自动调用
+
+<?php 
+class Animal{
+ public $name = "Tom";
+ 
+ public function __construct()
+ {
+ 
+ }
+ 
+ public function __construct($v1,$v2,...)
+ {
+ 
+ }
+ 
+ public function __destruct()
+ {
+   echo "析构函数被调用了!";
+ }
+}
+
+$obj = new Animal();
+unset($obj);//销毁对象
+?>
+
+静态变量(static)和self
+--
+静态指的是无需对类进行实例化,就可以直接调用这些属性和方法
+所有对静态变量进行的操作都会对所有对象起作用
+
+<?php 
+public static $x = "1";
+echo self::$x;
+?>
+
+<?php 
+class Animal{
+ public $name = "Tom";
+ public static $x = "1";
+ 
+ public function __construct()
+ {
+ 
+ }
+ 
+ public function __construct($v1,$v2,...)
+ {
+ 
+ }
+ 
+ public function eat()
+ {
+   echo self::$x;   //只能通过这种办法访问类的静态变量
+   echo $this::$x;  //效果与上面一样,很少见,很容易出问题
+ }
+ 
+ public function __destruct()
+ {
+   echo "析构函数被调用了!";
+ }
+}
+
+echo Animal::$x;        //在类外部访问类里面的静态变量
+Animal::$x = "2";
+?>
+
+类常量 
+--
+使用场景:所有的对象公用一个属性
+静态属性与类常量相似,唯一的区分是类常量不可以更改,静态属性可以更改
+
+<?php 
+const x = "1";
+echo self::x;
+?>
+
+<?php 
+class Animal{
+ public $name = "Tom";
+ public static x = "1";
+ 
+ public function __construct()
+ {
+ 
+ }
+ 
+ public function __construct($v1,$v2,...)
+ {
+ 
+ }
+ 
+ public function eat()
+ {
+   echo self::x;   //只能通过这种办法访问类的变量
+ }
+ 
+ public function __destruct()
+ {
+   echo "析构函数被调用了!";
+ }
+}
+
+echo Animal::x;        //在类外部访问类里面的变量
+?>
+
+静态方法(static)
+--
+可以调用静态方法,静态变量                //self::
+可以调用非静态方法,非静态变量            //
+
+<?php 
+class Animal{
+ public $name = "Tom";
+ 
+ public function __construct()
+ {
+ 
+ }
+ 
+ public function __construct($v1,$v2,...)
+ {
+ 
+ }
+ 
+ public static function say()
+ {
+   echo (new self)->name;
+ }
+ 
+ public function __destruct()
+ {
+   echo "析构函数被调用了!";
+ }
+}
+
+Animal::say();          //调用 
+?>
+
+类的继承(extends)
+--
+可以创建一个新的类,该类继承(extends)了父类的属性和方法,并且可以添加自己的属性和方法;通过继承可以避免重复编写相似的代码,并且可以实现代码的重用
+继承不一定能访问,受访问控制影响
+
+<?php 
+class Animal
+{
+
+}
+
+class Dog extends Animal
+{
+
+}
+
+var_dump(new Animal());
+var_dump(new Cat());
+?>
+
+方法和属性重写
+--
+如果从父类继承的方法或属性不能满足子类的需求,可以对其进行改写
+
+final关键字
+--
+作用:防止类被继承,防止类的方法被重写
+
+如果在一个类前加final,那么这个类不能被继承
+<?php 
+class Animal
+{
+
+}
+
+class Dog extends Animal
+{
+
+}
+
+final class people
+{
+
+}
+
+var_dump(new Animal());
+var_dump(new Cat());
+?>
+
+如果一个方法前加final,那么这个方法不能被重写
+<?php 
+class Animal
+{
+
+}
+
+class Dog extends Animal
+{
+  final public function eat()
+  {
+  
+  }
+}
+
+final class people
+{
+
+}
+
+var_dump(new Animal());
+var_dump(new Cat());
+?>
+
+调用父类的方法
+--
+parent::
+parent::__construct()
+
+<?php 
+class Animal
+{
+  public function __construct($v1,$v2,...)
+  {
+  
+  }
+  
+  public function go()
+  {
+  
+  }
+}
+
+class Dog extends Animal
+{
+
+  public function __construct($v1,$v2,...)
+  {
+    parent::__construct($v1,$v2,...);
+  }
+  
+  public function go()
+  {
+    parent::go();
+  }
+  
+  public function eat()
+  {
+  
+  }
+}
+
+final class people
+{
+
+}
+
+静态延迟绑定(static)
+--
+在运行时根据实际调用的类来确定静态方法或属性的绑定
+static::$name 
+
+<?php 
+class Animal
+{
+  protected static $name = "1";
+  
+  public static function x()
+  {
+    echo self::$name . "Animal";
+	echo PHP_EOL;
+	echo static::$name . "Dynameic Bind";
+  }
+}
+
+class Dog extends Animal
+{
+  protected static $name = "2";
+}
+
+Animal::x();
+//Cat::x();
+?>
+
+类的多态
+--
+多态性允许不同类的对象对相同信息作出不同的响应
+多态性通过方法重写(覆盖)和方法重载来实现
+方法重写是指子类重写父类的方法,以改变方法的实现细节
+方法重载是指在同一个类中根据参数个数或类型不同来实现不同功能
+多态性只适用于继承关系的类,子类必须重写父类的方法才能实现多态性
+
+<?php 
+class Animal
+{
+  protected $name = "Animal";
+  
+  public function makeSound()
+  {
+    echo "$this->name make sound!";
+  }
+}
+
+class Dog extends Animal 
+{
+  protected $name = "Dog";
+  
+  public function makeSound()
+  {
+    echo "$this->name make sound!";
+  }
+}
+
+class Cat extends Animal 
+{
+  protected $name = "Cat";
+  
+  public function makeSound()
+  {
+    echo "$this->name makeSound";
+  }
+}
+
+$animal = new Animal();
+$dog = new Dog();
+$cat = new Cat();
+
+animal.makeSound();
+dog.makeSound();
+cat.makeSound();
+?>
+
+方法重载(php中不允许有同名的函数)
+--
+$args = func_get args();                   获取参数
+$numArgs = func_num_args();                获取参数数量
+
+<?php 
+class Animal
+{
+  protected $name = "Animal";
+  
+  public function makeSound()
+  {
+    echo "$this->name make sound!";
+  }
+}
+
+class Dog extends Animal 
+{
+  protected $name = "Dog";
+  
+  public function makeSound()
+  {
+    echo "$this->name make sound!";
+  }
+}
+
+class Cat extends Animal 
+{
+  protected $name = "Cat";
+  
+  public function makeSound()
+  {
+    $args = func_get args();
+	$numArgs = func_num_args();
+	
+	switch($numArgs)
+	{
+	  case 1:
+	     //一个参数
+	    break;
+	  case 2:
+	    //两个参数
+	    brea;
+	  default:
+	    //零个参数
+	}
+	
+    echo "$this->name makeSound";
+  }
+}
+
+$animal = new Animal();
+$dog = new Dog();
+$cat = new Cat();
+
+animal.makeSound();
+dog.makeSound();
+cat.makeSound();
+?>
+
+接口和抽象类
+--
+接口(interface)
+-
+接口是指一组方法的集合,不是类,不能被实例化
+可以指定某个类必须实现哪些方法,但不需要定义这些方法的具体内容
+只可以使用public
+通常用于定义一些规范,让代码更加有条理,不易出错
+
+<?php 
+interface Animals
+{
+  public function x();
+  public function y();
+}
+
+class Dog implements Animals
+{
+  public function x()
+  {
+  
+  }
+  public function y()
+  {
+  
+  }
+}
+?>
+
+抽象类和抽象方法
+-
+使用它也是定义一种约束或规范
+抽象类是一种特殊的类,只能被继承,不能被实例化 
+抽象类用于定义一组相关的方法,但这些方法的具体实现由继承它的子类来完成 
+子类继承抽象类后,必须实现抽象类中的所有抽象方法
+抽象类可以包含抽象方法和普通方法
+
+<?php 
+abstract class Animals
+{
+
+}
+?>
+
+抽象方法
+-
+抽象方法是没有具体实现的方法,只有方法的声明,但不需要方法体
+抽象方法只能存在于抽象类中
+可以使用protected(保护),但不能使用private(私有)
+
+<?php 
+abstract class Animals
+{
+  abstract public function x();
+  abstract protected function y();
+
+  public function z()
+  {
+
+  }
+}
+?>
+
+抽象类与接口的区别
+-
+抽象类可以包含非抽象方法的实现,而接口只能包含方法的声明,没有方法的实现
+类只能继承一个抽象类,但是可以实现多个接口
+抽象类可以有构造函数,而接口不能有构造函数
+抽象类中的方法可以有public,protected和private访问修饰符,而接口中的方法只能是public
+子类继承抽象类时,必须实现抽象类中的所有抽象方法,否则子类也必须声明为抽象类;子类实现接口时,必须实现接口中的所有方法
+
+代码复用(trait)
+--
+解决单一继承问题
+可同时使用多个trait,用逗号隔开
+把常用的,通用的代码抽离出来,写成trait
+和类的继承非常像,但是trait里面不能有类常量,且trait不能被实例化 
+
+<?php 
+trait A
+{
+ public function eat()
+ {
+ 
+ }
+}
+
+trait B 
+{
+ public function eat()
+ {
+ 
+ }
+}
+
+class C 
+{
+  use A, B;
+}
+?>
+
+同名冲突 
+--
+当一个类同时引入多个trait,并且这些trait中存在同名方法时,就会产生方法冲突 
+适用于方法,而不适用于属性
+
+<?php 
+trait A
+{
+
+}
+
+trait B 
+{
+
+}
+
+class C 
+{
+  use A, B
+  {
+    //A::eat insteadof B;          //用A里面的eat方法
+    B::eat insteadof A;            //用B里面的eat方法
+	
+	//别名定义
+	A::eat as protected<or public/private> Aeat;                //既能用A的eat方法,也能使用B的eat方法
+  }
+}
+?>
+
+克隆对象(clone和__clone)
+--
+复制一个一模一样的对象,但两者是独立的
+会自动调用__clone方法
+
+表单和请求
+----
+主要用到了$_GET和$_POST超全局变量,分别对应两种不同的请求方式
+
+超全局变量($_REQUEST )
+----
+$_REQUEST 变量包含了 $_GET,$_POST和$_COOKIE的内容
+$_SERVER获取请求方式
+
+htmlspecialchars()函数 
+----
+用于将字符串中的特殊字符转换为HTML实体,以避免HTML文档中引起解析错误或安全漏洞 
+
+&           &amp;
+"           &quot;
+'           &#039;
+<           &lt;
+>           &gl;

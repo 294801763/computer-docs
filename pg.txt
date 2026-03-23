@@ -1,0 +1,26 @@
+$>apt-get install postgresql postgresql-contrib golang
+$>psql -V
+$>vi /etc/postgresql/`psql -V | awk '{print $3}' | awk -F "." '{print $1}'`/main/postgresql.conf
+------------
+listen_addresses = '*'
+
+$>su -- postgres
+ >psql
+ >SHOW DATA_DIRECTORY;                           #显示数据库存放目录.
+ >CREATE DATABASE db;
+ >CREATE USER root WITH PASSWORD '123456';
+ >GRANT ALL PRIVILEGES ON DATABASE db to root;
+ >DROP DATABASE <database-name>;                 #删除数据库. 
+ >\list                                          #显示所有数据库.   
+ >\du                                            #查看所有用户.
+ >\dt *.*                                        #显示所有表.
+ >\dt                                            #显示所有公共表.
+ >\z                                             #列表,视图,访问权限.
+ >\dp                                            #列表,视图,访问权限.
+ >\d <table-name>                                #查看表结构.
+ >\?                                             #帮助.                      
+ >\q
+$>exit
+
+$>psql --host=127.1 --dbname=db --username=root --password  #登录数据库.
+

@@ -1,0 +1,190 @@
+制作根文件系统
+-------------------
+$>apt-get install qemu qemu-system qemu-user-static
+$>cd /opt/rootfs && debootstrap --arch=amd64 --include=vim,openssh-server,telnet,flex,bison,net-tools,build-essential,make,gdb --foreign buster fs_buster_x86_64 file:////opt/buster/v1.6     #不能安装到移动设备,或挂载点.
+$>cp /usr/bin/qemu-x86_64-static /opt/rootfs/fs_buster_x86_64/usr/bin
+$>DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGAGE=C LANG=C chroot /opt/rootfs/fs_buster_x86_64/ debootstrap/debootstrap --second-stage
+
+qemu创建,分区,拷贝
+-------------------
+$>qemu-img create -f qcow2 rootfs.img 20G
+$>modprobe nbd max_part=12
+$>qemu-nbd --connect=/dev/nbd0 rootfs.img 
+$>fdisk /dev/nbd0
+$>fdisk -l /dev/nbd0
+----
+/dev/nbd0p1       2048 41943039 41940992  20G 83 Linux
+
+$>mkfs.ext4 /dev/nbd0p1
+$>mount /dev/nbd0p1 /mnt/
+$>qemu-nbd --disconnect /dev/nbd0
+
+qemu安装debian-linux系统
+-------------------
+1.使用debian-10.6.0-amd64-netinst.iso  #从网络安装debian->小容量安装光盘或U盘->amd64.
+2.开始安装 
+$>qemu-system-x86_64 -netdev bridge,id=tap0,br=br0 -device e1000,netdev=tap0 -m 1024 -smp `nproc` -boot d -hda rootfs.img -cdrom debian-10.6.0-amd64-netinst.iso 
+3.安装完成后运行命令
+$>qemu-system-x86_64 -netdev bridge,id=tap0,br=br0 -device e1000,netdev=tap0 -m 1024 -smp `nproc` -boot c -hda rootfs.img
+$>qemu-system-x86_64 -nographic -netdev bridge,id=tap0,br=br0 -device e1000,netdev=tap0 -m 1024 -smp `nproc` -boot c -hda rootfs.img -append "console=ttyS0"
+
+编译内核
+-------------------
+$>cp /boot/config-`uname -r` /torvalds/build/.config
+$>make O=/torvalds/build/ menuconfig
+--------- 
+CONFIG_FORTIFY_SOURCE             #禁用.
+CONFIG_STACKPROTECTOR             #禁用.
+CONFIG_KEXEC_BZIMAGE_VERIFY_SIG   #禁用.
+CONFIG_ANDROID                    #禁用.
+CONFIG_RANDOMIZE_BASE             #禁用.
+CONFIG_SYSTEM_TRUSTED_KEYS        #清空证书.
+CONFIG_BLK_DEV_RAM                #使能.
+CONFIG_FRAME_POINTER              #选择,Kernel hacking -> Choose kernel unwinder:Frame pointer unwinder.
+CONFIG_SLAB                       #选择,General setup->Choose SLAB allocator->SLAB.
+CONFIG_GDB_SCRIPTS                #使能.
+CONFIG_GCOV_KERNEL                #使能.
+CONFIG_GCOV_PROFILE_ALL           #使能.
+CONFIG_KGDB                       #使能.
+CONFIG_KGDB_SERIAL_CONSOLE        #使能.
+CONFIG_EXT4_FS                    #使能.
+CONFIG_DEBUG_OBJECTS              #使能.
+CONFIG_DEBUG_DRIVER               #使能.
+CONFIG_DEBUG_DEVRES               #使能.
+CONFIG_DEBUG_ENTRY                #使能.
+CONFIG_DEBUG_KOBJECT              #使能.
+CONFIG_CMDLINE_BOOL=y             #将命令嵌入到内核中,方便调试.
+CONFIG_CMDLINE="console=[ttySx],115200 kgdboc=[ttySy],115200 nokaslr kgdbwait text"
+
+$>make O=/torvalds/build/ V=1 -j`nproc` 2>&1 | tee build.log
+$>make O=/torvalds/build/ V=1 -j`nproc` bzImage
+$>make O=/torvalds/build/ V=1 -j`nproc` bindeb-pkg
+$>make O=/torvalds/build/ V=1 -j`nproc` cscope
+$>make O=/torvalds/build/ V=1 -j`nproc` clean
+
+系统'ip addr'包
+----------------
+$>iproute2                                 #软件包.
+$>ipaddr_list_flush_or_save                #$>ip addr,函数.
+
+qemu-linux内核配置选项
+---------
+$>vi arch/x86/Kconfig 
+--------- 
+...
+config X86
+        def_bool y
+        #
+        # Note: keep this list sorted alphabetically
+        #
+        ...
+		
+		#注释/删掉以下内容
+        #select ARCH_HAS_STRICT_KERNEL_RWX 
+        ...
+...
+
+注意:"ARCH_HAS_STRICT_MODULE_RWX"不能被删掉,如果删掉会导致系统启动不起来.
+
+$>cp /boot/config-`uname -r` /torvalds/build/.config
+$>make O=/torvalds/build/ menuconfig
+--------- 
+CONFIG_FRAME_POINTER              #选择,Kernel hacking -> Choose kernel unwinder:Frame pointer unwinder.
+CONFIG_SLAB                       #选择,General setup->Choose SLAB allocator->SLAB.
+
+$>vi /torvalds/build/.config
+----
+CONFIG_FORTIFY_SOURCE=n
+CONFIG_STACKPROTECTOR=n 
+CONFIG_KEXEC_BZIMAGE_VERIFY_SIG=n 
+CONFIG_ANDROID=n 
+CONFIG_RANDOMIZE_BASE=n 
+CONFIG_GDB_SCRIPTS=y
+CONFIG_GCOV_KERNEL=y 
+CONFIG_GCOV_PROFILE_ALL=y
+CONFIG_DEBUG_ENTRY=y 
+CONFIG_DEBUG_KOBJECT=y
+CONFIG_CMDLINE_BOOL=y
+CONFIG_PAGE_POOL=y
+CONFIG_DRM_VM=y
+CONFIG_VIRT_DRIVERS=y
+CONFIG_DEBUG_INFO=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_PCI_DEBUG=y
+CONFIG_DMADEVICES_DEBUG=y
+CONFIG_DMADEVICES_VDEBUG=y
+CONFIG_DEBUG_DEVRES=y
+CONFIG_DEBUG_BLOCK_EXT_DEVT=y
+CONFIG_DEBUG_DRIVER=y
+CONFIG_DEBUG_STACK_USAGE=y
+CONFIG_DEBUG_VM=y
+CONFIG_DEBUG_OBJECTS=y
+CONFIG_DEBUG_PAGEALLOC=y
+CONFIG_PNP_DEBUG_MESSAGES=y
+CONFIG_I2C_DEBUG_BUS=y
+CONFIG_I2C_DEBUG_CORE=y
+CONFIG_DEBUG_NOTIFIERS=y
+CONFIG_KGDB=y
+CONFIG_KGDB_KDB=y
+CONFIG_KDB_KEYBOARD=y
+CONFIG_KGDB_SERIAL_CONSOLE=y
+CONFIG_KGDB_LOW_LEVEL_TRAP=y
+CONFIG_SERIAL_KGDB_NMI=y
+CONFIG_BLK_DEV_RAM=y
+CONFIG_EXT3_FS=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_DEBUG=y
+CONFIG_FAT_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
+CONFIG_NTFS_FS=y
+CONFIG_NTFS_DEBUG=y
+CONFIG_NTFS_RW=y
+CONFIG_CRYPTO_CRC32C=y
+CONFIG_CRC16=y
+CONFIG_CRAMFS=y
+CONFIG_IA32_EMULATION=y
+CONFIG_VIRTIO_PCI=y
+CONFIG_VIRTIO_BALLOON=y
+CONFIG_VIRTIO_BLK=y
+CONFIG_VIRTIO_NET=y
+CONFIG_VIRTIO=y
+CONFIG_VIRTIO_CONSOLE=y
+CONFIG_VIRTIO_INPUT=y
+CONFIG_VIRTIO_MMIO=y
+CONFIG_VIRTIO_RING=y
+CONFIG_DRM_VIRTIO_GPU=y
+CONFIG_CRYPTO_DEV_VIRTIO=y
+CONFIG_EXT2_FS=y
+CONFIG_EXT2_FS_XATTR=y 
+CONFIG_EXT2_FS_POSIX_ACL=y
+CONFIG_EXT2_FS_SECURITY=y
+CONFIG_EXT3_FS_POSIX_ACL=y
+CONFIG_EXT3_FS_SECURITY=y 
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+CONFIG_EXT4_FS_ENCRYPTION=y
+CONFIG_EXT4_ENCRYPTION=y
+CONFIG_JBD2=y
+CONFIG_JBD2_DEBUG=y
+CONFIG_FS_MBCACHE=y
+CONFIG_FSCACHE=y
+CONFIG_JFS_POSIX_ACL=y
+CONFIG_JFS_SECURITY=y
+CONFIG_FS_ENCRYPTION=y
+CONFIG_BLK_DEV_NULL_BLK=y
+CONFIG_BLK_DEV_FD=y
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_SIZE=65536
+CONFIG_MSDOS_PARTITION=y
+CONFIG_MSDOS_FS=y
+CONFIG_DEBUG_LIST=y
+CONFIG_DLM_DEBUG=y
+CONFIG_DEBUG_WX=y
+
+$>make O=/torvalds/build/ V=1 -j`nproc` bzImage
+$>/usr/bin/qemu-system-x86_64 -netdev bridge,id=tap0,br=br0 -device e1000,netdev=tap0 -m 1024 -smp `nproc` -nographic -S -s -curses -kernel `pwd`/arch/x86/boot/bzImage -initrd `pwd`/initrd.img -append "console=ttyS0 root=/dev/ram0 init=/init rw nokaslr" 
+注意:-kernel和-append配合使用,"console=ttyS0"会将内容输出到终端.
+

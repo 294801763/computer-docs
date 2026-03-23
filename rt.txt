@@ -1,0 +1,61 @@
+RT
+-------------
+step.1 -- 编译内核
+$>export PATH=/usr/sbin/:$PATH
+$>export KBUILD_OUTPUT=/build/
+$>git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git kernel
+$>make O=/build/ menuconfig 
+$>make O=/build/ V=1 -j`nproc` 2>&1 | tee build.log
+$>make bindeb-pkg 2>&1 | tee deb.log
+
+step.2  -- 性能测试
+--------
+$>./bin/x86_64-linux-gnu-latency
+$>./demo/x86_64-linux-gnu-cyclictest -p 80 -t5 -ns
+
+step.3 
+----------
+$>vi /boot/grub/grub.cfg
+---------
+...
+
+$>vi /etc/default/grub
+---------
+GRUB_CMDLINE_LINUX_DEFAULT="text"
+
+注意:以上是rtlinux.
+
+RTAI
+-----------------
+step.1 -- 编译内核
+-----------
+$>export PATH=/usr/sbin/:$PATH
+$>export KBUILD_OUTPUT=/build/
+$>git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git kernel 
+$>cd kernel
+$>git checkout v4.19.177 -fb v4.19.177
+$>patch -p1 < /.../rtai/base/arch/x86/patches/hal-linux-4.19.177-cip44-x86-17.patch
+$>make O=/build/ menuconfig 
+$>make O=/build/ V=1 -j`nproc` 2>&1 | tee build.log
+$>make bindeb-pkg 2>&1 | tee deb.log
+
+step.2 -- 编译rtai
+...
+
+step.3  -- 性能测试
+--------
+$>./bin/x86_64-linux-gnu-latency
+$>./demo/x86_64-linux-gnu-cyclictest -p 80 -t5 -ns
+
+step.4 
+----------
+$>vi /boot/grub/grub.cfg
+--------
+...
+
+$>vi /etc/default/grub
+---------
+GRUB_CMDLINE_LINUX_DEFAULT="text"
+
+注意:以上是rtai补丁内核.
+

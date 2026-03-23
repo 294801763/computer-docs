@@ -1,0 +1,5 @@
+禁止root用户删除文件
+----------------
+$>lsattr -Vv
+$>chattr +i <filename>                #加锁
+$>chattr -i <filename>                #解锁

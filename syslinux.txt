@@ -1,0 +1,25 @@
+安装软件包
+----------------
+$>apt-get install syslinux squashfs-tools genisoimage debootstrap
+
+解压根文件
+----------------
+$>unsquashfs filesystem.squashfs    
+
+创建chroot
+----------------
+$>debootstrap --arch=amd64 --include=linux-image-amd64,systemd,systemd-coredump,grub-pc,makedev,locales,vim,openssh-server,sudo,bash-completion,telnet,net-tools,build-essential,udev,make,libaio-dev,libpcsclite-dev,xserver-xorg-core,xserver-xorg,samba,debootstrap,dosfstools,parted,pkg-config,autoconf,libtool,bison,flex,bc,cscope,iperf,libelf-dev,sshfs,unzip,unrar,ethtool,growisofs,libjpeg-dev,libncurses-dev,libncurses5-dev,syslinux,syslinux-utils,squashfs-tools,genisoimage,pxelinux buster /mnt/ http://192.168.10.88:81/v1.4 
+
+挂载
+----------------
+$>mount --rbind /sys squashfs-root/sys 
+$>mount --rbind /dev squashfs-root/dev 
+$>mount --rbind /proc squashfs-root/proc
+
+制作根文件
+----------------                                                         
+$>mksquashfs squashfs-root filesystem.squashfs -b 512k -comp xz
+
+制作光盘
+----------------
+$>genisoimage -r -V "live" -cache-inodes -J  -l -allow-limited-size -udf -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -A "live"  -o ../live.iso .

@@ -1,0 +1,9 @@
+Bitrate模式
+----------------
+ABR(固定码率) -> FFmpeg -i video.mkv -c:v libx264 -b:v 5000k out.mkv 
+
+CRF模式/恒定质量(Constant Rate Facter)
+----------------
+FFmpeg -i video.mkv -c:v libx264 -crf 22 out.mkv 
+
+注意:直播或压码都推荐这种方式,crf值越低画面质量越高.

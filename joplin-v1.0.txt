@@ -1,0 +1,224 @@
+NGINX-DAV
+-----------------
+$>apt-get install nginx nginx-extras libnginx-mod-http-dav-ext libnginx-mod-http-auth-pam
+$>mkdir -pv /opt/notes/ && chown -R www-data:www-data /opt/notes/
+$>usermod -aG shadow www-data
+$>cat > /etc/nginx/sites-available/default << EOF
+server {
+    listen 8088 default_server;
+    listen [::]:8088 default_server;
+    root /opt/notes/;
+    index index.html index.htm index.nginx-debian.html;
+    server_name _;
+
+    location / {
+        dav_methods PUT DELETE MKCOL COPY MOVE;
+        dav_ext_methods PROPFIND OPTIONS;
+        dav_access user:rw group:rw all:rw;
+
+        client_max_body_size 0;
+        create_full_put_path on;
+        client_body_temp_path /tmp/;
+
+        auth_pam "Restricted";
+        auth_pam_service_name "common-auth";
+    }
+}
+EOF
+
+$>nginx -t && nginx -s reload
+
+Joplin-2.9.17
+-----------------
+$>Tools->Options->Synchronisation->Synchronisation target:WebDAV
+                                  >WebDAV URL:http://<Server IP>:8088/
+								  >WebDAV username:<填写操作系统用户>
+								  >WebDAV password:<填写操作系统用户密码>
+
+设置Markdown渲染字体大小
+-----------------
+工具->选项->外观->显示高级选项->适用于已渲染 Markdown 的自定义样式表->userstyle.css <渲染样式>
+----
+*{
+  font-size:12px !important;
+}
+
+工具->选项->外观->显示高级选项->适用于 Joplin 全域应用样式的自定义样式表->userchrome.css <编辑器样式>
+----
+*{
+  font-size:12px !important;
+}
+
+注意:修改后不会立即生效,重启Joplin才能看到效果.
+
+设置全局字体
+-----------------
+工具->选项->外观->显示高级选项->适用于已渲染 Markdown 的自定义样式表->userstyle.css <渲染样式>
+----
+* {
+    font-family: 'DejaVu Sans Mono Book', DejaVuSansMono.ttf;
+}
+
+工具->选项->外观->显示高级选项->适用于 Joplin 全域应用样式的自定义样式表->userchrome.css <编辑器样式>
+----
+* {
+    font-family: 'DejaVu Sans Mono Book', DejaVuSansMono.ttf;
+}
+
+字体路径: /usr/share/fonts/truetype/dejavu/
+
+Joplin使用注意事项
+-----------------
+1.版本一旦选择就不要频繁更换
+
+编辑器
+-----------------
+WYSIWYG                   #所见即所得编辑器
+Markdown                  #Markdown编辑器
+
+注意:
+WYSIWYG可以直接使用Markdown语法来写笔记.
+Markdown只能使用工具栏操作Markdown语法.
+
+编辑器切换
+-----------------
+CTRL + L
+
+隐藏/显式侧边栏
+-----------------
+F10               #NOTEBOOKS
+F11               #笔记
+
+放大/缩小
+-----------------
+CTRL + +           #放大 
+CTRL + -           #缩小
+CTRL + 0           #实际大小
+
+外部编辑器
+-----------------
+Tools->Options->General->Text editor command
+PATH     : /opt/eclipse/eclipse-cpp-2024-12/eclipse
+Arguments: <NULL>
+
+快捷键: CTRL + E
+
+插入代码段
+-----------------
+```c 
+<... code ...>
+```
+
+快捷键
+-----------------
+ALT + F             #文件
+ALT + E             #编辑
+ALT + V             #视图
+ALT + T             #选项
+
+换行
+-----------------
+SHIFT + ENTER
+
+注意:用此方法换行不会产生空白行.
+
+同步
+-----------------
+CTRL + S
+
+同步要领:编辑端需要保持开启,在需要被同步一端<配置好了同步,eg.WebDAV>用CTRL + S同步即可.
+
+备份配置
+-----------------
+$>mkdir -pv /opt/Joplin/backup-configs/
+$>cp -afv /home/hy/.config/joplin-desktop /opt/Joplin/backup-configs/joplin-desktop
+
+快速清空笔记
+-----------------
+$>nano /usr/bin/j
+--
+#!/bin/bash 
+
+rm -rf ~/.config/joplin-desktop
+cp -afv /opt/Joplin/backup-configs/joplin-desktop ~/.config/
+
+注意:此方法适用于清除日记后重新同步.
+
+密码存储位置
+-----------------
+~/.config/joplin-desktop/database.sqlite
+
+删除笔记重新同步
+-----------------
+$>nano /usr/bin/jj
+--
+#!/bin/bash 
+
+find ~/.config/joplin-desktop -type d ! \( -name "joplin-desktop" \) -type d ! \( -name "tmp" -o -path '*/tmp/*' \) -type d ! \( -name "cache" -o -path '*/cache/*' \) -exec rm -rf {} +
+find ~/.config/joplin-desktop -type f ! \( -name "settings.json" \) -type f ! \( -name "window-state-prod.json" \) -type f ! \( -name "userchrome.css" \) -type f ! \( -name "userstyle.css" \) -type f ! \( -name "ipc_secret_key.txt" \) -type f ! \( -name "*.css" \) -type f ! \( -name "*.js" \) -type f ! \( -name "*.json" \) -exec rm -rf {} +
+
+需要重新同步时
+-----------------
+$>jj 
+
+注意:执行以上命令后重新同步即可.
+
+备份笔记
+-----------------
+$>cp -afv ~/.config/joplin-desktop/database.sqlite ~/Downloads/database.sqlite.`date +%Y%m%d-%H.%M.%S`
+
+$>nano /usr/bin/jb
+--
+#!/bin/bash 
+
+cp -afv ~/.config/joplin-desktop/database.sqlite ~/Downloads/database.sqlite.`date +%Y%m%d-%H.%M.%S`
+
+还原笔记
+-----------------
+$>cp -afv $1 ~/.config/joplin-desktop/database.sqlite
+$>nano /usr/bin/jr
+--
+#!/bin/bash 
+
+cp -afv $1 ~/.config/joplin-desktop/database.sqlite
+
+个人笔记的管理技巧
+-----------------
+step.1 导出笔记
+--
+File -> Export all -> JEX - Joplin Export File
+
+step.2 删除WebDAV数据
+--
+rm -rf /opt/notes/*
+
+step.3 同步数据
+--
+CTRL + S 
+
+step.4 导入笔记
+--
+File -> Import -> JEX - Joplin Export File 
+
+step.5 同步数据 
+--
+CTRL + S 
+
+step.6 被同步的一侧
+--
+jj                      #清除本地笔记
+CTRL + S                #重新同步笔记
+
+注意: 
+1.导出的笔记可以借助NextCloud(参考nextcloud-v1.0.txt),它可以多端同步数据(可以很顺利的同步导出的笔记也方便导入).
+2.删除WebDAV数据有利于定期清除一些无关的数据.
+
+快速截图
+-----------------
+nano /usr/bin/g
+--
+#!/bin/bash 
+
+/usr/bin/gnome-screenshot -a -c -B >/dev/null 2>&1&
+
+注意:快捷键(已设置好系统快捷键)为"Windows + 1"

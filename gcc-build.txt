@@ -1,0 +1,34 @@
+binutils-v2.43
+-------------------
+$>mkdir build && cd build
+$>../configure -v --prefix=/usr --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --target=$TARGET
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install 
+
+gcc-v14.2.0
+-------------------
+$>mkdir build && cd build 
+$>../configure --prefix=/opt/gcc-v14.2.0/ --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --with-tune=generic --with-gmp --with-mpfr --with-mpc --with-pic --enable-gnu-unique-object --enable-checking=release --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-clocale=gnu --enable-languages=c,c++ --enable-threads=posix --enable-shared --enable-linker-build-id --enable-nls --enable-bootstrap --enable-default-pie --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes
+$>make V=1 -j`nproc` 2>&1 | tee build.log
+$>make install 
+or
+$>../configure --prefix=/opt/gcc-v14.2.0/ --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --with-tune=generic --with-gmp --with-mpfr --with-mpc --with-pic --enable-gnu-unique-object --enable-checking=release --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-clocale=gnu --enable-languages=c,c++ --enable-threads=posix --enable-shared --enable-linker-build-id --enable-nls --disable-bootstrap --enable-default-pie --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes
+$>make V=1 -j`nproc` 2>&1 | tee build.log
+$>make install 
+
+注意:"--enable-bootstrap"会经历三次编译,在编译GCC之前需要先升级binutils.
+
+查看Gcc所支持的标准
+-------------------
+$>gcc -posix -E -dM - < /dev/null |grep --color=auto -i "__STDC_ISO" 
+$>gcc -v --help 2> /dev/null | sed -n '/^ *-std=\([^<][^ ]\+\).*/ {s//\1/p}'
+$>g++ -std=c++17 -E - < /dev/null
+
+分析源码依赖
+-------------------
+$>gcc -H -fsyntax-only /usr/include/stdio.h
+$>gcc -H -fsyntax-only <*.h/*.c>
+
+GCC帮助
+-------------------
+$>gcc -v --version --help --target-help
+$>gcc --target-help

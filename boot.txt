@@ -1,0 +1,25 @@
+grub
+---------------
+$>tar -xvf grub-2.06.tar.xz
+$>mount /dev/sdxx /mnt 
+$>mkdir -pv /mnt/boot/
+$>grub-install --target=i386-pc --recheck --boot-directory=/mnt/boot /dev/sdx                                #BIOS
+$>grub-install --target=x86_64-efi --removable --boot-directory=/mnt/boot --efi-directory=/mnt /dev/sdx      #UEFI
+$>vi /mnt/boot/grub/grub.cfg 
+---------
+set timeout=10 
+set default=0
+
+menuentry 'Debian GNU/Linux, with Linux 4.19.261' {
+	echo 'Loading Linux 4.19.261 ...'
+	...
+	linux /boot/bzImage ...
+	...
+}
+
+linux
+--------------
+$>make V=1 distclean
+$>make V=1 defconfig                           
+$>make V=1
+$>cp arch/x86_64/boot/bzImage /boot/bzImage

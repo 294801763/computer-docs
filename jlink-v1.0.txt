@@ -1,0 +1,100 @@
+PACKS下载地址
+-------------------
+https://www.keil.arm.com/devices/
+
+为JLink手动增加设备
+-------------------
+apt-get install p7zip-full
+7z x NSING.N32G45x_DFP.1.0.7.pack
+cp -afv Flash/N32G45x.FLM Devices/Nationstech/
+
+nano JLinkDevices.xml
+--
+...
+<!--             -->
+<!-- Nationstech -->
+<!--             -->
+
+<!--         -->
+<!-- N32G45x -->
+<!--         -->
+
+<!-- 参考Keil5 -> Options for Target ... -> Target -> Read/Only Memory Aears [on-chip -> IROM1] -->
+<!-- 参考Keil5 -> Options for Target ... -> Target -> Read/Only Memory Aears [on-chip -> IRAM1] -->
+<Device>
+	<ChipInfo Vendor="Nationstech" Name="N32G455VE" Core="JLINK_CORE_CORTEX_M4" WorkRAMAddr="0x20000000" WorkRAMSize="0x00024000"/>                                                              <!-- IRAM1 -->
+	<FlashBankInfo Name="Internal Flash" BaseAddr="0x08000000" MaxSize="0x00080000" Loader="Devices/Nationstech/N32G45x_NRP_512K.FLM" LoaderType="FLASH_ALGO_TYPE_OPEN" AlwaysPresent="1"/>      <!-- IROM1 -->
+</Device>
+....
+
+AutoHotKEY脚本
+-------------------
+nano link.ahk
+--
+!d:: ; Alt + d 的热键
+Run, download.bat
+return
+
+!e:: ; Alt + e 的热键
+Run, erase.bat
+return
+
+nano download.bat
+--
+JLink -AutoConnect 1 -If SWD -Speed 4000 -CommandFile N32G455VE.jflash
+
+nano erase.bat
+--
+JLink -AutoConnect 1 -If SWD -Speed 4000 -CommandFile N32G455VE-erase.jflash
+
+nano N32G455VE.jflash
+--
+// 选择 SWD 接口
+si 1
+
+// 设置连接速度为 4000 kHz
+speed 4000
+
+// 指定目标设备型号
+device N32G455VE
+
+// 擦除 Flash
+erase
+
+// 加载 .bin 文件
+// BIN文件,Windows10 - samba
+//loadbin "\192.168.0.22\h\MUH0809S-H2\ReleaseN32G45X\USERAPP.bin", 0x08000000
+loadbin "\192.168.0.22\i\MUH0808S-H2\ReleaseN32G45X\USERAPP.bin", 0x08000000              
+
+// 重启目标设备
+r
+
+// 运行
+go
+
+// 退出 J-Link
+q
+
+nano N32G455VE-erase.jflash
+--
+// 选择 SWD 接口
+si 1
+
+// 设置连接速度为 4000 kHz
+speed 4000
+
+// 指定目标设备型号
+device N32G455VE
+
+// 擦除 Flash
+erase
+
+// 重启目标设备
+r
+
+// 运行
+go
+
+// 退出 J-Link
+q
+

@@ -1,0 +1,65 @@
+平移PCB
+---------------
+鼠标中键或鼠标右键单击并拖动
+
+放大和缩小PCB
+----------------
+F1  --  放大 
+F2  --  缩小
+
+PCB组成部分
+----------------
+轨道、通孔、焊盘和区域的轮廓/填充显示模式的单位和切换
+
+设置PCB的标题和日期
+----------------
+PCB Editor->File->Page Settings...->Issue Data             #时间
+PCB Editor->File->Page Settings...->Revision               #版本号
+PCB Editor->File->Page Settings...->Titile                 #标题
+PCB Editor->File->Page Settings...->Company                #公司名称
+PCB Editor->File->Page Settings...->Comment1               #注释
+
+设置PCB板
+----------------
+PCB Editor->Board Setup...->Physical Stackup->Copper layers:2               #叠层,将铜层数保留为2;或者设置更多层.
+PCB Editor->Board Setup...->Design Rules->Constraints                       #设计规则的约束.
+PCB Editor->Board Setup...->Net Classes                                     #网表设计规则.
+
+导入原理图
+----------------
+PCB Editor->Tools->Update PCB from Schematic...->Update PCB 
+快捷键:F8
+
+注意:留意Changes To Be Applied中的消息.
+
+绘制电路板的轮廓
+----------------
+1.网格选择"Grid 1.0000 mm(0.0394 in)"
+2.在图层上绘制Edge.Cuts[定义电路板的边缘轮廓],单击Appearance[外观]->Layers[层]下的Edge.Cuts[定义电路板的边缘轮廓].
+3.PCB Editor->Place->Draw Rectangle    #注意:先选择一点点击一下,然后才能拖出矩形;直接拖是无法建立矩形的.
+
+3D视图
+----------------
+x                  #左侧面
+SHIFT+x            #右侧面
+z                  #正面
+SHIFT+z            #反面
+y                  #前侧面
+SHIFT+y            #后侧面
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

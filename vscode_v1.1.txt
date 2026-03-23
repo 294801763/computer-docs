@@ -1,0 +1,80 @@
+vscode开发设置(详细)
+---------------
+$>mkdir .vscode && cd .vscode
+$>vi settings.json 
+--------
+{
+    "files.exclude":{
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+		"**/.vscode": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.o": true,
+        "**/*.a": true,
+        "**/*.so": true,
+        "**/*_dev": true,
+        "**/Makefile": true,
+    },
+	"search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+    },
+	"editor.fontSize": 16,
+    "editor.tabSize": 4,
+    "editor.minimap.maxColumn": 120, 
+    "editor.wordWrap": "off",            //自动换行
+    "editor.autoIndent": "keep",         //自动缩进
+    "editor.autoClosingBrackets":"never",
+    "editor.autoClosingQuotes":"never",
+    "editor.find.autoFindInSelection":"multiline",
+    "editor.renderLineHighlight": "line",
+    "editor.wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?",
+    "editor.renderControlCharacters":false,
+    "editor.detectIndentation": false,
+    "editor.minimap.enabled": false,
+    "editor.selectionHighlight":false,
+    "editor.colorDecorators":false,
+    "editor.emptySelectionClipboard":false,
+    "editor.formatOnSave": false,        //保存即格式化
+    "editor.rulers": [
+        120
+    ],
+
+    "files.autoSave": "onFocusChange",   //自动保存
+	"files.associations": {
+        ".c": "c",
+        ".cpp": "cpp"
+    },
+	
+	"debug.showInStatusBar": "never",
+
+    "window.zoomLevel": 0,               //窗口放大倍数
+    "window.title":"${activeEditorLong}",
+    "window.titleSeparator": " - ",
+
+    "explorer.confirmDelete": false,
+
+    "workbench.colorTheme": "Default Light+",
+    "workbench.sideBar.location":"right",
+    "workbench.iconTheme":"vscode-icons",
+    "workbench.activityBar.visible": false,
+    "workbench.statusBar.visible": false,
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.enablePreviewFromQuickOpen": false,
+    "workbench.editor.languageDetection": true,
+    "workbench.editor.showTabs": false,
+    "workbench.startupEditor": "none",
+	"workbench.layoutControl.type": "menu",
+    "workbench.tree.indent": 4,
+}
+
+打开/隐藏菜单
+---------------
+步骤1,F1/shift+ctrl+p
+步骤2,View:Toggle Menu bar                       #可以设置快捷键,CTRL+m
+步骤3,View:Toggle Minimap
+步骤4,View:Toggle Activity Bar Visibility
+

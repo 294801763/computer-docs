@@ -1,0 +1,138 @@
+binutils-v2.43
+-------------------
+$>mkdir build && cd build
+$>../configure -v --prefix=/usr --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --target=$TARGET
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install 
+
+gcc-v14.2.0
+-------------------
+$>mkdir build && cd build 
+$>../configure --prefix=/opt/gcc-v14.2.0/ --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --with-tune=generic --with-gmp --with-mpfr --with-mpc --with-pic --enable-gnu-unique-object --enable-checking=release --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-clocale=gnu --enable-languages=c,c++ --enable-threads=posix --enable-shared --enable-linker-build-id --enable-nls --enable-bootstrap --enable-default-pie --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes
+$>make V=1 -j`nproc` 2>&1 | tee build.log
+$>make install 
+or
+$>../configure --prefix=/opt/gcc-v14.2.0/ --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --with-tune=generic --with-gmp --with-mpfr --with-mpc --with-pic --enable-gnu-unique-object --enable-checking=release --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-clocale=gnu --enable-languages=c,c++ --enable-threads=posix --enable-shared --enable-linker-build-id --enable-nls --disable-bootstrap --enable-default-pie --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes
+$>make V=1 -j`nproc` 2>&1 | tee build.log
+$>make install 
+
+注意:"--enable-bootstrap"会经历三次编译,在编译GCC之前需要先升级binutils.
+
+查看Gcc所支持的标准
+-------------------
+$>gcc -posix -E -dM - < /dev/null |grep --color=auto -i "__STDC_ISO" 
+$>gcc -v --help 2> /dev/null | sed -n '/^ *-std=\([^<][^ ]\+\).*/ {s//\1/p}'
+$>g++ -std=c++17 -E - < /dev/null
+
+分析源码依赖
+-------------------
+$>gcc -H -fsyntax-only /usr/include/stdio.h
+$>gcc -H -fsyntax-only <*.h/*.c>
+
+GCC帮助
+-------------------
+$>gcc -v --version --help --target-help
+$>gcc --target-help
+
+下载源码
+-------------------
+$>git config --system http.lowSpeedLimit 0
+$>git config --system https.lowSpeedLimit 0
+$>git config --system https.https://github.com.com.proxy https://127.0.0.1:1080
+$>git config --system https.https://git.openwrt.org.proxy https://127.0.0.1:1080
+$>git clone https://git.openwrt.org/openwrt/openwrt.git
+$>git clone https://github.com/coolsnowwolf/lede.git
+
+编译主机最小配置
+-------------------
+硬盘:120G
+内存:8G
+编译环境选择:v20240219/DEBIAN_BUSTER_GNOME_AMD64.vmdk
+
+编译源码必须设置的环境变量
+-------------------
+$>export FORCE_UNSAFE_CONFIGURE=1 && umask 0022
+
+编译源码-v23.05.5
+-------------------
+$>cd openwrt
+$>./scripts/feeds update -a && ./scripts/feeds install -a
+$>wget -O .config https://downloads.openwrt.org/releases/23.05.5/targets/x86/64/config.buildinfo
+$>wget https://downloads.openwrt.org/releases/23.05.5/targets/x86/64/config.buildinfo
+$>export all_proxy=socks://127.0.0.1:1080
+$>make menuconfig
+$>make download
+
+$>strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBCXX         #gcc-v14.2.0
+$>cd gcc-v14.2.0/lib64 && cp -afv libstdc++.so.6* /usr/lib/x86_64-linux-gnu/
+$>export FORCE_UNSAFE_CONFIGURE=1 && umask 0022
+$>make V=s -j1
+or 
+$>make V=sc -j1
+
+注意:依赖于gcc-v14.2.0版本,IMAGE大小不能超过内存大小,已经修改好的文件包"openwrt-v23.05.5-v1.6.tar.gz".
+
+RPCError
+-------------------
+$>chmod 0644 /usr/share/rpcd/ucode/luci
+$>chmod 0644 /usr/share/rpcd/ucode/luci.upnp
+$>service rpcd restart
+
+注意:编译完成之后登录WEB会出现"RPCError",用上面命令即可解决.
+
+重新编译-v23.05.5
+-------------------
+$>rm -rf ./tmp && rm -rf .config
+$>make menuconfig
+$>make V=s -j`nproc`
+
+编译单个软件包
+-------------------
+$>make package/libs/ncurses/compile V=s
+$>make package/libs/ncurses/clean V=s
+
+注意:make package/<包名>/compile V=s,make package/<包名>/clean V=s
+
+单独编译LUCI
+-------------------
+$>make V=s package/feeds/luci/luci-mod-admin-full/install 
+
+错误检查
+-------------------
+$>ubus -v list
+$>ubus call system board
+$>opkg list-installed
+$>opkg install -force-reinstall --force-overwrite luci-app-statistics
+
+step.1
+--
+$>service rpcd restart
+
+step.2
+--
+$>logread
+
+step.3
+--
+$>ucode /usr/share/rpcd/ucode/luci
+$>chmod 0644 /usr/share/rpcd/ucode/luci
+
+创建应用的目录
+-------------------
+step.1 可以存放项目的目录
+--
+./package
+./feeds/luci/applications
+
+注意:创建luci的应用的名称是有一定格式的,例如"luci-app-<项目名称>".
+
+step.2 在相应的目录下创建Makefile
+
+step.3 执行命令
+--
+$>./scripts/feeds update -a -i
+
+step.4 执行编译
+--
+make menuconfig
+-
+LuCI ->3. Applications -> <即可找到自己luci项目名>

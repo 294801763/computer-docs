@@ -1,0 +1,595 @@
+设置Git超时时间
+-------------------
+#每秒低于1B就视为"低速"
+export GIT_HTTP_LOW_SPEED_LIMIT=1
+
+#低速持续30s就超时
+export GIT_HTTP_LOW_SPEED_TIME=3000
+
+#整个HTTP请求30s硬超时
+export GIT_HTTP_TIMEOUT=3000
+
+Git配置
+-------------------
+$>git config --system i18n.logoutputencoding gbk
+$>git config --system i18n.commitencoding gbk
+$>git config --system color.ui true
+$>git config --system user.name "HY"
+$>git config --system user.email "HY@example.org"
+$>git config --system alias.s "status -s"
+$>git config --system alias.tg "tag --sort=taggerdate --format '%(refname:short) %(taggerdate:short) %(subject)'"
+$>git config --system alias.ca "commit --amend --allow-empty --reset-author -aF"
+$>git config --system alias.cm "commit -aF"
+$>git config --system alias.ct "commit -am \"commit on $(date '+%Y-%m-%d %H:%M:%S')\""
+$>git config --system alias.mm '!git commit -am `date +%Y/%m/%d-%H.%M.%S`'
+$>git config --system alias.ph "push --force"                           #强制提交给上游.
+$>git config --system alias.ack "apply --check"                         #检查补丁.
+$>git config --system alias.art "apply --reject"                        #强制应用补丁.
+$>git config --system alias.dd "diff"                                   #查看修改.
+$>git config --system alias.rr "rm -r --cached"                         #删除临时文件.
+$>git config --system alias.ddd "diff --cached"                         #查看修改.
+$>git config --system alias.cc "clean -df"                              #删除本地工作目录中未跟踪的文件,删除文件和目录.
+$>git config --system alias.ck "checkout -f"                            #强制签出分支. 
+$>git config --system alias.cx '!git reflog expire --expire=now --all'
+$>git config --system alias.cz '!git gc --aggressive --prune=now'
+$>git config --system alias.reu "remote update origin -p"
+$>git config --system alias.red "push origin --delete $1"
+$>git config --system alias.lg '!git log --stat --color=always --pretty=oneline --unified=0 -p $1...$2'   #显示两个版本间的日志和修改记录.
+$>git config --system alias.ll '!git log --stat --pretty=fuller --oneline --decorate --graph --author=HY'
+$>git config --system alias.lconsole '!git log --stat --pretty=fuller --oneline --decorate --graph --author=HY | git name-rev --tags --stdin'
+$>git config --system alias.dd '!git diff --summary --stat --color=always --unified=0 -p $1'
+$>git config --system alias.ss '!git show $1 --stat'
+$>git config --system alias.mp '!git submodule update --init --recursive;'
+$>git config --system alias.sd '!git diff --stat'
+$>git config --system alias.bup '!git stash save;git pull;git --git-dir=.git archive master | tar -xvf - -C'   #eg.>git bup /mnt/backup/,然后git stash pop并进行比较.
+$>git config --system alias.pop '!git stash pop'
+$>git config --system alias.save '!git stash save $1'
+$>git config --system alias.list '!git stash list'
+$>git config --system alias.psh '!git push origin HEAD:master'
+$>git config --system alias.srst '!git reset --soft $1'                #版本回退.
+$>git config --system alias.hrst '!git reset --hard $1'
+$>git config --system alias.es '!git config -e --system'
+$>git config --system alias.http '!git config --system http.proxy $1'
+$>git config --system alias.https '!git config --system https.proxy $1'
+$>git config --system alias.uhttp '!git config --system --unset http.proxy'
+$>git config --system alias.uhttps '!git config --system --unset https.proxy'
+$>git config --system log.date iso
+$>git config --system core.autocrlf input
+$>git config --system core.autocrlf=false
+$>git config --system core.excludesfile /.gitignore                     #忽略不需要提交的文件.
+$>git config --system core.symlinks true
+$>git config --system core.logallrefupdates true
+$>git config --system url."https://".insteadOf git://
+$>git config --system http.sslVerify false
+$>git config --system http.proxy http://127.0.0.1:1080
+$>git config --system https.proxy https:127.0.0.1:1080
+$>git config --system https.https://github.com.com.proxy https://127.0.0.1:1080
+$>git config --system --unset http.proxy 
+$>git config --system --unset https.proxy
+$>git config --system --unset https.https://github.com.com.proxy
+$>git config -e --system                                                #编辑配置文件.
+
+Git回退提交并丢弃更改
+-------------------
+git reset <commit-hash> --hard
+
+Git回退提交并并保留更改
+-------------------
+git reset <commit-hash> --soft
+
+Git修改远程仓库地址
+-------------------
+$>git remote -v
+------
+origin  <remote-url> (fetch)
+origin  <remote-url> (push)
+
+$>git remote help
+$>git remote set-url origin <remote-url>
+
+Git添加远程仓库地址
+-------------------
+$>git remote help
+$>git remote rm origin
+$>git remote add origin <remote-url>
+
+Git邮件配置
+-------------------
+$>git config --system user.name "胡致云"
+$>git config --system user.email "zy@126.com"
+$>git config --system credential.helper store
+$>git config --system sendemail.smtpencryption tls
+$>git config --system sendemail.smtpserver smtp.126.com
+$>git config --system sendemail.smtpuser user-xxx@126.com
+$>git config --system sendemail.smtppass user-password
+
+Git创建补丁并通过邮件发送
+-------------------
+$>git format-patch HEAD -1 --stdout > ~/important_commits.patch           #创建补丁.
+$>git send-email \
+    --in-reply-to=165002536661177@kroah.com \
+    --to=gregkh@linuxfoundation.org \
+    --cc=akpm@linux-foundation.org \
+    --cc=jslaby@suse.cz \
+    --cc=linux-kernel@vger.kernel.org \
+    --cc=lwn@lwn.net \
+    --cc=stable@vger.kernel.org \
+    --cc=torvalds@linux-foundation.org \
+    --subject='Re: Linux 4.19.238' \
+    ~/important_commits.patch
+
+Git临时提交
+-------------------
+$>git commit -am `date +%Y/%m/%d-%H.%M.%S`
+
+Git清除reflog日志
+-------------------
+$>git reflog expire --expire=now --all
+$>git config --system alias.cx '!git reflog expire --expire=now --all'
+
+Git垃圾回收
+-------------------
+$>git gc --prune=now
+$>git gc --aggressive --prune=now
+$>git config --system alias.cz '!git gc --aggressive --prune=now'
+
+Git将分支合并到master
+-------------------
+$>git checkout master 
+$>git merge <要合并的分支名称>
+
+Git查看合并日志
+-------------------
+$>git log --merges
+
+Git查看非合并日志
+-------------------
+$>git log --no-merges
+
+Git查看作者日志
+-------------------
+$>git log --stat --pretty=fuller --oneline --decorate --graph --author=HY
+$>git log --stat --pretty=fuller --oneline --decorate --graph --author=HY | git name-rev --tags --stdin
+
+Git分支的操作
+-------------------
+$>git config --system alias.reu "remote update origin -p"
+$>git config --system alias.red "push origin --delete $1"
+$>git remote update origin --prune               #更新远程分支列表.
+$>git branch -a                                  #查看所有分支.
+$>git push origin --delete <远程分支名称>        #删除远程分支.
+$>git branch -d <本地分支名称>                   #删除本地分支.
+
+Git清除
+-------------------
+$>git clean -xdf
+
+Git高级操作
+-------------------
+$>git branch -avv
+$>git reflog show --single-worktree -n 10
+$>git --git-dir=</.../dir-name>/.git archive <tag-name/branch-name/commit-id> | tar -xvf -      #建立测试Git目录.
+$>git config --global alias.<alias-name> '!git checkout $1'                                     #参数,用法:git <alias-name> <...>
+$>git diff --summary --stat --color=always --unified=0 -p  
+$>git show <commit id> --stat   #显示commit-id修改的文件信息
+$>git log --pretty=oneline <commit-id/tag-name,eg.5.1.9>...<commit-id/tag-name,eg.5.1.10>
+$>git log --stat --pretty=oneline <commit-id/tag-name,eg.5.1.9>...<commit-id/tag-name,eg.5.1.10>
+
+Git强制切换某个<tag name>并创建<branch name>分支
+-------------------
+$>git checkout -fb <branch name> <tag name>
+
+Git删除分支
+-------------------
+$>git checkout master
+$>git branch -D <branch name>
+
+Git丢弃本地修改
+-------------------
+$>git reset --hard [commit]               #返回到某个节点,不保留修改.
+$>git reset --hard HEAD                   #丢弃最近的修改.
+$>git reset --soft [commit]               #返回到某个节点,保留修改.
+$>git clean -df                           #删除本地工作目录中未跟踪的文件,删除文件和目录.
+
+Git软回退到某个<commit id>
+-------------------
+git reset --soft <commit id>
+
+Git回退
+-------------------
+$>git reset --hard <commit id>            #回退到指定的<commit id>,丢失已修改的代码.
+$>git reset --soft <commit id>            #回退到指定的<commit id>,不会丢失已修改的代码
+
+Git创建TAG 
+-------------------
+$>git tag -a "v1.0" -m "VMWARE v1.0" <commit id> 
+
+Git日志
+-------------------
+$>git log -ps -n [x]                                 #查看最近[x]次提交的修改.
+$>git log --since=[x].day                            #列出最近[x]天的修改.
+ >git log --since=[x].weeks                          #列出最近[x]周的修改.
+ >git log --since=[x].years                          #列出最近[x]年的修改.
+$>git log -s --since=[y].day --committer [x]         #列出提交者([x])最近[y]天的修改.
+$>git shortlog -n                                    #显示简短的日志信息.
+$>git log --graph --pretty=oneline --abbrev-commit   #查看分支历史.
+$>git reflog                                         #显示本地库HEAD的更改日志.
+
+Git注释格式
+-------------------
+Added            #新加入的需求.
+Fixed            #修复bug.
+Changed          #完成的任务.
+Updated          #完成的任务或者由于第三方模块变化而做的更改.
+Issue#[issue number]
+
+Git提交日志
+-------------------
+步骤1,编辑<commit log>提交日志文件.
+$>vi <commit log>
+------
+title
+
+<Added/Fixed/Changed/Updated>
+<desc>(描述):
+...
+
+<git status -s>
+
+步骤2,根据<commit log>进行提交.
+$>git commit -aF <commit log>
+
+Git从仓库中删除某个目录或文件
+-------------------
+$>git rm -rf --cached [File/Dir Name]
+$>git commit -aF <commit log>
+
+Git注意事项
+-------------------
+1.Git仓库移动建议使用命令<tar -cvzf name.tar.gz name/>压缩后传输到其他主机然后再解压并使用.
+
+Git清理
+-------------------
+$>git clean -fdx
+
+Git修改上一次的提交信息
+-------------------
+$>git commit --amend --allow-empty --reset-author -aF <commit log>      #改正上一次的提交记录,此条命令执行后不会新增新的[commit-id]信息;[--amend]是对刚刚的提交进行修补,[--allow-empty]使得空白提交被允许,[--reset-author]是将作者[Author]的ID同步修改,否则只能影响(commit)的ID.
+or 
+$>git ca <commit log>
+$>git cm <commit log>
+
+Git创建tag
+-------------------
+$>git tag -a <tag name> -fF <commit log>
+$>git tag -a <tag name> <git reflog> -fF <commit log>
+
+Git对tag输出进行排序
+-------------------
+$>git tag --sort=taggerdate --format '%(refname:short) %(taggerdate:short) %(subject)'
+or
+$>git tg
+
+Git显示TAG名字
+-------------------
+$>git describe
+$>git describe <commit id>
+$>git name-rev --tags <commit id>
+$>git log --oneline --decorate
+$>git log <branch name or tag name> --pretty=oneline | git name-rev --tags --stdin
+$>git log --oneline -<number> --stat                    #显示<number>条日志的状态信息.
+$>git log -<number>                                     #显示<number>条日志.
+
+Git操作上游TAG
+-------------------
+$>git remote -v
+$>git remote rename <old name> <new name>
+$>git remote update                                        #远程版本库的更新.
+$>git config remote.<remote name>.skipdefaultupdate true   #跳过<remote name>的自动更新.
+$>git remote rm <remote name>                              #删除远程版本库.
+$>git ls-remote <origin name>                              #查看上游tag.
+$>git push <origin name> :<tagname>                        #删除远程版本库中的里程碑.
+$>git push <origin name> <tagname>                         #推送tag到远程版本库.
+
+Git分支
+-------------------
+$>git branch
+$>git branch <branch name>
+$>git branch <branch name> <branch name or commit id>
+$>git branch -d <branch name>
+$>git branch -m <old branch name> <new branch name>     
+$>git checkout -b <branch name> <branch name or commit id>
+
+Git基于TAG创建分支
+-------------------
+$>git checkout -b <branch name> <tag name> 
+
+Git查看两个分支的提交记录
+-------------------
+$>git log v4.19.133...v4.19.134
+
+查看代码修改记录
+-------------------
+文件标注
+--------
+$>git blame -C -L <起始行,终止行> <文件>
+
+二分查找
+--------
+$>git bisect start
+$>git bisect bad 
+$>git bisect good <标记名称/TAG>
+$>git bisect reset
+
+参考:progit_v2.1.53.pdf <使用 Git 调试>
+
+子模块
+--------
+参考:progit_v2.1.53.pdf <使用 Git 调试-子模块>
+
+Git删除不需要提交的文件
+-------------------
+$>git rm -r --cached [FILE]                          #从暂存区域移除，但仍然希望保留在当前的工作目录中.
+
+注意:需要配合".gitignore"文件进行使用.
+
+Git找回被删除的分支
+-------------------
+$>git reflog                                 #查看所有引用的变动日志.
+$>git checkout <reflog id> -fb <save name>   #即可找回被删除的代码. 
+
+Git-hard
+-------------------
+$>git reset --hard <commit-id>/<tag-id>/HEAD
+
+git-lab使用方法
+-------------------
+$>ssh-keygen -t ed25519 -C "your-email"
+$>cat ~/.ssh/id_ed25519.pub                          #复制内容到“Add an SSH key”.
+$>git config --system i18n.logoutputencoding gbk
+$>git config --system i18n.commitencoding gbk
+$>git config --system color.ui true
+$>git config --system user.name "HY"
+$>git config --system user.email "your-email"
+$>git config --system core.logallrefupdates true
+$>git config --system alias.s "status -s"
+$>git config --system alias.tg "tag --sort=taggerdate --format '%(refname:short) %(taggerdate:short) %(subject)'"
+$>git config --system alias.ca "commit --amend --allow-empty --reset-author -aF"
+$>git config --system alias.cm "commit -aF"
+$>git config --system log.date iso
+$>git clone ssh://.../xx.git
+
+在分支上创建分支
+-------------------
+$>git checkout xx-branch                             #签出/切换"xx-branch"分支,后面新拉的分支会在这个基础上创建.
+$>git checkout -b yy-branch                          #创建并切换到"yy-branch".
+$>git push origin yy-branch       
+$>git branch --set-upstream-to=origin/yy-branch yy-branch
+
+$>git branch                                         #要在yy-branch模式下才能够正常使用push命令.
+$>git checkout yy-branch                             #切换到yy-branch分支.
+$>git commit -aF <commit-note file>                  #提交修改.
+$>git push                                           #推送,日常向上游推送指令.
+
+$>git branch -a
+$>git branch -vv
+$>git push origin HEAD:master      #在当前新创建的分支下提交修改到远程仓库.
+
+注意:以上命令即可完成git-lab的分支与本地保持一致. 
+
+Git签出远程分支
+-------------------
+$>git checkout -b <dev_localname> origin/<dev_remotename> 
+
+下载远程分支代码
+-------------------
+$>git checkout -b <本地分支名称也可以用远程仓库的名称> origin/<远程仓库的分支名称>
+$>git pull 
+
+Git从当前工作区上下载某个文件
+-------------------
+$>mv x x.backup
+$>git checkout -- x
+
+例如:
+$>mv x x.backup 
+$>git checkout -- x                                  #丢弃x的修改.
+or
+$>git checkout -- .                                  #丢弃当前工作区的全部修改.
+
+git签出指定文件
+-------------------
+$>git checkout <commit id> -- <file name>
+
+Git-remote版本回退
+------------
+$>find /path/srcx -name 'srcx' -type d -exec rsync -avHP --exclude='.git' --exclude='*.o' {} /path/srcy \; 
+$>git reset --hard <commit-id>                       #强制还原到<commit-id>.
+$>rsync -avHP /path/srcy/srcx/* /path/srcx/
+$>git push -f/<--force>                              #强制推送到上游.
+$>git commit -aF <commit-note file>                  #提交.
+$>git push                                           #推送修改.
+
+Git查看本地文件的修改
+-------------------
+$>git diff                                           #查看本地全部文件的修改内容.
+$>git diff <xx-file>                                 #查看本地xx文件的修改内容.
+
+Git查看<commit-id>的修改内容
+-------------------
+$>git show <commit-id>
+
+Git打补丁和应用补丁
+-------------------
+$>git diff <commit id x> <commit id y> > /path/xx.diff    #打补丁.
+$>git diff <commit id x> <commit id y> 2>&1 | tee /path/xx.diff  
+$>git apply --check /path/xx.diff                         #检查能否正常打入.
+$>git apply --reject /path/xx.diff                        #强制应用"/path/xx.diff"补丁.
+
+Git查看某个文件的变化
+-------------------
+$>git log --pretty=oneline <file name>
+or
+$>git log -p <file name>
+
+Git操作远程分支
+-------------------
+$>git fetch 
+$>git branch -v -r -a 
+$>git checkout <remote branch,eg.origin/linux-4.19.y> -fb <new branch name,eg.linux-4.19.y>  
+
+Git取消合并以remote代码为主
+-------------------
+$>git pull -f 
+$>git merge --abort 
+
+Git打补丁
+-------------------
+$>git format-patch <commit-id1>..<commit-idn> --stdout > ~/important_commits.patch 
+$>git apply --stat ~/important_commits.patch                                        #查看patch的情况.
+$>git apply --check ~/important_commits.patch                                       #检查patch是否能够打上.
+$>git apply --reject ~/important_commits.patch                                      #强制打补丁.
+$>git am --skip ~/important_commits.patch                                           #应用补丁.
+eg.
+$>git format-patch 3a19f808cb2bc8d0320c3ba5ec4ba525b3d6640c..71a430048134b9d8b0039437babe3af5c75b3404 --stdout > ~/important_commits.patch 
+
+hg使用方法
+-------------------
+$>hg log -vpr 10  #查看最近10条日志详细内容.
+$>hg pull         #拉取代码.
+$>hg push         #推送代码. 
+
+Git初始化-CRT脚本
+-------------------
+$>vi git-init.vbs 
+--------
+#$language = "VBScript"
+crt.Screen.Synchronous = True
+
+Sub Main
+ crt.Screen.Send "cat>~/.gitignore<<EOF" & chr(13)
+ crt.Screen.Send "*.d" & chr(13)
+ crt.Screen.Send "*.slo" & chr(13)
+ crt.Screen.Send "*.lo" & chr(13)
+ crt.Screen.Send "*.o" & chr(13)
+ crt.Screen.Send "*.obj" & chr(13)
+ crt.Screen.Send "*.gch" & chr(13)
+ crt.Screen.Send "*.pch" & chr(13)
+ crt.Screen.Send "*.so" & chr(13)
+ crt.Screen.Send "*.dylib" & chr(13)
+ crt.Screen.Send "*.dll" & chr(13)
+ crt.Screen.Send "*.mod" & chr(13)
+ crt.Screen.Send "*.smod" & chr(13)
+ crt.Screen.Send "*.lai" & chr(13)
+ crt.Screen.Send "*.la" & chr(13)
+ crt.Screen.Send "*.a" & chr(13)
+ crt.Screen.Send "*.lib" & chr(13)
+ crt.Screen.Send "*.exe" & chr(13)
+ crt.Screen.Send "*.out" & chr(13)
+ crt.Screen.Send "*.app" & chr(13)
+ crt.Screen.Send "*.ko" & chr(13)
+ crt.Screen.Send "*.elf" & chr(13)
+ crt.Screen.Send "*.ilk" & chr(13)
+ crt.Screen.Send "*.map" & chr(13)
+ crt.Screen.Send "*.exp" & chr(13)
+ crt.Screen.Send "*.gch" & chr(13)
+ crt.Screen.Send "*.pch" & chr(13)
+ crt.Screen.Send "*.lo" & chr(13)
+ crt.Screen.Send "*.so.*" & chr(13)
+ crt.Screen.Send "*.i*86" & chr(13)
+ crt.Screen.Send "*.x86_64" & chr(13)
+ crt.Screen.Send "*.hex" & chr(13)
+ crt.Screen.Send "*.dSYM/" & chr(13)
+ crt.Screen.Send "*.su" & chr(13)
+ crt.Screen.Send "*.idb" & chr(13)
+ crt.Screen.Send "*.pdb" & chr(13)
+ crt.Screen.Send "*.mod*" & chr(13)
+ crt.Screen.Send "*.cmd" & chr(13)
+ crt.Screen.Send "*.bak" & chr(13)
+ crt.Screen.Send "*.gho" & chr(13)
+ crt.Screen.Send "*.ori" & chr(13)
+ crt.Screen.Send "*.orig" & chr(13)
+ crt.Screen.Send "*.tmp" & chr(13)
+ crt.Screen.Send ".fuse_hidden*" & chr(13)
+ crt.Screen.Send ".directory" & chr(13)
+ crt.Screen.Send ".Trash-*" & chr(13)
+ crt.Screen.Send ".nfs*" & chr(13)
+ crt.Screen.Send "[._]*.s[a-v][a-z]" & chr(13)
+ crt.Screen.Send "!*.svg" & chr(13)
+ crt.Screen.Send "[._]*.sw[a-p]" & chr(13)
+ crt.Screen.Send "[._]s[a-rt-v][a-z]" & chr(13)
+ crt.Screen.Send "[._]ss[a-gi-z]" & chr(13)
+ crt.Screen.Send "[._]sw[a-p]" & chr(13)
+ crt.Screen.Send "Session.vim" & chr(13)
+ crt.Screen.Send "Sessionx.vim" & chr(13)
+ crt.Screen.Send ".netrwhist" & chr(13)
+ crt.Screen.Send "tags" & chr(13)
+ crt.Screen.Send "[._]*.un~" & chr(13)
+ crt.Screen.Send "*.tmp_versions/" & chr(13)
+ crt.Screen.Send "modules.order" & chr(13)
+ crt.Screen.Send "Module.symvers" & chr(13)
+ crt.Screen.Send "Mkfile.old" & chr(13)
+ crt.Screen.Send "dkms.conf" & chr(13)
+ crt.Screen.Send "EOF" & chr(13)
+ 
+ crt.Screen.Send "git config --global core.excludesfile ~/.gitignore" & chr(13)
+ crt.Screen.Send "git config --global i18n.logoutputencoding gbk" & chr(13)
+ crt.Screen.Send "git config --global i18n.commitencoding gbk" & chr(13)
+ crt.Screen.Send "git config --global color.ui true" & chr(13)
+ crt.Screen.Send "git config --global core.logallrefupdates true" & chr(13)
+ crt.Screen.Send "git config --global log.date iso" & chr(13)
+
+ #查看状态,eg.git s.
+ crt.Screen.Send "git config --global alias.s 'status -s'" & chr(13)
+
+ #从当前工作区上下载某个文件,git l <xx file>.
+ crt.Screen.Send "git config --global alias.l 'checkout --'" & chr(13)
+
+ #查看<tag>,git tg.
+ crt.Screen.Send "git config --global alias.tg " & chr(34) & "tag --sort=taggerdate --format '%(refname:short) %(taggerdate:short) %(subject)'"& chr(34) & chr(13)
+
+ #提交,重复上一次提交(多次修改与提交都会反馈在当前git-commit日志中),git ca <commit-note file>.
+ crt.Screen.Send "git config --global alias.ca 'commit --amend --allow-empty --reset-author -aF'" & chr(13)
+
+ #提交,git cm <commit-note file>.
+ crt.Screen.Send "git config --global alias.cm 'commit -aF'" & chr(13)
+
+ #删除临时文件,git rr <*.o/*.a>.
+ crt.Screen.Send "git config --global alias.rr 'rm -r --cached'" & chr(13)
+
+ #删除本地工作目录中未跟踪的文件,删除文件和目录,git cc.
+ crt.Screen.Send "git config --global alias.cc 'clean -df'" & chr(13)
+
+ #强制签出分支git ck <commit-id/branch-name>.
+ crt.Screen.Send "git config --global alias.ck 'checkout -f'" & chr(13)
+
+ #强制提交给上游,git ph.
+ crt.Screen.Send "git config --global alias.ph 'push --force'" & chr(13)
+
+ #查看修改,git dd or git dd <xx file>.
+ crt.Screen.Send "git config --global alias.dd 'diff'" & chr(13)
+
+ #查看修改git ddd or git ddd <xxx file>.
+ crt.Screen.Send "git config --global alias.ddd 'diff --cached'" & chr(13)
+
+ #检查补丁,git ack /path/x.diff.
+ crt.Screen.Send "git config --global alias.ack 'apply --check'" & chr(13)
+
+ #强制应用补丁,git art /path/x.diff.
+ crt.Screen.Send "git config --global alias.art 'apply --reject'" & chr(13)
+
+ #用户配置.
+ crt.Screen.Send "git config --global user.email 'HY@example.org'" & chr(13)
+ crt.Screen.Send "git config --global user.name 'HY'" & chr(13)
+End Sub
+
+vi ~/.gitclean
+--------
+#!/bin/bash 
+
+for igs in $(cat ~/.gitignore)
+do 
+git rr ${igs}
+done
+
+$>chmod a+x ~/.gitclean && ~/.gitclean

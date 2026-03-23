@@ -1,0 +1,59 @@
+终端连接WIFI - 自动重连 
+---------------
+$>apt-get install wireless-tools net-tools udhcpc
+$>iwconfig
+$>iw <WLAN-Interface> scan | grep SSID
+$>nmcli device wifi list
+or 
+$>nmcli d wifi list
+$>nmcli c
+$>nmcli dev wifi connect <SSID> password <passwd>
+$>nmcli g
+$>nmcli c up <SSID>                      #连接WIFI
+$>nmcli c down <SSID>                    #断开WIFI
+or
+$>nano /etc/default/grub
+----
+GRUB_CMDLINE_LINUX_DEFAULT="net.ifnames=0 biosdevname=0 text"
+
+$>export PATH=$PATH:/usr/sbin/:/sbin:/usr/local/sbin
+$>/sbin/update-grub
+
+$>mkdir -pv /var/run/wpa_supplicant
+$>nano /etc/wpa_supplicant/<SSID>
+----
+ctrl_interface=/var/run/wpa_supplicant
+ctrl_interface_group=0
+update_config=1
+
+#自动重连
+ap_scan=1
+autoscan=periodic:10
+disable_scan_offload=1
+
+network={  
+ssid="<SSID>"  
+psk="<passwd>"  
+priority=5  
+scan_ssid=1
+}  
+
+$>killall wpa_supplicant
+$>wpa_supplicant -B -i <WLAN-Interface> -c /etc/wpa_supplicant/<SSID> 
+$>wpa_cli -i <WLAN-Interface> status
+$>dhclient -i <WLAN-Interface>
+
+开机自动配置WIFI
+---
+$>nano /etc/network/interfaces
+----
+...
+allow-hotplug <WLAN-Interface>
+iface <WLAN-Interface> inet dhcp 
+wpa-conf /etc/wpa_supplicant/<SSID> 
+
+$>/etc/init.d/networking reload
+$>systemctl restart networking
+$>ifdown <网口名称> && ifup <网口名称>
+$>ip link set dev <网口名称> down
+$>ip link set dev <网口名称> up

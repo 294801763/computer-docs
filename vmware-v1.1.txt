@@ -1,0 +1,72 @@
+VMware-Workstation-Full-17.5.2-23775571
+--
+MC60H-DWHD5-H80U9-6V85M-8280D
+
+automake 
+--
+$>cd automake-1.16.5
+$>./configure --prefix=/usr
+$>make 
+$>make install 
+
+m4
+--
+$>cd m4-1.4.19
+$>./configure --prefix=/usr
+$>make 
+$>make install 
+
+libtool
+--
+$>cd libtool-2.4.7
+$>./configure --prefix=/usr
+$>make 
+$>make install 
+
+libxml 
+--
+$>cd libxml2-2.12.7
+$>cp /usr/share/aclocal/*.m4 /usr/local/share/aclocal/
+$>./autogen.sh --with-http=no --with-python=no --with-lzma=yes --with-threads=no --enable-shared --prefix=/usr
+$>make 
+$>make install 
+
+linux 
+--
+$>cd linux-4.19.315 && make mrproper
+$>mkdir -p ./build && cp /boot/config-`uname -r` ./build/.config
+$>make O=./build/ menuconfig
+-
+CONFIG_ANDROID                    #禁用.
+CONFIG_SYSTEM_TRUSTED_KEYS        #清空证书.
+
+$>make O=./build V=1 -j`nproc`
+$>make O=./build modules_install install 
+$>reboot
+
+ros 
+--
+$>vmrun -T ws start "/home/ros/chr.vmx" nogui
+$>vmrun stop "/home/ros/chr.vmx" hard
+
+开机启动
+--
+$>nano /etc/rc.local 
+-
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+/usr/bin/vmrun -T ws start "/home/ros/chr.vmx" nogui >/dev/null 2>&1 &
+
+$>chmod a+x /etc/rc.local 
+

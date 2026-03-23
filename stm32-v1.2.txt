@@ -1,0 +1,80 @@
+核心文档
+-------------------
+jlink-v1.0.txt
+stm32-v1.2.txt
+
+工具目录
+-------------------
+/home/windows/vscode
+/home/windows/Keil
+
+禁止优化
+-------------------
+void <function-name>() __attribute__((optimize(0)));
+or
+volatile int variable = 0;
+
+注意:以上内容经过编译验证.
+
+自动展开结构体指针
+-------------------
+typedef struct {
+    int* ptr;
+    int value;
+} MyStruct;
+
+define print_struct
+  set $struct = $arg0
+  print $struct
+  if ($struct.ptr != 0)
+    print *$struct.ptr
+  end
+end
+
+>print_struct my_struct
+
+开发工具集
+-------------------
+eclipse                  #可以用来查看一部分代码非常好用.
+vscode                   #非常好用的文本编辑器
+Keil                     #STM32开发工具
+JLink                    #STM32调试工具
+VNCView/VNCSeriver       #多屏显示
+
+STM32调试方法
+-------------------
+step.1 修改JLINK的devices.xml文件
+step.2 生成ELF/BIN文件
+魔术棒->User->After Build/Rebuild
+--
+Run#1: fromelf.exe --elf -o d:/programes/stm.elf "#L"
+Run#2: fromelf.exe --bin -o d:/programes/stm.bin "#L"
+
+step.3 使用eclipse建立Makefile
+--------
+nano Makefile 
+--
+.PHONY:gdb
+gdb:
+	@echo startup Jlink gdbserver
+	@x:\<dir>\.eide\tools\jlink\JLinkGDBServer.exe 
+
+.PHONY:gdbx
+gdbx:
+        @echo startup Jlink gdbserver
+        @x:\<dir>\.eide\jlink\JLinkGDBServer.exe -localhostonly 0 -if SWD -port 2331 -device N32G455VE -endian little -rtos FreeRTOS
+
+.PHONY:pscp 
+pscp:
+	@echo copy elf file to linux
+	@pscp -l root -pw 123456 d:\programes\xx.elf 192.168.10.22:/home/xx/
+
+step.4 转到Linux上连接Windows - JLinkGDBServer即可调试了.
+
+调试步骤
+-----
+$>make stm
+--
+gdb>break <断点>
+gdb>stm
+gdb>r or run   #r - 全速运行 - 快捷方式,run - 全速运行

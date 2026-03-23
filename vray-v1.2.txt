@@ -1,0 +1,60 @@
+Linux开启转发
+-------------------
+$>echo 'net.ipv4.ip_forward=1' | tee -a /etc/sysctl.conf && sysctl -p
+
+Windows开启转发
+-------------------
+step.1
+--
+reg add HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters /v IPEnableRouter /D 1 /f 
+or
+reg add HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters /v IPEnableRouter /D 1 /f 
+
+step.2
+--
+sc config RemoteAccess start=auto
+sc start RemoteAccess
+
+Linux使用Windows网关
+-------------------
+step.1 添加默认网关
+--
+ip route add default via <Windows网关,eg.192.168.10.254>
+
+$>nano /etc/network/interfaces
+--
+...
+gateway <Windows网关,eg.192.168.9.104>
+dns-nameservers <DNS,eg.1.2.4.8/210.2.4.8>
+dns-nameservers <DNS,eg.1.2.4.8/210.2.4.8>
+dns-nameservers <DNS,eg.1.2.4.8/210.2.4.8>
+dns-nameservers <DNS,eg.1.2.4.8/210.2.4.8>
+dns-nameservers <DNS,eg.1.2.4.8/210.2.4.8>
+
+注意:192.168.9.104 - 这个IP一定是可以联网的才可以.
+
+v2rayN
+-------------------
+1.自定义(custom)类型的服务,在局域网中是无法共享.
+2.只有添加具体的服务类型(Hysteria2/其他服务),在局域网中可以共享.
+3.具体的配置参考"config.json"即可.
+4.[重要]设置之后会生成guiConfigs/config.json,拿guiConfigs/config.json与Chrome130_AllNew_2024.10.20/Xray/config.json进行比较重点关注[outbounds]对象,如有不相同的地方按照选项进行相应的设置即可.
+5.[重要]已支持WebDAV功能,可以配置备份到服务器或从服务器恢复备份.
+
+注意:支持局域协议有"xray","hysteria".
+
+v2rayN - custom - config.json - 开启局域网共享
+-------------------
+{
+	...
+	"http":{
+		"listen": ":1081",
+		...
+	},
+	"socks5": {
+		"listen": ":1080",
+		...
+	},
+}
+
+注意:局域共享只需要设置"socks5"->"listen": ":1080"即可.

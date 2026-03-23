@@ -1,0 +1,162 @@
+使用代理下载
+-------------------
+$>TZ="Asia/Shanghai" date -s "<当前时间,eg."20241101 12:00">"
+$>export all_proxy="socks://127.0.0.1:1080"
+$>export http_proxy="http://127.0.0.1:1080"
+$>export https_proxy="https://127.0.0.1:1080"
+$>unset http_proxy
+$>unset https_proxy
+
+检查文件完整性
+-------------------
+$>find dl -size -1024c -exec ls -l {} \;
+$>find dl -size -1024c -exec rm -f {} \;
+
+编译依赖软件包
+-------------------
+$>apt-get install rsync
+
+交叉编译
+-------------------
+驱动:drv-v1.0
+应用:app-v1.0
+
+编译命令
+-------------------
+make targetclean
+make config-clean
+./scripts/feeds update -a
+FORCE_UNSAFE_CONFIGURE=1 ./scripts/feeds install -a
+
+集成编译<应用> - 可以随openwrt一起发布
+-------------------
+step.1 参考package/network/utils/iwcap,package/utils/fbtest
+step.2 复制apps目录到<openwrt目录>/package
+step.3 make distclean -> 在添加新的包之后必须要执行这一句否则在make menuconfig中无法显示新增的包,执行清除之后需要重新下载feeds(移步step.5)
+step.4 cp -afv ../dl .
+step.5 ./scripts/feeds update -a && ./scripts/feeds install -a && ./scripts/feeds install libpam libnetsnmp liblzma
+step.6 make package/index -> 生成签名
+step.7 cp -afv config-x86-x86_64-v1.4.7 .config
+step.8 make menuconfig
+step.9 export FORCE_UNSAFE_CONFIGURE=1 && umask 0022 && make V=s -j`nproc`
+step.10 make package/apps/me/{clean,prepare,compile,install} V=s -j`nproc`   -> 单独编译app,在这之前需要先编译一遍openwrt
+
+注意:frp,me只能openwrt一起发布,无法单独执行"make package/apps/frp/{compile,install} V=s -j1".
+
+集成编译<驱动> - 可以随openwrt一起发布
+-------------------
+step.1 参考package/kernel/trelay
+step.2 复制drvs目录到<openwrt目录>/package
+step.3 make distclean -> 在添加新的包之后必须要执行这一句否则在make menuconfig中无法显示新增的包,执行清除之后需要重新下载feeds(移步step.5)
+step.4 cp -afv ../dl .
+step.5 ./scripts/feeds install -a
+step.6 make package/index -> 生成签名
+step.7 cp -afv config-x86-x86_64-v1.4.7 .config
+step.8 make menuconfig
+step.9 export FORCE_UNSAFE_CONFIGURE=1 && umask 0022 && make V=s -j`nproc`
+step.10 make package/drivers/ethernet_a/{clean,prepare,compile,install} V=s -j`nproc` 
+
+keepalived
+-------------------
+$>chmod 0644 /etc/keepalived/keepalived.conf
+$>/etc/init.d/keepalived restart
+
+注意:keepalived刚刷机不会启动,需要执行以上命令然后重启服务即可.
+
+openwrt启动顺序
+-------------------
+/etc/init.d/
+/etc/rc.d/ 
+
+开机运行程序
+-------------------
+step.1 参考package/utils/ugps
+step.2 编写frp
+
+$>nano files/frpc.init
+--
+#!/bin/sh /etc/rc.common
+# Copyright (c) 2014 OpenWrt.org
+
+START=100
+
+USE_PROCD=1
+PROG=/usr/bin/frpc
+
+start_service() {
+	procd_open_instance
+	procd_set_param command "$PROG" -c /root/client.cfg
+	procd_close_instance
+}
+
+$>sed -i 's/\r//' files/frp.init
+
+计划任务
+-------------------
+*/1 * * * * frpx
+
+默认软件包
+-------------------
+SSH - dropbear-2022.82.tar.bz2 - Base system
+
+openwrt-v23.05.5-v3.2.tar.gz
+-------------------
+1.默认"dropbear-2022.82.tar.bz2"软件包
+
+注意:squashfs下openssh-server无法读取/var,dnsmasq-full会造成ubus启动不了
+
+单独编译内核
+-------------------
+$>make target/linux/compile V=s
+$>make target/linux/clean V=s
+
+手动放置一些文件并编译到镜像中
+-------------------
+$>cd <buildroot>
+$>mkdir files
+$>/etc/sysctl.conf -> <buildroot>/files/etc/sysctl.conf
+
+注意:其他内容以此类推即可
+
+修改openwrt - logo
+-------------------
+<openwrt目录>/package/base-files/files/etc/banner -> 可以使用"ASCII字形生成器"快速制作
+
+修改openwrt默认管理地址
+-------------------
+$>nano package/base-files/files/bin/config_generate
+or 
+$>sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
+
+修改默认语言
+-------------------
+$>nano feeds/luci/modules/luci-base/root/etc/config/luci
+
+注意:把"option lang auto"修改为"option lang zh_cn"
+
+修改主机名
+-------------------
+$>nano package/base-files/files/bin/config_generate
+
+修改时区
+-------------------
+$>nano package/base-files/files/bin
+
+修改标准时间
+-------------------
+$>nano package/base-files/files/bin
+
+修改无线名称<SSID>
+-------------------
+$>nano package/kernel/mac80211/files/lib/wifi/mac80211.sh
+
+修改固件<root>密码
+-------------------
+$>nano package/base-files/files/etc/shadow
+
+注意:把密码添加到root:和:中间即可
+
+运行
+-------------------
+$>gzip -d openwrt-x86-64-generic-squashfs-combined.img.gz
+$>VBoxManage convertfromraw --format VDI openwrt-x86-64-generic-squashfs-combined.img  openwrt-x86-64-generic-squashfs-combined.vdi             #转换成vdi/vmdk.

@@ -1,0 +1,5 @@
+Git给分支添加注释
+-------------------
+$>git checkout branch-name
+$>git tag -a "tag-name" -m "描述你的分支用途或历史的信息"
+$>git push origin tag-name

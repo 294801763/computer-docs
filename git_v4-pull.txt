@@ -1,0 +1,7 @@
+Git多人提交后怎么拉取
+-------------------
+$>git pull --rebase
+$>git config pull.rebase true
+$>git config --system pull.rebase true                   #开发主机安装好就必须设置
+
+注意:当其他人提交了修改后,需要在本地执行"git pull --rebase"然后才能继续提交本地修改.

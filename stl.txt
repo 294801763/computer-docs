@@ -1,0 +1,58 @@
+Sequences
+ C++ Vectors
+ C++ Lists
+ C++ Double-Ended Queues
+Container Adapters
+ C++ Stacks
+ C++ Queues
+ C++ Priority Queues
+Associative Containers
+ C++ Bitsets
+ C++ Maps
+ C++ Multimaps
+ C++ Sets
+ C++ Multisets
+
+Vectors
+----
+包含一系列连续存储的元素,其行为和数组类似.访问Vectors中的任意元素或从末尾添加元素都可以在常量级时间复杂度内完成,而查找特定值的元素所处的位置或是在Vectors中插入元素则是线性时间复杂度
+
+Lists
+----
+将元素按顺序存储在链表中,与向量(Vectors)相比,它允许快速插入和删除,但是随机访问却比较慢.
+
+Double-Ended Queues
+----
+双端队列,是一种具有队列和栈性质的数据结构,可以从两端添加和删除元素.
+
+Stacks
+----
+栈是限定仅在表的一端进行插入和删除操作数的线性表,允许插入和删除的一端称为栈顶,另一端称为栈底,不含任何数据元素的栈称为空栈.
+
+Queues
+----
+队列最大的特点就是先进先出,先放入queue容器的元素一定是要先出队列之后,比他后进入队列的元素才能够出队列.
+
+Priority Queues
+----
+优先队列具有队列的所有特性,包括队列的基本操作,只是在这基础上添加了内部的一个排序,本质上是一个堆的实现.
+
+Bitsets
+----
+用于表示固定大小的位序列,其中每个位的值要么是0,要么是1.Bitsets提供了一系列操作函数,可用对位序列进行位操作,逻辑操作等.
+
+Maps
+----
+键值对集合,Maps集合中的每一个元素都包含一个键对象和一个值对象.
+
+Multimaps
+----
+和Maps很相似,但是Multimaps允许重复的元素.
+
+Sets
+----
+存储一组不重复的元素.
+
+Multisets
+----
+按照特定排序存储元素的容器,多个元素可以有相同的值.元素的值即为其本身的键值.

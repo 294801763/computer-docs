@@ -1,0 +1,268 @@
+IDE集合工具的激活方法(更换电脑/硬盘都需重新激活)
+-------------------
+step.1 新启动一个终端,并执行ireg激活破解;执行完毕后关闭终端.
+step.2 重新启动一个新的终端,运行IDE工具即可(例如: cln即<clion>).
+
+CMake执行外部命令
+-------------------
+执行外部命令
+----
+语法
+--
+execute_process(
+    COMMAND <command> [<arg1> <arg2> ...]
+    WORKING_DIRECTORY <dir>
+    RESULT_VARIABLE <variable>
+    OUTPUT_VARIABLE <variable>
+    ERROR_VARIABLE <variable>
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+例如
+--
+execute_process(COMMAND date OUTPUT_VARIABLE current_date)
+message(STATUS "Current date: ${current_date}")
+
+QT开发环境
+-------------------
+$>apt install qt5-default
+$>apt-get install qtcreator
+$>apt-get install libqt5serialport5 libqt5serialport5-dev
+$>apt-get install libqt5multimedia5 libqt5multimedia5-plugins libqt5multimediawidgets5 qtmultimedia5-dev
+$>apt-get install libqt5webenginecore5 libqt5webenginewidgets5 qtwebengine5-dev libqt5webkit5-dev
+
+快速修改当前文件夹下所有文件时间戳
+-------------------
+$>nano /usr/bin/tt
+--
+find . -type f -exec touch {} \;
+
+环境变量
+-------------------
+$>nano /etc/profile
+--
+#CLion
+export PATH=/home/ide/clion-2025.1.3/bin:$PATH
+
+#IDEA
+export PATH=/home/ide/idea-IU-251.26927.53/bin:$PATH
+
+#Goland
+export PATH=/home/ide/GoLand-2025.1.3/bin:$PATH
+
+#PHP
+export PATH=/home/ide/PhpStorm-251.26927.60/bin:$PATH
+
+#Web
+export PATH=/home/ide/WebStorm-251.26927.40/bin:$PATH
+
+#SQL
+export PATH=/home/ide/DataGrip-2025.1.3/bin:$PATH
+
+#PYTHON
+export PATH=/home/ide/pycharm-2025.1.2/bin:$PATH
+
+#IDE - install.sh
+export PATH=/home/ide/reg-v1.0/scripts:$PATH
+
+CLion
+-------------------
+nano /usr/bin/cln 
+--
+#!/bin/bash 
+
+sudo date -s 20250628
+sudo hwclock -w
+
+clion >/dev/null 2>&1&
+
+IDEA
+-------------------
+nano /usr/bin/ida 
+--
+#!/bin/bash 
+
+sudo date -s 20250628
+sudo hwclock -w
+
+idea >/dev/null 2>&1&
+
+Goland
+-------------------
+nano /usr/bin/gld 
+--
+#!/bin/bash 
+
+sudo date -s 20250628
+sudo hwclock -w
+
+goland >/dev/null 2>&1&
+
+PHP
+-------------------
+nano /usr/bin/psm 
+--
+#!/bin/bash 
+
+sudo date -s 20250628
+sudo hwclock -w
+
+phpstorm >/dev/null 2>&1&
+
+Web
+-------------------
+nano /usr/bin/wsm 
+--
+#!/bin/bash 
+
+sudo date -s 20250628
+sudo hwclock -w
+
+webstorm >/dev/null 2>&1&
+
+SQL
+-------------------
+nano /usr/bin/dgp 
+--
+#!/bin/bash 
+
+sudo date -s 20250628
+sudo hwclock -w
+
+datagrip >/dev/null 2>&1&
+
+PYTHON
+-------------------
+nano /usr/bin/pcm 
+--
+#!/bin/bash 
+
+sudo date -s 20250628
+sudo hwclock -w
+
+pycharm >/dev/null 2>&1&
+
+NextCloud
+-------------------
+xc
+
+Shell
+-------------------
+bb
+
+vncserver
+-------------------
+vl
+
+vncview
+-------------------
+xv
+
+joplin
+-------------------
+j
+jj
+
+synergy
+-------------------
+mm
+
+monitor
+-------------------
+xo
+
+slickedit
+-------------------
+v
+sf
+sn
+sex
+
+eclipse
+-------------------
+ee
+ec
+
+dropbear
+-------------------
+drop
+
+cscope
+-------------------
+tag
+
+terminal
+-------------------
+t
+
+nautilus
+-------------------
+n
+
+mkdir 
+-------------------
+m
+
+bcompare
+-------------------
+b
+
+touch - c
+-------------------
+cx
+
+touch - cc
+-------------------
+c
+
+touch - markdown
+-------------------
+xx
+
+touch - time
+-------------------
+tt
+
+chmod - c/h
+-------------------
+x
+
+pxe
+-------------------
+pxe
+pxes
+
+kibitz
+-------------------
+k
+
+ttyrec
+-------------------
+r
+
+screenshot
+-------------------
+g
+
+X11
+-------------------
+vt
+vtx
+
+rsync
+-------------------
+rs
+
+usbip
+-------------------
+usbip_bind
+usbip_unbind
+
+rustdesk
+-------------------
+hbr
+hbs
+
+vlmcsd
+-------------------
+vlm

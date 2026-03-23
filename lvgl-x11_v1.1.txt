@@ -1,0 +1,95 @@
+$>apt-get install libx11-6
+$>apt-get install libx11-dev
+$>nano lv_conf.h
+--
+#define LV_USE_X11  1
+...
+/***********************************************************
+ * Direct Exit
+ ***********************************************************/
+#define LV_X11_DIRECT_EXIT  1 /*preferred default - ends the application automatically if last window has been closed*/
+// or
+#define LV_X11_DIRECT_EXIT  0 /*application is responsible for ending the application (e.g. by own LV_EVENT_DELETE handler*/
+
+...
+/***********************************************************
+ * Double buffering
+ ***********************************************************/
+#define LV_X11_DOUBLE_BUFFER  1 /*preferred default*/
+// or
+#define LV_X11_DOUBLE_BUFFER  0 /*not recommended*/
+
+...
+/***********************************************************
+ * Render mode
+ ***********************************************************/
+#define LV_X11_RENDER_MODE_PARTIAL 1  /*LV_DISPLAY_RENDER_MODE_PARTIAL, preferred default*/
+// or
+#define LV_X11_RENDER_MODE_DIRECT  1  /*LV_DISPLAY_RENDER_MODE_DIRECT, not recommended for X11 driver*/
+// or
+#define LV_X11_RENDER_MODE_DULL    1  /*LV_DISPLAY_RENDER_MODE_FULL, not recommended for X11 driver*/
+...
+
+$>nano main-v1.0.c 
+--
+int main(int argc, char ** argv)
+{
+    ...
+
+    /* initialize X11 display driver */
+    lv_display_t * disp = lv_x11_window_create("LVGL X11 Simulation", monitor_hor_res, monitor_ver_res);
+
+    /* initialize X11 input drivers (for keyboard, mouse & mousewheel) */
+    lv_x11_inputs_create(disp, NULL);
+
+    ...
+
+    while(true)
+    {
+        ...
+
+        /* Periodically call the lv_timer handler */
+        lv_timer_handler();
+    }
+}
+
+$nano main-v1.1.c 
+--
+bool terminated = false;
+
+#if !LV_X11_DIRECT_EXIT
+static void on_close_cb(lv_event_t * e)
+{
+    ...
+
+    terminate = true;
+}
+#endif
+
+int main(int argc, char ** argv)
+{
+    ...
+
+    /* initialize X11 display driver */
+    lv_display_t * disp = lv_x11_window_create("LVGL X11 Simulation", monitor_hor_res, monitor_ver_res);
+    lv_display_add_event_cb(disp, on_close_cb, LV_EVENT_DELETE, disp);
+
+    /* initialize X11 input drivers (for keyboard, mouse & mousewheel) */
+    LV_IMAGE_DECLARE(my_mouse_cursor_icon);
+    lv_x11_inputs_create(disp, &my_mouse_cursor_icon);
+
+    #if !LV_X11_DIRECT_EXIT
+    /* set optional window close callback to enable application cleanup and exit */
+    lv_x11_window_set_close_cb(disp, on_close_cb, disp);
+    #endif
+
+    ...
+
+    while(!terminated)
+    {
+        ...
+
+        /* Periodically call the lv_timer handler */
+        lv_timer_handler();
+    }
+}

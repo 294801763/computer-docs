@@ -1,0 +1,94 @@
+查看Gcc所支持的标准
+--------------
+$>gcc -posix -E -dM - < /dev/null |grep --color=auto -i "__STDC_ISO" 
+
+查看头文件路径
+--------------
+$>gcc -x c++ -v -E /dev/null
+
+查看编译器默认搜索路径
+--------------
+$>gcc -E -v -
+or 
+$>arm-linux-gnueabihf-gcc -E -v -
+
+查看本机glibc版本
+--------------
+$>ldd --version
+
+构建交叉编译器
+--------------
+$>date -s "2022-12-01 12:00"
+$>hwclock -w
+
+step.1 创建目录
+--------
+$>cd /opt/
+$>mkdir armlinux
+$>cd armlinux
+$>mkdir -pv build-tools kernel tools
+
+step.2 设置环境变量
+--------
+$>export PRJROOT=/opt/armlinux
+$>export TARGET=arm-linux-gnueabihf
+$>export PREFIX=$PRJROOT/tools 
+$>export TARGET_PREFIX=$PREFIX/$TARGET
+$>export PATH=$PREFIX/bin:$PATH
+
+step.3 binutils
+--------
+$>cp binutils-2.27.tar.gz $PRJROOT/build-tools
+$>mkdir -pv $PRJROOT/build-tools/build-binutils
+$>cd $PRJROOT/build-tools
+$>tar -xvf binutils-2.27.tar.gz
+$>cd $PRJROOT/build-tools/build-binutils
+$>../binutils-2.32/configure --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --prefix=$PREFIX --with-sysroot=$TARGET_PREFIX --enable-multilib --enable-threads --enable-static --disable-shared --disable-plugins --disable-nls --disable-bootstrap --disable-werror --disable-gdb --disable-sim --disable-libdecnumber --disable-readline
+$>make -j`nproc` && make install
+
+step.4 gcc - v1
+--------
+$>cd /github/abe/gcc                                                 #abe - Advanced Build Environment
+$>git checkout linaro-7.5-2019.12 -b v7.5
+$>cd $PRJROOT/build-tools/gcc/mpfr
+$>autoreconf -f
+$>cd $PRJROOT/build-tools/gcc/isl/
+$>autoreconf -f
+$>cd $PRJROOT/build-tools/build-gcc-v1
+$>../gcc/configure --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --prefix=$PREFIX --with-sysroot=$TARGET_PREFIX --with-glibc-version=2.36 --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb --with-tune=cortex-a9 --with-cloog=no --with-ppl=no --with-isl=no --with-gnu-ld --with-gnu-as --with-system-zlib --with-newlib --without-included-gettext --without-headers --enable-nls --enable-multiarch --enable-c99 --enable-long-long --enable-gnu-indirect-function --enable-libstdcxx-debug --enable-gnu-unique-object --enable-linker-build-id --enable-clocale=gnu --enable-languages=c,c++ --enable-threads=posix --enable-libstdcxx-time=yes --disable-multilib --disable-libmudflap --disable-libssp --disable-libquadmath --disable-libgomp --disable-libatomic --disable-libvtv --disable-libstdcxx --disable-bootstrap --disable-libitm --disable-libsanitizer --disable-sjlj-exceptions --disable-libstdcxx-pch --disable-threads --disable-decimal-float --disable-plugins --disable-shared --disable-lto
+$>make -j`nproc` all-gcc all-target-libgcc && make install-gcc install-target-libgcc 
+
+注意:经过测试"git checkout releases/gcc-7.5.0 -b v7.5.0"和"git checkout linaro-7.5-2019.12 -b v7.5"都能成功编译内核.
+
+step.5 linux 
+--------
+$>cd $PRJROOT/kernel/
+$>git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+$>cd linux 
+$>git checkout 4.19.267 -fb v4.19.267
+$>make ARCH=arm headers_check
+$>make C=2 V=1 ARCH=arm O=./tmp INSTALL_HDR_PATH=$TARGET_PREFIX/usr headers_install
+
+step.6 glibc
+--------
+$>cp glibc-2.36.tar.gz $PRJROOT/build-tools
+$>mkdir -pv $PRJROOT/build-tools/build-glibc
+$>cd $PRJROOT/build-tools
+$>tar -xvf glibc-2.36.tar.gz
+$>cd $PRJROOT/build-tools/build-glibc
+$>CC=$TARGET-gcc AR=$TARGET-ar RANLIB=$TARGET-ranlib ../glibc-2.36/configure --prefix=/usr --build=$MACHTYPE --host=$TARGET --target=$TARGET --with-headers=$TARGET_PREFIX/usr/include --without-selinux --without-gd -enable-shared --enable-obsolete-rpc --disable-werror --disable-profile libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
+$>make install-bootstrap-headers=yes install_root=$TARGET_PREFIX install-headers
+$>LDFLAGS=-static-libgcc make -j`nproc` && LDFLAGS=-static-libgcc make install_root=$TARGET_PREFIX install
+
+step.7 gcc - v2 
+--------
+$>cd /github/abe/gcc                                                 #abe - Advanced Build Environment
+$>git checkout linaro-7.5-2019.12 -b v7.5
+$>cd $PRJROOT/build-tools/gcc/mpfr
+$>autoreconf -f
+$>cd $PRJROOT/build-tools/gcc/isl/
+$>autoreconf -f
+$>cd $PRJROOT/build-tools/build-gcc-v2
+$>../gcc/configure --build=$MACHTYPE --host=$MACHTYPE --target=$TARGET --prefix=$PREFIX --with-sysroot=$TARGET_PREFIX --with-cloog=no --with-float=hard --with-mode=thumb --with-tune=cortex-a9 --with-arch=armv7-a --with-fpu=vfpv3-d16 --with-gnu-as --with-gnu-ld --with-system-zlib --without-included-gettext --enable-languages=c,c++ --enable-libstdcxx-time=yes --enable-threads=posix --enable-clocale=gnu --enable-checking=yes --enable-default-pie --enable-default-ssp --enable-shared --enable-threads --enable-nls --enable-multiarch --enable-gnu-indirect-function --enable-gnu-unique-object --enable-linker-build-id --enable-c99 --enable-libatomic --enable-libvtv --enable-libssp --enable-libgomp --enable-libquadmath --enable-multilib --enable-libstdcxx --enable-libstdcxx-debug --enable-long-long --enable-libsanitizer --disable-sjlj-exceptions --disable-bootstrap --disable-libstdcxx-pch --disable-libmudflap --disable-lto
+$>make -j`nproc` && make install
+

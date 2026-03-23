@@ -1,0 +1,54 @@
+opensips编译与安装
+--------------
+$>apt-get install libncurses5-dev libmysqlclient-dev libmysqld-dev mysql-server mysql-client
+$>cd opensips-2.4.7
+$>make menuconfig
+---------
+Configure Compile Options->Configure Excluded Modules->db_mysql
+Configure Compile Options->Configure Excluded Modules->compression
+
+opensips配置
+--------------
+$>./sbin/osipsconfig         #生成配置脚本.
+---------
+Generate OpenSIPS Script->Configure Residential Script 
+------
+>ENABLE_TCP           #勾选
+>USE_AUTH             #勾选
+>USE_DBACC            #勾选
+>USE_DBUSRLOC         #勾选
+
+Generate OpenSIPS Script->Configure Residential Script->Generate Residential Script
+
+$>mv ./etc/opensips/opensips_residential_[...].cfg ./etc/opensips/opensips.cfg
+$>vi ./etc/opensips/opensipsctlrc
+---------
+SIP_DOMAIN=127.0.0.1
+DBENGINE=MYSQL
+DBPORT=3306
+DBHOST=localhost
+DBNAME=opensips
+DBRWUSER=opensips
+DBRWPW="opensipsrw"
+DBROOTUSER="root"
+
+$>vi ./etc/opensips/opensips.cfg
+---------
+...
+listen=udp:192.168.10.88:5060   # CUSTOMIZE ME
+listen=tcp:192.168.10.88:5060   # CUSTOMIZE ME
+...
+
+注意:这里的"192.168.10.88"是对外连接的ip;一定要进行修改,否则无法连接.
+
+opensips部署
+--------------
+$>./sbin/opensips -c                   #检查脚本.
+$>./sbin/opensipsdbctl create          #创建数据库.
+$>./sbin/opensipsctl start             #启动opensips服务.
+$>./sbin/opensipsctl add 1001 1001     #添加用户(1001),密码为(1001).
+$>./sbin/opensipsctl rm 1001           #删除用户(1001).
+$>./sbin/opensipsctl ul show           #查看在线用户.
+$>./sbin/opensipsctl online            #查看在线用户.
+
+注意:以上内容是opensips配合mysql进行使用,具体mysql安装根据Linux操作系统来进行安装.

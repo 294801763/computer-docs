@@ -1,0 +1,986 @@
+FireFox设置
+-------------------
+$>about:support                                       #打开"配置文件夹","extensions\*.xpi"备份到其他目录.
+$>about:addons                                        #从文件安装附加组件...,选择上面备份的"extensions\*.xpi"文件即可导入插件.
+
+编译与安装
+-------------------
+$>apt-get install -y build-essential libtool cscope ttyrec gdb valgrind pkg-config autoconf automake shtool re2c libzip-dev libssl-dev libpng-dev libxpm-dev libmcrypt-dev libpspell-dev librecode-dev libreadline-dev libtidy-dev libxslt1-dev libxml2-dev libsqlite3-dev libwebp-dev libjpeg-dev
+$>./configure --prefix=/ --enable-debug --enable-session --enable-sigchild --enable-calendar --enable-ftp --enable-pdo --enable-json --enable-intl --enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem --enable-sysvshm --enable-soap --enable-gd --enable-exif --disable-phpdbg --with-webp --with-jpeg --with-xpm --with-freetype --with-zip --with-zlib --with-xsl --with-openssl --with-readline --with-tsrm-pthreads --with-valgrind --with-gnu-ld --with-pdo-sqlite --with-mysqli --with-pdo-mysql
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install
+
+oniguruma-6.9.8(mbstring)
+-------------------
+$>./buildconf --force --debug
+or 
+$>./autogen.sh
+$>./configure --prefix=/usr
+$>make && make install 
+
+注意:"--enable-mbstring"
+
+freetype(gd)
+-------------------
+$>apt-get install libtool libwebp-dev libjpeg-dev
+$>./autogen.sh
+$>./configure --prefix=/usr
+$>make && make install
+
+注意:"--enable-gd"
+
+检验环境
+-------------------
+$>php -i | grep extensions                                           #扩展目录.
+$>php -i | grep php.ini                                              #配置目录.
+$>php -m                                                             #查看已加载的模块.
+$>php -c /[path]/php.ini -S [server ip]:80 -t /web >/dev/null 2>&1 & #启动php程序,需要根据具体环境填写外部访问服务器的ip地址.
+$>php -i 
+------
+ >/lib                                                               #配置目录.
+ >/lib/php.ini                                                       #配置文件.
+ >/lib/php/extensions/debug-non-zts-20190902                         #扩展目录.
+ 
+注意:php网页设计过程中,php页面的文件名后缀一定要以.php结尾.
+
+PHP编写扩展
+----------------
+$>vi /lib/php.ini
+------
+extension_dir = "/lib/php/extensions/"
+extension = "[extension name].so"
+
+$>cd /php-7.4.6/ext/
+$>./ext_skel.php --author HuHuoYun --dir . --onlyunix --ext [extension name] 
+$>cd [extension name]
+$>phpize
+$>./configure && make V=1 -j`nproc` 2>&1 | tee build.log
+$>cp modules/extension name].so /lib/php/extensions                                   #拷贝扩展库到php扩展目录.
+$>kill -9 $(ps -ef | grep -i php | grep -v grep | awk '{print $2}') 2 >/dev/null      #杀掉已存在的php进程.
+$>php -c /[path]/php.ini -S [server ip]:80 -t /web >/dev/null 2>&1 &                  #启动php服务.
+
+注意:以上内容是以动态库的方式编译的,下面将介绍静态编译进php主程序的办法.
+
+$>$>cd /php-7.4.6/ext/
+$>./ext_skel.php --author HuHuoYun --dir . --onlyunix --ext [extension name] 
+$>cd .. && ./buildconf --force --debug
+$>./configure --prefix=/ --enable-[extension name] --enable-debug --enable-session --enable-sigchild --enable-ftp --enable-pdo --with-pdo-sqlite --with-webp --with-jpeg --with-xpm --with-freetype --enable-json --enable-intl --enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem --enable-sysvshm --enable-soap --disable-phpdbg --with-zip --with-xsl --with-openssl --with-readline --with-tsrm-pthreads --with-valgrind
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install
+$>kill -9 $(ps -ef | grep -i php | grep -v grep | awk '{print $2}') 2 >/dev/null                         #杀掉已存在的php进程.
+$>php -c /[path]/php.ini -S [server ip]:80 -t /web >/dev/null 2>&1 &                                     #启动php服务.
+
+注意:以上方式即可将[extension name]静态编译进php主程序,方便开发与调试.
+
+PHP常用宏的介绍
+----------------
+PHP_MINFO_FUNCTION(<module name>)           -->zm_info_<module name>(zend_module_entry *zend_module)
+PHP_RINIT_FUNCTION(<module name>)           -->zm_activate_<module name>(int type, int module_number)
+PHP_MINIT_FUNCTION(<module name>)           -->zm_startup_<module name>(int type, int module_number)
+PHP_MSHUTDOWN_FUNCTION(<module name>)       -->zm_shutdown_<module name>(int type, int module_number)
+PHP_GINIT_FUNCTION(<module name>)           -->zm_globals_ctor_<module name>(zend_<module name>_globals *<module name>_globals)
+PHP_METHOD(<class name>, <function name>)   -->zim_<class name>_<function name>(zend_execute_data *execute_data, zval *return_value)
+PHP_FUNCTION(<function name>)               -->zif_<function name>(zend_execute_data *execute_data, zval *return_value)
+
+新PHP插件函数加载顺序
+----------------
+1.PHP_RINIT_FUNCTION(module)  -->zm_activate_<module name>(int type, int module_number)
+2.PHP_MINFO_FUNCTION(module)  -->zm_info_<module name>(zend_module_entry *zend_module)
+
+PHP测试页
+----------------
+$>vi INFO.php 
+------
+<?php phpinfo(); ?>
+
+安装调试插件
+-------------------
+$>tar -xvf xdebug-2.9.6.tgz && cd xdebug-2.9.6
+$>/bin/phpize 
+$>./configure --enable-xdebug --enable-xdebug-dev && make V=1 -j`nproc` 2>&1 | tee build.log
+$>cp modules/xdebug.so /lib/php/extensions/debug-non-zts-20190902/
+$>vi /lib/php.ini
+------
+display_errors = Off
+zend_extension = /lib/php/extensions/debug-non-zts-20190902/xdebug.so
+
+[Xdebug]
+xdebug.auto_trace = On 
+xdebug.show_exception_trace = On 
+xdebug.show_local_vars = On 
+xdebug.collect_vars = On 
+xdebug.collect_return = On 
+xdebug.collect_params = On 
+xdebug.profiler_enable = On
+xdebug.remote_enable = On 
+xdebug.remote_autostart = On 
+xdebug.remote_host= localhost 
+xdebug.remote_port = 9008
+xdebug.remote_handler = dbgp
+xdebug.remote_connect_back= Off 
+xdebug.idekey = PHPSTORM
+
+PhpStorm配置 
+-------------------
+$>cp -r 192.168.10.88:/home/prog/jdk/PhpStorm-172.3317.83 ...                       #拷贝wheezy主机上的PhpStorm.
+$>cat /home/hy/.local/share/applications/PhpStorm-172.3317.83.sh                    #参考配置.
+$>cat /home/hy/.local/share/applications/PhpStorm-172.3317.83.desktop               #参考配置.
+
+软件配置-步骤1
+------
+Languages & Frameworks->PHP                                                         #在CLI Interpreter点击"...",然后点击"+"[添加]选择“/bin/php”即可.
+Languages & Frameworks->PHP->CLI Interpreter->"..."->"+"->Name          :php-7.4.6
+                                                   ->PHP executable:/bin/php                      
+
+软件配置-步骤2
+------
+Languages & Frameworks->PHP->Debug->Xdebug->Debug port:9008
+
+软件配置-步骤3
+------
+Languages & Frameworks->PHP->Debug->Servers->"+"->Name:srv-7.4.6
+                                                ->Host:[本机ip地址]
+												->Port:80
+												->Debugger:Xdebug
+
+软件配置-步骤4
+------
+Run/Debug Configurations->"+"->Name:[工程名称]
+                             ->Configuration->Servers            :srv-7.4.6
+							 ->Ide key(session id):PHPSTORM
+
+软件配置-步骤5
+------
+调试-步骤1
+---
+主窗体->Start Listening for PHP Debug Connections                                        #启用监听.
+
+调试-步骤2
+---
+主窗体->Debug '...' (Shift+F9)                                                           #开启调试.
+
+调试-步骤3
+---
+$>su - root
+$>php -c /[path]/php.ini -S [server ip]:80 -t /web >/dev/null 2>&1 &                     #启动php服务;使用浏览器访问要调试的页面,即可进入开发页面中的断点.
+
+注意:PHP开发与调试时,PhpStorm和php必须在本地进行;以上也说明了本地开发必须在Linux环境上部署,调试,发布等.
+
+配置开发软件
+-------------------
+$>java -jar /home/prog/jdk/WebStorm-172.3317.70/bin/JetbrainsCrack.jar 
+$>vi ~/.local/share/applications/WebStorm-172.3317.70.sh                                 #WebStorm
+------
+#!/bin/bash
+
+#LANG
+export LANG="en_US.utf8"
+export LC_CTYPE="en_US.utf8"
+export LC_NUMERIC="en_US.utf8"
+export LC_TIME="en_US.utf8"
+export LC_COLLATE="en_US.utf8"
+export LC_MONETARY="en_US.utf8"
+export LC_MESSAGES="en_US.utf8"
+export LC_PAPER="en_US.utf8"
+export LC_NAME="en_US.utf8"
+export LC_ADDRESS="en_US.utf8"
+export LC_TELEPHONE="en_US.utf8"
+export LC_MEASUREMENT="en_US.utf8"
+export LC_IDENTIFICATION="en_US.utf8"
+export LC_ALL="en_US.utf8"
+
+#PATH 
+export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin 
+
+#shell 
+export SHELL=/bin/bash 
+
+#jdk 
+export JAVA_HOME=/home/prog/jdk/jdk1.8.0_25
+export CLASS_PATH=$JAVA_HOME/jre
+export PATH=$JAVA_HOME/bin:/home/prog/jdk/WebStorm-172.3317.70/bin/:$PATH
+
+cd /home/prog/jdk/WebStorm-172.3317.70/bin/ 
+./webstorm.sh
+
+$>vi ~/.local/share/applications/PhpStorm-172.3317.83.sh                                 #PhpStorm
+------
+#!/bin/bash
+
+#LANG
+export LANG="en_US.utf8"
+export LC_CTYPE="en_US.utf8"
+export LC_NUMERIC="en_US.utf8"
+export LC_TIME="en_US.utf8"
+export LC_COLLATE="en_US.utf8"
+export LC_MONETARY="en_US.utf8"
+export LC_MESSAGES="en_US.utf8"
+export LC_PAPER="en_US.utf8"
+export LC_NAME="en_US.utf8"
+export LC_ADDRESS="en_US.utf8"
+export LC_TELEPHONE="en_US.utf8"
+export LC_MEASUREMENT="en_US.utf8"
+export LC_IDENTIFICATION="en_US.utf8"
+export LC_ALL="en_US.utf8"
+
+#PATH 
+export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin 
+
+#shell 
+export SHELL=/bin/bash 
+
+#jdk 
+export JAVA_HOME=/home/prog/jdk/jdk1.8.0_25
+export CLASS_PATH=$JAVA_HOME/jre
+export PATH=$JAVA_HOME/bin:/home/prog/jdk/PhpStorm-172.3317.83/bin/:$PATH
+
+cd /home/prog/jdk/PhpStorm-172.3317.83/bin/ 
+./phpstorm.sh
+
+$>vi ~/.local/share/applications/WebStorm-172.3317.70.desktop                             #WebStorm
+------
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Web
+Icon=/home/prog/jdk/WebStorm-172.3317.70/bin/webstorm.svg
+Exec=./.local/share/applications/WebStorm-172.3317.70.sh
+Comment=Develop with pleasure!
+Categories=Development;IDE;
+Terminal=false
+StartupWMClass=Web
+NoDisplay=false
+
+$>vi ~/.local/share/applications/PhpStorm-172.3317.70.desktop                             #PhpStorm
+------
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Php
+Icon=/home/prog/jdk/PhpStorm-172.3317.83/bin/phpstorm.png
+Exec=./.local/share/applications/PhpStorm-172.3317.83.sh
+Comment=Develop with pleasure!
+Categories=Development;IDE;
+Terminal=false
+StartupWMClass=Web
+NoDisplay=false
+
+PHP离线手册下载
+-------------------
+$>https://www.php.net/download-docs.php
+
+sqlite3例子
+----------------
+public void SQLite3::open ( filename, flags, encryption_key )
+打开一个"SQLite 3"数据库.如果构建包括加密,那么它将尝试使用的密钥.
+如果文件名"filename"赋值为':memory:',那么"SQLite3::open()"将会在"RAM"中创建一个内存数据库,这只会在 session的有效时间内持续.
+如果文件名"filename"为实际的设备文件名称,那么"SQLite3::open()"将使用这个参数值尝试打开数据库文件。如果该名称的文件不存在，那么将创建一个新的命名为该名称的数据库文件.
+可选的"flags"用于判断是否打开"SQLite"数据库.默认情况下,当使用"SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE"时打开.
+
+public bool SQLite3::exec ( string $query )
+该例程提供了一个执行"SQL"命令的快捷方式,"SQL"命令由"sql"参数提供,可以由多个"SQL"命令组成.该程序用于对给定的数据库执行一个无结果的查询.
+
+public SQLite3Result SQLite3::query ( string $query )
+该例程执行一个"SQL"查询,如果查询到返回结果则返回一个"SQLite3Result"对象.
+
+public int SQLite3::lastErrorCode ( void )
+该例程返回最近一次失败的 SQLite 请求的数值结果代码.
+
+public string SQLite3::lastErrorMsg ( void )
+该例程返回最近一次失败的"SQLite"请求的英语文本描述.
+
+public int SQLite3::changes ( void )
+该例程返回最近一次的"SQL"语句更新或插入或删除的数据库行数.
+
+public bool SQLite3::close ( void )
+该例程关闭之前调用"SQLite3::open()"打开的数据库连接.
+
+public string SQLite3::escapeString ( string $value )
+该例程返回一个字符串,在"SQL"语句中,出于安全考虑,该字符串已被正确地转义.
+
+连接数据库
+----------------
+如果数据库不存在,那么它就会被创建,最后将返回一个数据库对象.
+<?php
+   class MyDB extends SQLite3
+   {
+      function __construct()
+      {
+         $this->open('test.db');
+      }
+   }
+   
+   $db = new MyDB();
+   if(!$db){
+      echo $db->lastErrorMsg();
+   } else {
+      echo "Opened database successfully<br/>";
+   }
+?>
+在当前目录中创建我们的数据库"test.db".您可以根据需要改变路径.如果数据库成功创建,那么会显示下面所示的消息:
+Open database successfully
+
+创建表
+----------------
+在先前创建的数据库中创建一个表.
+<?php
+   class MyDB extends SQLite3
+   {
+      function __construct()
+      {
+         $this->open('test.db');
+      }
+   }
+   
+   $db = new MyDB();
+   if(!$db){
+      echo $db->lastErrorMsg();
+   } else {
+      echo "Opened database successfully<br/>";
+   }
+
+   $sql =<<<EOF
+      CREATE TABLE COMPANY
+      (ID INT PRIMARY KEY     NOT NULL,
+      NAME           TEXT    NOT NULL,
+      AGE            INT     NOT NULL,
+      ADDRESS        CHAR(50),
+      SALARY         REAL);
+   EOF;
+
+   $ret = $db->exec($sql);
+   if(!$ret){
+      echo $db->lastErrorMsg();
+   } else {
+      echo "Table created successfully<br/>";
+   }
+   $db->close();
+?>
+
+INSERT 操作
+----------------
+在上面创建的"COMPANY"表中创建记录.
+<?php
+   class MyDB extends SQLite3
+   {
+      function __construct()
+      {
+         $this->open('test.db');
+      }
+   }
+   
+   $db = new MyDB();
+   if(!$db){
+      echo $db->lastErrorMsg();
+   } else {
+      echo "Opened database successfully<br/>";
+   }
+
+   $sql =<<<EOF
+      INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (1, 'Paul', 32, 'California', 20000.00 );
+
+      INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (2, 'Allen', 25, 'Texas', 15000.00 );
+
+      INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (3, 'Teddy', 23, 'Norway', 20000.00 );
+
+      INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (4, 'Mark', 25, 'Rich-Mond ', 65000.00 );
+   EOF;
+
+   $ret = $db->exec($sql);
+   if(!$ret){
+      echo $db->lastErrorMsg();
+   } else {
+      echo "Records created successfully<br/>";
+   }
+   $db->close();
+?>
+
+SELECT 操作
+----------------
+从前面创建的"COMPANY"表中获取并显示记录.
+<?php
+   class MyDB extends SQLite3
+   {
+      function __construct()
+      {
+         $this->open('test.db');
+      }
+   }
+   $db = new MyDB();
+   if(!$db){
+      echo $db->lastErrorMsg();
+   } else {
+      echo "Opened database successfully<br/>";
+   }
+
+   $sql =<<<EOF
+      SELECT * from COMPANY;
+   EOF;
+
+   $ret = $db->query($sql);
+   while($row = $ret->fetchArray(SQLITE3_ASSOC) ){
+      echo "ID = ". $row['ID'] . "<br/>";
+      echo "NAME = ". $row['NAME'] ."<br/>";
+      echo "ADDRESS = ". $row['ADDRESS'] ."<br/>";
+      echo "SALARY =  ".$row['SALARY'] ."<br/>";
+   }
+   echo "Operation done successfully<br/>";
+   $db->close();
+?>
+
+UPDATE 操作
+----------------
+使用 UPDATE 语句来更新任何记录,然后从"COMPANY"表中获取并显示更新的记录.
+<?php
+   class MyDB extends SQLite3
+   {
+      function __construct()
+      {
+         $this->open('test.db');
+      }
+   }
+   
+   $db = new MyDB();
+   if(!$db){
+      echo $db->lastErrorMsg();
+   } else {
+      echo "Opened database successfully<br/>";
+   }
+   
+   $sql =<<<EOF
+      UPDATE COMPANY set SALARY = 25000.00 where ID=1;
+   EOF;
+   
+   $ret = $db->exec($sql);
+   if(!$ret){
+      echo $db->lastErrorMsg();
+   } else {
+      echo $db->changes(), " Record updated successfully<br/>";
+   }
+
+   $sql =<<<EOF
+      SELECT * from COMPANY;
+   EOF;
+   
+   $ret = $db->query($sql);
+   while($row = $ret->fetchArray(SQLITE3_ASSOC) ){
+      echo "ID = ". $row['ID'] . "<br/>";
+      echo "NAME = ". $row['NAME'] ."<br/>";
+      echo "ADDRESS = ". $row['ADDRESS'] ."<br/>";
+      echo "SALARY =  ".$row['SALARY'] ."<br/>";
+   }
+   echo "Operation done successfully<br/>";
+   $db->close();
+?>
+
+DELETE 操作
+----------------
+使用 DELETE 语句删除任何记录,然后从"COMPANY"表中获取并显示剩余的记录.
+<?php
+   class MyDB extends SQLite3
+   {
+      function __construct()
+      {
+         $this->open('test.db');
+      }
+   }
+   
+   $db = new MyDB();
+   if(!$db){
+      echo $db->lastErrorMsg();
+   } else {
+      echo "Opened database successfully<br/>";
+   }
+   
+   $sql =<<<EOF
+      DELETE from COMPANY where ID=2;
+   EOF;
+   
+   $ret = $db->exec($sql);
+   if(!$ret){
+     echo $db->lastErrorMsg();
+   } else {
+      echo $db->changes(), " Record deleted successfully<br/>";
+   }
+
+   $sql =<<<EOF
+      SELECT * from COMPANY;
+   EOF;
+   
+   $ret = $db->query($sql);
+   while($row = $ret->fetchArray(SQLITE3_ASSOC) ){
+      echo "ID = ". $row['ID'] . "<br/>";
+      echo "NAME = ". $row['NAME'] ."<br/>";
+      echo "ADDRESS = ". $row['ADDRESS'] ."<br/>";
+      echo "SALARY =  ".$row['SALARY'] ."<br/>";
+   }
+   echo "Operation done successfully<br/>";
+   $db->close();
+?>
+
+PDO-SQLITE 
+----------------
+<?php
+
+/**
+ * 创建sqlite扩展实例.
+ */
+class MyDB extends SQLite3
+{
+    function __construct()
+    {
+        $this->open('pdo.db');
+    }
+}
+
+/**
+ * sqlite-pdo示例.
+ */
+class db_sqlite {
+    //打开sqlite数据库
+    function connect_sqlite($dbname,$module) {
+        $conn = null;
+        if(file_exists($dbname)) {
+            $dbPath = 'sqlite:'.$dbname;
+            try {
+                $conn = new PDO($dbPath);
+                $conn->beginTransaction();
+            } catch(PDOException $e) {
+                echo 'Exception is:'.$e->getMessage();
+            }
+            return $conn;
+        } else {
+            exit('连接时出现错误！');
+        }
+    }
+    //打开datafarm链接
+    function connect_datafarm_sqlite($dbname) {
+        $conn = null;
+        if(file_exists($dbname)) {
+            $dbPath = 'sqlite:'.$dbname;
+            try {
+                $conn = new PDO($dbPath);
+                $conn->beginTransaction();
+            } catch(PDOException $e) {
+                echo 'Exception is:'.$e->getMessage();
+            }
+            return $conn;
+        } else {
+            exit('启动事务时出现错误！');
+        }
+    }
+    //查询操作
+    function query_sqlite($conn,$sql) {
+        $result = array();
+        try {
+            $sth = $conn->prepare($sql);
+            $sth->execute();
+            //获取结果
+            $result = $sth->fetchAll();
+        } catch(PDOException $e) {
+            echo 'Exception is:'.$e->getMessage();
+        }
+        return $result;
+    }
+    //查询总记录数
+    function query_count($conn,$sql) {
+        $result = 0;
+        try {
+            $sth = $conn->prepare($sql);
+            $sth->execute();
+            //获取结果
+
+            $vec = $sth->fetchAll();
+
+            $result = $vec[0]['c'];
+
+        } catch(PDOException $e) {
+            echo 'Exception is:'.$e->getMessage();
+        }
+        return $result;
+    }
+    //add,update,delete执行操作
+    function exec_sqlite($conn,$sql) {
+        $count = 0;
+        try {
+
+            $count = $conn->exec($sql);
+        } catch(PDOException $e) {
+            $conn->rollBack();
+            echo 'Exception is:'.$e->getMessage();
+        }
+        return $count;
+    }
+    /**
+     * 提交事务。针对执行exec_sqlite后
+     */
+    function commit_sqlite($conn) {
+        $conn->commit();
+    }
+    //关闭连接
+    function close_sqlite($conn) {
+        $conn=null;
+    }
+}
+
+/**
+ * 使用sqlite扩展创建数据库和数据库表.
+ */
+$db = new MyDB();
+if(!$db){
+    echo $db->lastErrorMsg();
+} else {
+    echo "Opened database successfully<br/>";
+}
+
+$sql =<<<EOF
+      CREATE TABLE COMPANY
+      (ID INT PRIMARY KEY     NOT NULL,
+      NAME           TEXT    NOT NULL,
+      AGE            INT     NOT NULL,
+      ADDRESS        CHAR(50),
+      SALARY         REAL);
+EOF;
+
+$ret = $db->exec($sql);
+if(!$ret){
+    echo $db->lastErrorMsg();
+} else {
+    echo "Table created successfully<br/>";
+}
+$db->close();
+
+/**
+ * 使用sqlite-pdo操作数据库.
+ */
+$sqlitedb = new db_sqlite;
+$conn = $sqlitedb->connect_sqlite('pdo.db','');
+
+$sqlitedb->exec_sqlite($conn,"insert into COMPANY (ID,NAME,AGE,ADDRESS,SALARY) values(1, 'Paul', 32, 'California', 20000.00 )");
+$sqlitedb->exec_sqlite($conn,"insert into COMPANY (ID,NAME,AGE,ADDRESS,SALARY) values(2, 'XiaoMing', 10, 'China', 1500.00 )");
+$sqlitedb->exec_sqlite($conn,"insert into COMPANY (ID,NAME,AGE,ADDRESS,SALARY) values(3, 'ZhangSan', 20, 'Amai', 200.00 )");
+$sqlitedb->commit_sqlite($conn);
+$rs = $sqlitedb->query_sqlite($conn,'select * from COMPANY');
+foreach($rs as $k=>$v)
+{
+    $v1 = $v['NAME'];
+    $v2 = $v['AGE'];
+    $v3 = $v['ADDRESS'];
+    $v4 = $v['SALARY'];
+    #$v1 = mb_convert_encoding($v1,"gb2312","utf-8");
+    #$v1 = mb_convert_encoding($v1,"utf-8","gb2312");
+    echo '<br/> NAME:',$v1,'  AGE:',$v2,'  ADDRESS:',$v3,'  SALARY:',$v4;
+}
+$sqlitedb->close_sqlite($conn);
+?>
+
+nginx编译
+-------------------
+$>cd pcre && autoreconf --install --force && cd ../nginx
+$>./configure --prefix=/nginx --with-stream --with-threads --with-debug --with-cc-opt="-g3 -O0 -gdwarf-2" --with-ld-opt="-lrt" --add-module= --with-pcre=../pcre --with-openssl=../openssl --with-zlib=../zlib 2>&1 | tee configure.log
+$>make V=1 -j`nproc` 2>&1 | tee build.log
+
+nginx运行
+-------------------
+$>vi [工作目录]/nginx.conf
+$>nginx -p [工作目录]
+
+NGINX+PHP配置指南
+-------------------
+$>groupadd nobody && useradd -g nobody nobody
+$>cd ~ && tar -xvf nginx-1.16.1.tar.gz && cd nginx-1.16.1 && ./r
+$>cd /nginx && ./sbin/nginx                                                                   #启动NGINX.
+$>vi conf/nginx.conf
+-------------
+user  nobody;
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+	sendfile        on;
+	keepalive_timeout  65;
+	server {
+        listen       80;
+        server_name  localhost;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+		
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        location ~ \.php$ {
+            root           html;
+            fastcgi_pass   192.168.0.30:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;               #关键内容"$document_root".
+            include        fastcgi_params;
+        }
+    }
+}
+
+$>vi ./html/index.php
+-------------
+<?php phpinfo(); ?>
+
+$>./sbin/nginx -s reload                                                                      #重新加载配置文件.
+$>cd ~ && tar -xvf php-7.4.7_v1.tar.gz && cd php-7.4.7
+$>./buildconf --force --debug
+$>./configure --prefix=/php --enable-debug --enable-session --enable-fpm --enable-sigchild --enable-ftp --enable-json --enable-intl --enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem --enable-sysvshm --enable-soap --enable-pdo --with-pdo-sqlite --with-webp --with-jpeg --with-xpm --with-freetype --disable-phpdbg --with-zip --with-xsl --with-openssl --with-readline --with-tsrm-pthreads --with-curl 
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install
+$>cp ~/php-7.4.7/php.ini-development /php/lib/php.ini
+$>cp /php/etc/php-fpm.conf.default /php/etc/php-fpm.conf
+$>cp /php/etc/php-fpm.d/www.conf.default /php/etc/php-fpm.d/www.conf
+$>vi /php/etc/php-fpm.d/www.conf 
+-------------
+...
+user = nobody
+group = nobody
+...
+listen = [服务器地址]:[端口号]
+...
+
+$>groupadd nobody
+$>useradd -g nobody -m nobody -s /sbin/nologin
+$>/php/sbin/php-fpm                                                                           #启动PHP FAST-CGI.
+
+注意:以上内容请从上往下阅读,内容已通过测试.在公网云上安装vpn服务并与本地主机建立连接,将php与nginx安装在本地同一台主机上;然后在公网云上安装nginx,修改配置文件启用反向代理即可.
+例如:
+http {
+    server {
+        listen       80;
+		
+        location ~ \.php$ {
+                proxy_pass   http://[服务器IPAddress];
+        }
+	}
+}
+
+DEBIAN-v10 PHP实战
+-------------------
+$>apt-get install build-essential cscope ttyrec gdb valgrind pkg-config autoconf automake shtool re2c libzip-dev libssl-dev libpng-dev libxpm-dev libmcrypt-dev libpspell-dev librecode-dev libreadline-dev libtidy-dev libxslt1-dev libxml2-dev libsqlite3-dev 
+
+icu4c -- 源码包
+-------------------
+$>/github/web/icu/source
+$>CXXFLAGS=-std=c++11 ./configure --prefix=/usr/
+$>make && make install 
+
+icu -- github
+-------------------
+$>/github/web/icu/icu4c/source
+$>git checkout release-71-1 -fb v71.1
+$>autoreconf --install --force
+$>CXXFLAGS=-std=c++11 ./configure --prefix=/usr/
+$>make && make install 
+
+libzip
+-------------------
+$>cd /github/web/libzip
+$>git checkout rel-1-6-1 -fb v1.6.1
+$>autoreconf --install --force
+$>./configure --prefix=/usr/
+$>make && make install
+
+openssl -- github
+-------------------
+$>cd /github/web/openssl
+$>git checkout OpenSSL_1_1_1o -fb v1.1.1o
+$>./config -d no-asm -d no-shared --prefix=/usr/ 2>&1 | tee configure.log && make -j1 2>&1 | tee make.log && make install 
+
+php编译-release
+-------------------
+$>cd /github/web/php
+$>git checkout php-7.4.22 -fb php-7.4.22
+$>export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
+$>autoreconf --install --force
+$>./configure --prefix=/ --enable-debug --enable-session --enable-sigchild --enable-ftp --enable-pdo --with-pdo-sqlite --with-webp --with-jpeg --with-xpm --with-freetype --enable-json --enable-intl --enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem --enable-sysvshm --disable-phpdbg --with-zip --with-xsl --with-openssl --with-readline --with-tsrm-pthreads --with-valgrind
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install
+
+php编译-debug
+-------------------
+$>./buildconf --force --debug
+$>./configure --prefix=/php --enable-debug --enable-session --enable-fpm --enable-sigchild --enable-ftp --enable-json --enable-intl --enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem --enable-sysvshm --enable-pdo --with-pdo-sqlite --with-webp --with-jpeg --with-xpm --with-freetype --disable-phpdbg --with-zip --with-xsl --with-openssl --with-readline --with-tsrm-pthreads --with-curl --with-valgrind
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install
+
+pcre2
+-------------------
+$>/github/web/pcre2
+$>git checkout pcre2-10.40 -fb pcre2-10.40
+$>autoreconf --install --force
+
+nginx编译
+-------------------
+$>./auto/configure --prefix=/nginx --with-stream --with-threads --with-debug --with-cc-opt="-g3 -O0 -gdwarf-2" --with-ld-opt="-lrt" --add-module= --with-pcre=../pcre2 --with-openssl=../openssl --with-zlib=../zlib 2>&1 | tee configure.log
+$>make V=1 -j`nproc` 2>&1 | tee build.log
+
+nginx运行
+-------------------
+$>vi [工作目录]/nginx.conf
+$>nginx -p [工作目录]
+
+NGINX+PHP配置指南
+-------------------
+$>groupadd nobody && useradd -g nobody nobody
+$>cd ~ && tar -xvf nginx-1.16.1.tar.gz && cd nginx-1.16.1 && ./r
+$>cd /nginx && ./sbin/nginx                                                                   #启动NGINX.
+$>vi conf/nginx.conf
+-------------
+user  nobody;
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+	sendfile        on;
+	keepalive_timeout  65;
+	server {
+        listen       80;
+        server_name  localhost;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+		
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        location ~ \.php$ {
+            root           html;
+            fastcgi_pass   192.168.0.30:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;               #关键内容"$document_root".
+            include        fastcgi_params;
+        }
+    }
+}
+
+$>vi ./html/index.php
+-------------
+<?php phpinfo(); ?>
+
+$>./sbin/nginx -s reload                                                                      #重新加载配置文件.
+$>cd ~ && tar -xvf php-7.4.7_v1.tar.gz && cd php-7.4.7
+$>./buildconf --force --debug
+$>./configure --prefix=/php --enable-debug --enable-session --enable-fpm --enable-sigchild --enable-ftp --enable-json --enable-intl --enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem --enable-sysvshm --enable-pdo --with-pdo-sqlite --with-webp --with-jpeg --with-xpm --with-freetype --disable-phpdbg --with-zip --with-xsl --with-openssl --with-readline --with-tsrm-pthreads --with-curl 
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install
+$>cp ~/php-7.4.7/php.ini-development /php/lib/php.ini
+$>cp /php/etc/php-fpm.conf.default /php/etc/php-fpm.conf
+$>cp /php/etc/php-fpm.d/www.conf.default /php/etc/php-fpm.d/www.conf
+$>vi /php/etc/php-fpm.d/www.conf 
+-------------
+...
+user = nobody
+group = nobody
+...
+listen = [服务器地址]:[端口号]
+...
+
+$>groupadd nobody
+$>useradd -g nobody -m nobody -s /sbin/nologin
+$>/php/sbin/php-fpm                                                                           #启动PHP FAST-CGI.
+
+注意:以上内容请从上往下阅读,内容已通过测试.在公网云上安装vpn服务并与本地主机建立连接,将php与nginx安装在本地同一台主机上;然后在公网云上安装nginx,修改配置文件启用反向代理即可.
+例如:
+http {
+    server {
+        listen       80;
+		
+        location ~ \.php$ {
+                proxy_pass   http://[服务器IPAddress];
+        }
+	}
+}
+
+install 
+-------------------
+$>apt-get install -y build-essential libtool cscope ttyrec gdb valgrind pkg-config autoconf automake shtool re2c libzip-dev libssl-dev libpng-dev libxpm-dev libmcrypt-dev libpspell-dev librecode-dev libreadline-dev libtidy-dev libxslt1-dev libxml2-dev libsqlite3-dev libwebp-dev libjpeg-dev
+
+php-v7.4.23
+-------------------
+$>./buildconf --force --debug
+$>./configure --prefix=/opt/php-v7.4.23 --enable-debug --enable-fpm --enable-session --enable-sigchild --enable-calendar --enable-ftp --enable-pdo --enable-json --enable-intl --enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem --enable-sysvshm --enable-soap --enable-gd --enable-exif --disable-phpdbg --with-webp --with-jpeg --with-xpm --with-freetype --with-zip --with-zlib --with-xsl --with-openssl --with-readline --with-tsrm-pthreads --with-valgrind --with-gnu-ld --with-pdo-sqlite --with-mysqli --with-pdo-mysql
+$>make V=1 -j`nproc` 2>&1 | tee build.log && make install
+$>cp ./php.ini-development /opt/php-v7.4.23/lib/php.ini
+$>cp /opt/php-v7.4.23/etc/php-fpm.conf.default /php/etc/php-fpm.conf
+$>cp /opt/php-v7.4.23/etc/php-fpm.d/www.conf.default /php/etc/php-fpm.d/www.conf
+$>vi /opt/php-v7.4.23/etc/php-fpm.d/www.conf 
+-------------
+...
+user = nobody
+group = nobody
+...
+listen = [服务器地址]:[端口号]
+...
+
+$>groupadd nobody
+$>useradd -g nobody -m nobody -s /sbin/nologin
+$>/opt/php-v7.4.23/sbin/php-fpm                                                                           #启动PHP FAST-CGI.
+
+nginx 
+-------------------
+$>./auto/configure --prefix=/opt/nginx-v80 --with-stream --with-threads --with-debug --with-cc-opt="-g3 -O0 -gdwarf-2" --with-ld-opt="-lrt" --with-pcre=../pcre --with-openssl=../openssl --with-zlib=../zlib --add-module=... 2>&1 | tee configure.log
+$>make V=1 -j`nproc` 2>&1 | tee build.log
+$>vi /opt/nginx-v80/conf/nginx.conf
+-------------
+user  nobody;
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+	sendfile        on;
+	keepalive_timeout  65;
+	server {
+        listen       80;
+		charset      UTF-8;
+        server_name  localhost;
+
+        location / {
+            root   /mnt/webs/;
+            index  index.html index.htm;
+			if (!-e $request_filename){
+				rewrite  ^(.*)$  /index.php?s=$1  last;   
+				break;
+			}
+        }
+		
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        location ~ \.php$ {
+            root           /mnt/webs/;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;               #关键内容"$document_root".
+            include        fastcgi_params;
+        }
+    }
+}
+
+$>/opt/nginx-v80/sbin/nginx -p /opt/nginx-v80 -c ./conf/nginx.conf
+

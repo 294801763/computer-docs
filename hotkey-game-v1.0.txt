@@ -1,0 +1,101 @@
+自动点击脚本(适用于需要重复点击的游戏场景,例如自动打怪,自动拾取物品等)
+-------------------
+; 自动点击脚本
+F1::  ; 按下 F1 开始自动点击
+{
+    Loop
+    {
+        Click  ; 模拟鼠标左键点击
+        Sleep, 500  ; 每次点击间隔 500 毫秒
+    }
+}
+return
+
+F2::  ; 按下 F2 停止自动点击
+{
+    Send, {Click up}  ; 释放鼠标左键
+    Break  ; 停止循环
+}
+return
+
+定时释放技能(技能需要定时释放,可以通过 SetTimer 实现)
+-------------------
+#Persistent  ; 保持脚本运行
+SetTimer, UseSkill, 3000  ; 每 3 秒释放一次技能
+
+UseSkill:
+    Send, {1}  ; 假设按 1 键释放技能
+return
+
+自动移动(模拟角色在游戏中的移动操作)
+-------------------
+; 自动向前移动
+F3::
+{
+    Loop
+    {
+        Send, {w down}  ; 按住 W 键前进
+        Sleep, 1000  ; 持续 1 秒
+        Send, {w up}  ; 释放 W 键
+        Sleep, 1000  ; 间隔 1 秒
+    }
+}
+return
+
+F4::  ; 按下 F4 停止移动
+{
+    Send, {w up}
+    Break
+}
+return
+
+自动瞄准(通过鼠标操作实现简单的自动瞄准功能)
+-------------------
+SetTimer, AutoAim, 50  ; 每 50 毫秒检查一次目标
+
+AutoAim:
+{
+    MouseGetPos, mouseX, mouseY  ; 获取鼠标当前位置
+    TargetPos := FindTarget()  ; 调用 FindTarget 函数获取目标位置
+    if (TargetPos)
+    {
+        dx := TargetPos[1] - mouseX  ; 计算 X 偏移量
+        dy := TargetPos[2] - mouseY  ; 计算 Y 偏移量
+        MouseMove, mouseX + dx, mouseY + dy, 10  ; 将鼠标移动到目标位置
+    }
+}
+return
+
+FindTarget()  ; 示例目标检测函数
+{
+    ; 这里需要根据游戏实际情况实现目标检测逻辑
+    ; 返回目标的屏幕坐标数组，例如 [x, y]
+    return [100, 100]  ; 示例坐标
+}
+
+自动拾取物品(在游戏界面中检测特定颜色或图像,并模拟点击拾取物品)
+-------------------
+SetTimer, PickupItems, 1000  ; 每秒检查一次
+
+PickupItems:
+{
+    PixelGetColor, color, 100, 100  ; 获取屏幕 (100, 100) 位置的颜色
+    if (color = "0xRRGGBB")  ; 比较颜色值，假设物品的颜色为 0xRRGGBB
+    {
+        Click, 100, 100  ; 点击物品位置
+    }
+}
+return
+
+组合按键宏(实现复杂的按键组合,完成一系列操作)
+-------------------
+; 按 F5 执行攻击 + 跳跃 + 使用技能
+F5::
+{
+    Send, {a}  ; 攻击
+    Sleep, 200
+    Send, {space}  ; 跳跃
+    Sleep, 200
+    Send, {1}  ; 使用技能 1
+}
+return

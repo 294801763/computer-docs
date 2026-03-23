@@ -1,0 +1,761 @@
+1.恢复窗体的按钮！
+  临时解决办法：
+   metacity --replace &
+  永久解决办法：
+    ~/.local/share/applications/metacity.desktop 注释hidden=true这条语句。
+    ~/.local/share/applications/gnome-wm.desktop 注释hidden=true这条语句。
+    ~/.local/share/applications/gnome-panel.desktop  注释hidden=true这条语句。
+  以上这三条语句如果全都设置true，则顶部和下面panel都将隐藏
+2.gnome-session-properties 可以设置gnome一些特性。
+3.经过测试/usr/src/ 中包含的Gcc,linux 源代码都是可以编译的。
+4.自己动手制作Linux系统清参照LFS手册。
+5.由于安装gnu-fdisk 导致原先fdisk变成了fdisk.distrib
+  cfdisk 变成了 cfdisk.distrib
+  fdisk.distrib /dev/sdx 依然有效.
+  /sbin/ 是一个很重要的目录;fdisk,cfdisk 等程序就安装在这个目录. 
+6.cron是Linux定时任务,可以通过修改"/etc/crontab"文件添加定时任务
+  eg.30 5    * * *    root    /usr/bin/apt-mirror >> /var/spool/apt-mirror/var/cron.log
+
+7.调整屏幕亮度,不需要sudo管理员权限;当前用户即可操作.
+  >cat /sys/class/backlight/acpi_xx/max_brightness   #查看本机最大亮度值,xx 表示那个视频卡;这个文件在虚拟机中没发现，但是笔记本中竟然有不知道是不是设置了之后才有这个文件的.
+  >pkexec /usr/lib/gnome-settings-daemon/gsd-backlight-helper --set-brightness 15  #将屏幕亮度设置为15.
+  eg. >vi xxx.sh   #创建shell脚本，当系统自动登录时自动设置.
+        #!/bin/sh 
+        pkexec /usr/lib/gnome-settings-daemon/gsd-backlight-helper --set-brightness 15 
+      >chmod +x xxx.sh      #添加可执行权限
+      >gsettings set org.gnome.settings-daemon.peripherals.input-devices hotplug-command "/home/xx/xxx.sh" #设置gnome
+
+8.virtualbox 插入U盘不能识别的解决办法:
+    >sudo adduser hy vboxusers    #将用户名 hy 添加到vboxusers 组,重启或注销后即可解决.
+
+9.scp 同步文件:
+    eg.scp -rv xxx/xx  xx@xx.xx.xx.xx:/xxx/ 
+
+10.同步gnu源代码:
+    >rsync -rltpHS --delete-excluded rsync://ftp.gnu.org/ /home/xx 
+
+11.gdb 使用:
+    1. directory:
+        (gdb) directory /home/xxx/      #指定调试过程中需要查看的源代码目录
+        eg. (gdb) directory /home/eglibc-2.15/nptl
+            (gdb) b pthread_create  #此刻就可以进入pthread_create函数了.
+
+    2.gdb 参数:
+        gdb [options] --args prog [arguments]
+
+    3.gdb 符号表:    #如果现在有同一个工程构建出的debug和release可执行文件progjectD和projectR,如下命令可以帮助把debug中的符号表加入到release中，实现对release的调试.
+        1.objcopy --only-keep-debug projectD projectsymbol.dbg 
+        2.gdb -q --symbol=projectsymbol.dbg --exec=projectR 
+
+12.gnome ssh远程桌面,这些操作都是在本地操作:
+    CTRL + ALT + F2    #切换到一个新的shell提示符.
+    CTRL + ALT + F12   #切换到一个空的控制台.
+    CTRL + ALT + F7    #回到原有的X图形显示.
+
+    >X :12.0 vt12 2>&1 >/dev/null&   #在本地终端上输入上述内容;CTRL+ALT+F2输入下面的内容.
+    >xterm -display :12.0 -e ssh -X xx@xx.xx.xx.xx    #ctrl+alt+f12 输入密码即可登录shell;下面要使用gnome桌面.
+    >xterm -display :12.0 -e ssh -4 -C -c blowfish-cbc -X USER@HOST  #这种经过压缩后的数据包，远程效果要比上面好.
+    >xterm  +t -hold -sl 1000 -display :12.0 -e ssh -4 -C -c blowfish-cbc -t -q -XY -o Compression=yes -o CompressionLevel=9 xx@xxx.xxx.xxx.xxx    #非常流畅和快速.
+    >startx       #显示一次桌面
+    >gnome-session   #会话不退出,就可以永久显示桌面.
+
+    配置gnome startx :
+       1. /etc/X11/Xwrapper.config 
+            1.root 
+            2.anybody
+            3.console 
+
+            eg.allowed_users=anybody 
+        2.使用命令: 
+            >dpkg-reconfigure x11-common 
+
+13.下载Linux内核源代码,执行 apt-get source linux 这条命令即可.
+
+14.minicom 使用方法，首先使用 minicom -s 进入设置,然后就可以使用mnicom串口测试程序了.
+
+15.构建debian的arm的根文件系统:    #整个过程需要以root来执行.
+    >apt-get install binfmt-support qemu qemu-user-static debootstrap vde2-cryptcab  #qemu-kvm 虚拟机中会安装失败. 
+    1.使用apt-mirror 构建离线的镜像服务器.
+    2.$>debootstrap --arch=armel --foreign wheezy fs_debian_wheezy file:////var/spool/apt-mirror/mirror/ftp.us.debian.org/debian  #file:/// 后面填写的本地镜像文件的路径; --foreign 这个选项必须有，下面的命令会用到--foreign导入的脚本;--arch 指定了cpu架构eg.arm,armel,x86,amd64. --include=vim,openssh-server 此条语句加在--foreign 即可.
+    3.$>sudo cp /usr/bin/qemu-arm-static /home/hy/arm/fs_debian_wheezy/usr/bin   #将qemu-arm-static 复制到要制作arm根文件系统的/usr/bin目录，需要注意的这一步是必须的否则下面执行的 chroot 将会无法执行;该命令的意思是设置一些环境变量,然后切换根目录到fs_debian_wheezy,执行目录fs_debian_wheezy/debootstrap 下的命令:debootstrap --second-stage;终端上会最后打印 "I:Base system installed successfully." 说明根文件系统就定制成功了.
+    4.$>DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGAGE=C LANG=C chroot /home/hy/arm/fs_debian_wheezy debootstrap/debootstrap  --second-stage #/home/hy/arm/fs_debian_wheezy 是构建arm根文件系统路径.
+    5.修改文件,目录等:
+        >cd /home/hy/arm/fs_debian_wheezy 
+        >sudo echo "proc /proc proc defaults 0 0">>etc/fstab
+        >sudo mkdir -p usr/share/man/man1 
+        >sudo mknod dev/console c 5 1   #如果dev/console设备节点不存在,也需要创建. 
+    6.测试跟文件系统是否构建成功:
+        >cd ..
+        >sudo chroot fs_debian_wheezy   #如果这一步不能执行需要检查qemu-arm-static 是否拷贝到usr/bin 目录中. 
+    7.设置软件源:
+        >vi /etc/apt/source.list #填写相应的软件源即可.
+    8.为root 设置密码和创建新用户:
+        >passwd root   #debian不能以root用户登录,所以创建一个普通用户;登录系统后再切换到root用户. 
+        >adduser xxx  #添加用户xxx 
+        >passwd xxx   #为xxx设置密码 
+制作完成后,根据需求将根文件系统打包. uboot/units 可以将根文件系统打包.
+注意:1.$>chroot fs_debian_wheezy && vi /etc/apt/sources.list 中填写:
+        deb http://127.0.0.1/apt/mirror/ftp.us.debian.org/debian wheezy main non-free contrib 
+     2.fs_debian_wheezy 这个是可以随便取名字的.
+     3.chroot 必须是构建fs_debian_wheezy的同级目录. 
+     4.安装编译工具链
+        $>apt-get install build-essential binutils-dev linux-kernel-headers locales binutils-doc bzip2-doc cpp-doc gcc-4.6-locales debian-keyring gcc-4.6-doc libstdc++6-4.6-dbg autoconf automake1.9 libtool autoconf2.13 autoconf-archive gnu-standards autoconf-doc gettext automake1.9-doc bison-doc doc-base gdb-doc glibc-doc-reference libtool-doc gfortran groff python2.7-doc binfmt-support flex bison gdb gcc-doc libmudflap0-4.6-dev libgcc1-dbg libgomp1-dbg libmudflap0-dbg binutils-gold glibc-doc libstdc++6-4.6-doc make-doc ed diffutils-doc perl-doc libterm-readline-gnu-perl libterm-readline-perl-perl libpod-plainer-perl 
+     5.实战(编译ok6410内核代码,经过测试成功执行.)
+        $>ln -sv /usr/bin/arm-linux-gnueabi-gcc /usr/bin/arm-linux-gcc
+        $>ln -sv /usr/bin/objdump /usr/bin/arm-linux-objdump
+        $>ln -sv /usr/bin/ld /usr/bin/arm-linux-ld
+        $>ln -sv /usr/bin/ar /usr/bin/arm-linux-ar
+        $>ln -sv /usr/bin/nm /usr/bin/arm-linux-nm
+        $>ln -sv /usr/bin/objcopy /usr/bin/arm-linux-objcopy
+Usage:
+编译busybox-1.26.2
+-----------------------
+$>chroot fs_debian_wheezy 
+$>vi /etc/apt/sources.list 
+   deb http://127.0.0.1/apt/mirror/ftp.us.debian.org/debian wheezy main non-free contrib 
+$>apt-get update && apt-get install ....
+$>cd /
+$>mkdir ok6410 && chmod 777k ok6410
+$>cd ok6410
+$>mkdir -p bin etc proc sbin sys udisk var dev lib mnt opt root sdcard tmp usr
+$>chmod 777 sdcard
+$>cp /home/common/busybox-1.26.2.tar.bz2 /ok6410/sdcard
+$>tar -xvf busybox-1.26.2.tar.bz2 
+$>cd /home/hy/arm/fs_debian_wheezy/ok6410/sdcard/busybox-1.26.2 && make menuconfig   #重新开启终端执行这行命令.
+config                                                                               #以下是主要的配置信息,在主机上使用make menconfig是因为chroot fs_debian_wheezy无法安装ncurses 库.  
+-----------------------
+Busybox Settings->Installation Options-> 
+------------
+BusyBox installation prefix                  [/ok6410]
+
+Busybox Settings->Debugging Options->
+------------
+Build BusyBox with extra Debugging symbols   [*]
+
+Busybox Settings->Build Options->
+------------
+Build BusyBox as a static binary (no shared libs)   [*] 
+
+Busybox Library Tuning->
+------------
+[*] vi-style line editing commands      
+[*] Tab completion
+[*] Fancy shell prompts 
+
+Networking Utilities->
+------------
+[  ] iptunnel 
+
+Shells->
+------------
+[*] msh (deprecated: aliased to hush) 
+
+Linux System Utilities->
+------------
+[  ] nsenter 
+
+Coreutils->
+------------
+[  ] sync   
+
+$>make && make install  或者 make CONFIG_PREFIX=/ok6410 install                      #回到chroot终端执行这条命令.
+$>cd busybox-1.26.2/examples/bootfloppy && cp -rf etc/* /ok6410/etc/ 
+$>cd /ok6410/etc 
+$>vi inittab 
+----------------------
+::sysinit:/etc/init.d/rcS
+::respawn:-/bin/sh
+::askfirst:-/bin/sh
+::ctrlaltdel:/sbin/reboot
+::shutdown:/bin/umount -a -r 
+
+$>vi /init.d/rcS
+----------------------
+#! /bin/sh
+
+PATH=/bin:/sbin:/usr/bin:usr/sbin
+echo "hello,hzy linux system!!!"
+/bin/mount -a
+echo "mount finish." 
+
+$>vi /etc/fstab 
+----------------------
+proc /proc procdefaults 0 0
+tmpfs /tmp tmpfs defaults 0 0
+
+$>mknod console c 5 1
+$>mknod null c 1 3
+$>cp mkyaffs2image /home/hy/arm/fs_debian_wheezy/ok6410                              #重新开启终端执行这行命令. 
+$>./mkyaffs2image ok6410 rootfs.yaffs2                                               #myyaffs2image可以在arm资料中找到这个工具;对应的解压工具/home/common/unyaffs-0.9.6.zip,解压并make即可.
+$>./unyaffs rootfs.yaffs2 $dir                                                       #rootfs.yaffs2解压到$dir. 
+
+16.Linux 驱动编写的环境建立:
+    基本环境和准备:
+        >apt-get install build-essential libncurses-dev kernel-package fakeroot initramfs-tools module-init-tools libncurses5-dev wget bzip2    
+        >cd /usr/src 
+        >tar xzvf linux-version.tar.gz    #文件扩展名称为*.tar.gz，可以使用当前指令解压.
+        >tar xjvf linux-version.tar.gz2   #文件扩展名称为*.tar.bz2,可以使用当前指令解压. 
+        >cd linux-version   
+        >bzcat ../patch-xx.bz2 | patch -pl   #如果 /usr/src/存在patch-xx.bz2 .
+    
+    编译和安装内核:
+        >cd /usr/src/linux-version 
+        >make mrproper   #清除所有旧的配置和旧的编译目标文件. 
+        >cp /boot/config-'uname -r' .config    #为了debian开发环境正常运行,拷贝之前已经配置好的配置文件到当前目录. 
+        >make -jn      #n代表的cpu的核心数量,i7-4770k n=8  eg. make -j8 
+        >make modules 
+        >make install 
+        >make modules_install 
+        mkinitramfs -o /boot/initrd.img-version /lib/modules/version   #version eg.2.6.39-4  这里是创建initramfs .
+    到此为止,debian会自动设置grub; 重启进入新的环境即可. 
+
+    Makefile模板:
+        ifneq ($(KERNELRELEASE),)
+            mymodule-objs:=mymodule xx.o xxx.o   #依赖关系
+            obj-m += mymodule.o                  #编译,链接后将生成mymodule.o模块. 
+        else 
+            PWD := $(shell pwd)
+            KVER := $(shell uname -r)
+            KDIR := /lib/modules/$(KVER)/build 
+        all:
+            $(MAKE) -C $(KDIR) M=$(PWD)  #此处再次调用make 
+
+    内核调试函数printk:
+        printk(记录级别 "格式化输出信息");    #printk 语法格式
+        记录等级                字符串代号           描述
+        KERN_EMERG               "<0>"        这是一个最高优先级输出的紧急事件消息,表示操作系统崩溃前会进行输出提示信息
+        KERN_ALERT               "<1>"        输出警告信息,通知需要采取措施
+        KERN_CRIT                "<2>"        这是一个临界情况,当发生严重的软件或硬件操作失败时,进行输出提示信息
+        KERN_ERR                 "<3>"        当系统检测发生一个错误时,会输出信息.设备驱动程序常常KERN_ERR来报告硬件的错误信息
+        KERN_WARNING             "<4>"        提示信息,一般用于提醒.常用在与系统安全相关的消息输出
+        KERN_NOTICE              "<5>"        这是一个普通的提示,系统输出时需要注意的情况信息
+        KERN_INFO                "<6>"        非正式的消息,可能无关紧要,例如驱动程序进行挂载时,一般打印硬件相关信息
+        KERN_DEBUG               "<7>"        这是用于程序开发与调试的信息,完成编码后.这类信息一般都要删除.
+
+        eg. printk("没哟等级信息,则采用默认级别!\n");
+            printk(KERN_INFO "内核提示信息\n");
+            printk(KERN_DEBUG "内核调试信息\n");
+        如果没有特定指定一个记录等级,函数会选用默认的DEFAULT_MESSAGE_LOGLEVEL,现在默认等级是KERN_WARNING.由于这个默认值将来存在变化的可能性，所以还是应该为自定义的消息指定一个记录等级.
+
+17.debian 源代码阅读与编译:
+    1.linux内核源代码编译:
+        >apt-get source linux 
+        >cd linux-version 
+        >bash debian/bin/test-patches ../xxx.patch ../xxxx.patch   #打补丁
+        >bash debian/bin/test-patches 
+        >fakeroot debian/rules binary 
+
+18.gnome-session-properties 配置 gnome-terminal 时给定参数:
+    基本设置:
+        >gnome-terminal --geometry=90x60+650+0   #设置gnome-terminal 窗口大小,宽度x高度+左偏移量+上方偏移量
+        >gnome-terminal --maximize     #打开后最大化
+        >gnome-terminal --full-screen    #打开后全屏
+        >gnome-terminal --title="xxxx"   #设置标题
+        >gnome-terminal --widnow --window   #打开两个窗口
+        >gnome-terminal --window --tab --window --tab --tab   #打开两个窗口,第一个两个tab,第二个三个tab.
+   启动后自动执行命令:
+        >gnome-terminal -e ls    # -e 可以出现多次,如果在所有--widnow 前面表示对所有widnow和tab起作用.如果在--widnow 或者 --tab 后面，表示只针对这个tab执行,要注意-e后面只能有一个参数 也就是说如果有空格,需要用引号.
+        >gnome-terminal -x ls    #只能出现一次,在-x后面的所有内容，均认为是要执行的命令,所以可以出现空格 这些命令是针对所有tab都执行的.
+            eg.gnome-terminal -x ls|less
+        >gnome-terminal -x bash -c 'export RUN_AFTER_BASHRC="ls --help";exec bash'  #后台运行ls --help，打开一个新的bash窗口. 
+
+20.debian配置crontab定时任务:
+    >cd /var/spool/cron/crontabs/ 
+    >vi root 
+    -------------------------
+    SHELL=/bin/bash 
+    USER=root 
+    LOGNAME=root 
+    HOME=/root 
+    PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/local/sbin:/bin:/usr/sbin:/usr/bin
+
+    0 0 * * * /usr/bin/apt-mirror >> /var/spool/apt-mirror/cron.log 2>&1
+    -------------------------
+21.debian版本查看:
+    >lsb_release -a  #查看lsb本身的版本信息
+    >uname -a        #查看内核版本信息
+
+22.SCP大文件高效传输:
+    scp -C -c blowfish-cbc -o Compression=yes -o CompressionLevel=9 SRV-MAIL-CentOS-7-x86_64.iso user@host:xxx
+    scp -C -c aes192-cbc -o Compression=yes -o CompressionLevel=9 SRV-MAIL-CentOS-7-x86_64.iso user@host:xxx
+    scp -C -c aes128-cbc -o Compression=yes -o CompressionLevel=9 SRV-MAIL-CentOS-7-x86_64.iso user@host:xxx 
+
+23.光盘挂载:
+    /xx/xxx/xx.iso /xx/xxx udf,iso9660 owner,auto,ro,loop,iocharset=utf8 0 0    #开机自动挂载
+
+24.acl访问控制列表:
+    >apt-get install acl 
+    >mount     #查看是否启用acl属性. 
+    >vi /etc/fstab 
+    /dev/mapper/DEBIAN-root /               ext4    acl,errors=remount-ro 0       1     #注意acl属性,在这里表示根文件系统已经开启acl.
+    >mount / -o remount     #重新挂载根分区,或者重启. 
+    setfacl    #用于增加或修改acl. 
+    getfacl    #用于显示分配完的acl.  
+    eg.sudo setfacl -m u:hy:rwx /home/common 
+       sudo setfacl -m u:xx:rx  /home/common   #读取目录需要执行权限. 
+    ------------------------------------------
+    -m 表示修改acl.可以增加或者修改已存在的acl.
+    u 表示用户,你可以使用g来设置组权限.
+    hy 用户名
+    :rwx 需要设置的权限. 
+    ------------------------------------------
+    >ls -lh /home/common    #在正常权限后多了一个+标记,者表示acl已经设置成功. 
+    >sudo getfacl /home/common     #查看  
+    >sudo setfacl -x u:hy /home/common     #单条移除acl.
+    >sudo setfacl -b /home/common          #删除所有acl条目.
+
+25.wget
+    1>wget 批量下载网页:
+        eg. wget -c -r -np -k -L --restrict-file-names=nocontrol http://www.kerneltravel.net/kernel-book/
+    2>下载整个http或者ftp站点:
+        eg. wget http://place.your.url/here   # -x 会强制建立服务器上一模一样的目录,-nd 从服务器上下载的所有内容都会加到本地目录.
+        eg. wget -r http://place.your.url/here  #按照递归的方法,下载服务器上所有目录和文件. -i number 参数来指定下载层次.
+        eg. wget -m http://place.your.url/here  #制作镜像站点. 
+    3>断点续传:
+        eg.wget -c http://the.url.of/incomplete/file   # -t 重试次数 -t 100 . -t 0 表示无穷此重试直到连接成功. -T 表示超时时间 -T 120 表示等待120秒链接不上就算超时. 
+    4>批量下载:
+        eg.wget -i download.txt   #download.txt 添加要下载的内容即可. 
+    5>选择性的下载:
+        eg. wget -m -reject=gif http://target.web.site/subdirectory  #表示下载http://target.web.site/subdirectory，但是忽略gif文件. -accept=LIST可以接受的文件类型.
+    6>密码和认证:
+        eg. --http-user=USER 设置http用户  -http-passwd=PASS 设置http密码.  对于需要证书做认证的网站,只能利用其他下载工具（curl）.
+    7.利用代理服务器进行下载:
+        需要在当前用户的目录创建一个 .wgetrc 文件, 加入代理服务地址即可.
+        eg. http-proxy = 11.11.11.11:8080 
+            ftp-proxy = 11.11.11.11:8080 
+        分别代表http的代理服务器和ftp的代理服务器. 如果需要密码则使用下面的例子.
+        eg. -proxy-user=USER  #设置代理用户 
+            -proxy-passwd=PASS  #设置代理密码  
+            -proxy=on/off  #使用或关闭代理 
+    8>定时下载,添加cron定时任务:
+        eg. 0 23 * * 1-5 wget -c -N http://place.your.url/here 
+            0 6 * * 1-5 killall wget 
+    9>wget -r -np -nd --accept=gz --limit-rate=200k --reject=gif --no-check-certificate --http-user=username --http-password=password https://...      #下载https网站内容.
+        -np                #没有父目录
+        -nd                #不要构建本地目录结构
+        --accept=gz        #只下载gz文件 
+        --limit-rate=200k  #指定下载速率200k.
+        --reject=gif       #禁止下载指定类型的文件(gif).
+    10>wget --mirror -p --convert-links -P ./path http://url                                                                                           #下载整站
+        --mirror           #设置这个参数用来建立本地镜像 
+        -p                 #下载所有html文件适合显示的元素
+        --convert-links    #下载完成后，将文档链接都转换成本地 
+        -P ./path          #保存所有的文件和目录到指定文件夹 
+    11>Usage 
+        $>wget -r --accept=gz --limit-rate=200k --reject=gif --ftp-user=USERNAME --ftp-password=PASSWORD ftp://url                                                                            #使用wget下载ftp
+        $>wget -r --accept=gz --limit-rate=200k --reject=gif --ftp-user=anonymous ftp://url                                                                                                   #使用wget下载ftp
+        $>wget -r --no-check-certificate --user-agent="Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" https://url                                     #模拟浏览器下载
+        $>wget --mirror -p --no-check-certificate --convert-links -P ./path --user-agent="Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" https://url  #模拟浏览器下载
+
+26.ssh 高级用法:
+    1.复制 ssh 密钥到目标主机,开启无密码ssh登录:
+        eg. ssh-copy-id user@host   #如果还没有密钥,ssh-keygen 命令生成.
+    2.从某主机的 80 端口开启到本地主机的2001的隧道:
+        eg. ssh -N -L 2001:localhost:80 somemachine   #现在可以使用浏览器访问http://localhost:2001 这个网站. 
+    3.比较远程和本地文件:
+        eg. ssh user@host cat /path/to/remotefile | diff /path/to/localfile - 
+    4.通过ssh挂载目录/文件系统:
+        sshfs user@server:/path/to/folder /path/to/mount/point 
+        sshfs -o allow_other user@server:/path/to/folder /path/to/mount/point 
+        sshfs -o allow_root user@server:/path/to/folder /path/to/mount/point 
+    5. ssh-keygen -R 
+    6.通过ssh运行复杂的远程shell命令:
+        eg. ssh host -l login-user $(cmd.txt) 
+    7.通过ssh 将mysql 数据库复制到新的服务器:
+        eg. mysqldump -add-drop-table -extended-insert -force -log-error=error.log -uUSER -pPASS OLD_DB_NAME | ssh -C user@newhost "mysql -uUSER -pPASS NEW_DB_NAME"
+    8. 从一台没有 ssh-copy-id 命令的主机将主机的ssh公钥复制到服务器:
+        eg. cat ~/.ssh/id_rsa.pub | ssh user@machine "mkdir ~/.ssh; cat >> ~/.ssh/authorized_keys" 
+    9. 实时测试网络吞吐量:
+        eg. yes | pv | ssh host "cat > /dev/null"   #通过ssh链接主机,显示实时的传输速度,将所有的数据指向/dev/null ，需要安装 pv ; sudo apt-get install pv 
+    10.使用cstream控制带宽:
+        eg. cd ~ && touch backup 
+            tar -cj ~/backup | cstream -t 777k | ssh host 'tar -xj -C ~/backup'   #sudo apt-get install cstream  使用bzip压缩文件夹,然后以 777k bit/s 速率向远程主机传输. 
+    11.更稳定,更快,更强的ssh客户端:
+        eg. ssh -4 -C -c blowfish-cbc USER@HOST     #强制使用IPV4，压缩数据流,使用blowfish加密. 
+    12.保持ssh会话永久打开:
+        eg. autossh -M21 -t USER@HOST 'screen -raAd mysession'  #sudo apt-get install autossh   打开一个ssh会话后，让其保持永久打开；如果需要在wifi热点之间切换，可以保证切换后不会丢失连接. 
+    13. 一步将ssh 公钥传输到另外一台主机:
+        ssh-keygen ; ssh-copy-id user@host;ssh user@host 
+    14.通过 ssh / wireshark 分析流量:
+        eg. ssh USER@HOST tcpdump -w - 'port !22' | wireshark -k -i -   #sudo apt-get install wireshark  
+        eg. ssh USER@HOST 'tshark -w - "port !22"' | wireshark -k -i -
+    15.建立一个可以重新连接的远程GNU Screen:
+        eg. ssh -t user@host /usr/bin/screen -xRR 
+        如果会话突然终端或者CTRL+a d ，远程主机的shell不会丝毫受到影响;可以重新建立连接,使用重复使用上面的命令打开远程shell即可. 在执行上面的命令中,可以使用CTRL + a c 打开一个新的shell；CTRL + a a 可以在打开的多个shell之间进行切换.
+
+27.已挂载的文件系统和设备:
+    >aptitude search util-linux 
+    eg. findmnt     #列出文件系统. 
+    eg. findmnt -l  #以列表的形式输出. 
+    eg. findmnt -s/-fstab  #使用-s 或者-fstab 选项，将只从/etc/fstab文件和/etc/fstab.d目录读取文件系统. 
+    eg. findmnt -t ext4    #打印只基于类型的特定的文件系统,多个系统类型可以指定一个逗号分隔. 
+    eg. findmnt -r/--raw    #原始输出,使用-r或者--raw. 
+    eg. findmnt -S /dev/sda1  #通过源设备查找,指定的设备路径包括/不包括 -S 选项. 
+    eg. find findmnt -T /  #通过挂载点查找文件系统,指定的目录包括/不包括 -T/--target 选项. 
+
+28.Linux上录制终端操作并转换成gif动画:
+    > sudo apt-get install ttyrec imagemagick python-opster xdotool
+    录制:
+        >ttyrec   #将产生ttyrecord 文件. 
+        键入 exit或者 CTRL + d 来停止.
+    回放:
+        >ttyplay ttyrecord   
+        点击 + 或者 - 进行加速或减速，0 和 1 暂停和恢复播放. 
+    导出GIF:
+        python tty2gif.py typing ttyrecord    #将 tty2gif.py 拷贝到 ttyrecord 文件的相同目录.     /home/vsftpd/ttyrec  ln -sv /home/vsftpd/ttyrec/tty2gif.py /home/xx/tty2gif.py
+    将gif整合成一个gif文件:#通过imagemagick工具:
+        convert -delay 25 -loop 0 *.gif example.gif
+29.pv:
+    eg.>man ls |pv -qL 10   #在终端查看实时文字的输出效果.
+       >echo "Tecmint[dot]com is a community of Linux Nerds and Geeks" | pv -qL 10 
+
+30.asciiview:
+    eg.>asciiview xxxx.jpg -driver curses   #ASCII模式在终端查看图片.
+
+31.cowsay:
+    eg.>cowsay -l    #查看可用的动物列表
+       >cowsay -f elephant-in-snake Tecmint is Best
+       >cowsay -f gnu Tecmint is Best 
+
+32.rig
+    eg.>rig    #每次生成一个随机的身份信息和地址.   
+
+33.磁盘配额:
+    磁盘配额作用是限制普通用户使用的磁盘空间和创建文件的个数，不至于因为个别人的浪费影响到所有人的使用.
+    >apt-get install quota quotatool 
+    >mount -o usrquota,grpquota /dev/sdxx /mnt/point 
+    >mount -o remount,usrquota,grpquota /dev/sdxx /mnt/point 
+    >quotacheck -cvug /dev/sdxx                         #创建数据库文件后面需要带上分区 
+    >quotacheck -cvuga                                  #创建数据库文件后面不需要带上分区 
+    >quotaon /dev/sdxx                                  #激活 or quotaon -a 
+    >edquota -u xx  #为用户xx创建配额;blocks:不需要设置,soft:设置软限制大小,hard：设置硬限制大小,inodes:不需要设置,soft:文件个数的软限制,hard:文件个数硬限制.  soft-可以超过的大小,hard-不可以超过的大小. 
+    >repquota -a     #查看用户空间使用情况. 
+    >edquota -t      #编辑时间.
+    >quotaoff  /mnt/point    #/mnt/point关闭配额. 
+    >vi /etc/fstab 
+    ------------------------
+    /dev/sdxx /mnt/point ext4 rw,usrquota,grpquota 0 0 
+    >df -T                      #验证fstab. 
+    >dd if=/dev/zero of=FILE bs=1k count=1024       #创建块文件. 
+    >du -shk FILE                                   #查看FILE大小.
+    注意:需要在配有配额的挂在点创建目录并将目录权限更改限制用户或者组,否则限制无效. 
+
+34.terminal:
+    CTRL+-         #缩小窗口字体
+    SHIFT+CTRL+=   #放大窗体 
+
+35.找出发生SEGV内存错误的程序:
+    1.sysconf:
+        >ulimit -a
+        >ulimit -c unlimited    #解除限制
+        注意:ulimit -c 的设置仅仅是对你完成设置后启动的进程有效;而且退出登陆后,再进入需要从新设置.否则从新登陆后启动的进程也无法生成core文件.  
+    2.找到core文件:
+        2.1.一般情况下,core文件会生成在你执行程序的地方;文件名是core.进程号.
+        2.2.指定core文件名和生成目录,vi /etc/sysctl.conf
+        >sysctl -a |grep -i kernel.core 
+        >sysctl -a |grep -i fs.suid
+        >vi /etc/sysctl.conf 
+        -------------------------------
+        kernel.core_uses_pid = 1                             #追加进程号到core文件名中.
+        fs.suid_dumpable = 2                                 #确保设置属主的进程也可以生成core文件.
+        kernel.core_pattern = /tmp/core/-%e-%s-%u-%g-%p-%t   #定core文件生成的位置和文件名规则.
+        >sysctl -p                                           #修改完后，执行当前命令使配置生效. 
+    2.2.1文件名规则:
+        %% – 符号%
+        %p – 进程号
+        %u – 进程用户id
+        %g – 进程用户组id
+        %s – 生成core文件时收到的信号
+        %t – 生成core文件的 时间 (seconds since 0:00h, 1 Jan 1970)
+        %h – 主机名
+        %e – 程序文件名 
+    3.使用core文件: 
+        >gdb -e exe-prog -c /tmp/core-xxx 
+
+36.验证端口是否被占用:
+    >lsof -i -P -n | grep LISTEN
+    >netstat -tulpn | grep LISTEN
+    >nmap -sTU -O ip.addr  
+
+37.bash命令行快捷键:
+    CTRL+a      #移动光标到行首
+    CTRL+e      #移动光标到行尾 
+    CTRL+b      #光标向前移动一个字符
+    CTRL+f      #光标向后移动一个字符
+    CTRL+h      #删除当前光标出的字母，且向前移动
+    CTRL+d      #删除当前光标出的字母，且向后移动
+    CTRL+u      #删除光标前面所有的字符 
+    CTRL+k      #删除光标位置及后面所有的字符 
+    CTRL+w      #删除光标前的单词
+    CTRL+c      #终止shell 
+    CTRL+d      #退出shell
+    CTRL+r      #搜索shell历史记录 
+    CTRL+l      #清屏 
+    CTRL+i      #类似TAB健补全功能
+    CTRL+y      #粘贴刚才所删除的字符 
+
+38.内部命令:
+    >enable 
+    >type cd 
+    >help cd 
+
+39.外部命令:
+    >ls --help 
+    >info cmd
+    >man # cmd    # '#'-表示章节号 
+    ------------------------------
+    1.所有用户可以使用的命令
+    2.系统内核调用，不是每个命令都有系统调用
+    3.库调用
+    4.特殊文件
+    5.文件格式,eg.>man 5 passwd
+    6.游戏相关
+    7.杂项
+    8.管理员命令,eg.>man 7 fdisk
+    注意:[]-可选内容,<>-必须给出内容,...-可以有多个 
+
+41.多行合并成一行中间加分隔符:
+    >ls xxx | sed 's@^@xxxx/@g'|paste -s -d ":"   
+    >ls xxx | sed 's@^@xxxx/@g'|tr "\n" ":"|sed 's@:$@@'
+    >ls xxx | sed 's@^@xxxx/@g'|xargs|sed 's/ /: /g'
+    >ls xxx | sed 's@^@xxxx/@g'|awk "{if(NR%`ls xxx | sed 's@^@lib/@g' | wc -l`){ORS=\":\"}else{ORS=\"\n\"};print;}"
+    >ls xxx | sed 's@^@xxxx/@g'|perl -pe 's/\n/:/;' | sed 's@:$@@' 
+
+42.rsync实现文件备份同步:
+    >vi /etc/rsyncd.conf          #修改address.
+    >/usr/bin/rsync --daemon 
+    >rsync --list-only root@ip.addr::homes 
+    >rsync -avzP  --delete --progress root@ip.addr::homes ./$(date +'%m-%d-%y') 
+   
+   args
+   ------------------
+   -a/--archive                          #归档模式，表示以递归方式传输文件，并保持所有文件属性，等于-rlptgoD
+   -r/--recursive                        #对子目录以递归模式处理
+   -l/--links                            #保留软链
+   -p/--perms                            #保持文件权限
+   -t/--times                            #保持文件时间信息
+   -g/--group                            #保持文件属组信息
+   -o/--owner                            #保持文件属主信息
+   -D/--devices                          #保持设备文件信息
+   -z/--compress                         #对备份的文件在传输时进行压缩处理
+   -P/--partial                          #保留那些因故没有完全传输的文件，以是加快随后的再次传输
+   -v/--verbose                          #详细模式输出
+   -e/--rsh=COMMAND                      #指定替代rsh的shell程序
+   -u/--update                           #仅仅进行更新，也就是跳过所有已经存在于DST，并且文件时间晚于要备份的文件
+   --progress                            #显示备份过程
+   --delete                              #是指如果服务器端删除了这一文件，那么客户端也相应把文件删除，保持真正的一致
+
+43.java反编译工具:
+    >java -jar /home/vsftpd/jd.jar 
+
+44.找出最近或今天被修改的文件:
+    >ls -al --time-style=+%D |grep -i `date +%D`     #使用 ls 命令，只列出home文件夹中今天的文件.
+    >ls -alX --time-style=+%D |grep -i `date +%D`    
+    >ls -alS --time-style=+%D |grep -i `date +%D` 
+
+    args 
+    -----------------
+    -a                                   # 列出所有文件，包括隐藏文件
+    -l                                   #启用长列表格式
+    -X                                   #标志来按字母顺序对结果排序
+    -S                                   #标志来基于大小（由大到小）来排序
+    --time-style=FORMAT                  #显示指定 FORMAT 的时间,+％D - 以 ％m/％d/％y （月/日/年）格式显示或使用日期
+
+    >find . -maxdepth 1 -newermt "2016-12-06" 
+    >find . -maxdepth 1 -newermt "12/06/2016" 
+    >find . -maxdepth 1 -newermt "12/06/16" 
+
+    args 
+    -----------------
+    -maxdepth                            #级别用于指定在搜索操作的起点下（在这个情况下为当前目录）的搜索层级（子目录层级数）
+    -newerXY                             #用于所寻找的文件的时间戳 X 比参照文件的时间戳 Y 更新一些的文件:
+        X和Y 表示以下任何字母
+        ---------------------
+        -a                               #参照文件的访问时间      
+        -B                               #参照文件的创建时间      
+        -c                               #参照文件的 inode 状态改变时间      
+        -m                               #参照文件的修改时间      
+        -t                               #直接指定一个绝对时间
+
+45.密码自动输入:
+    1.1 scp:
+        #!/usr/bin/expect -f 
+        set timeout 60
+        spawn scp -r FILES USER@ip.addr:PATH
+        expect "Password:"    #注意这里必须与要输入密码的字符串相同才可以.
+        send "PASSWD\r"
+        expect eof
+
+    1.2 scp:
+        #!/usr/bin/expect -f 
+        set timeout 60
+        spawn scp -r FILES USER@ip.addr:PATH
+
+        for { set i 0   } { $i<2  } { incr i  } {
+            expect { 
+                "*Password:"  { send "PASSWD\r"  } 
+                #"*(yes/no)*" { send "yes\r"    }
+                #...
+            }
+        }
+
+    2.ssh:
+        #!/usr/bin/expect -f 
+        set timeout 60
+        spawn ssh -p 22 USER@ip.addr 'commands && ...'
+
+        for { set i 0   } { $i<1  } { incr i  } {
+            expect { 
+                "*Password:"  { send "PASSWD\r"  } 
+            }
+        }
+
+46.Login:
+    >ssh -p 22 -l USER ip.addr 
+    >rsh -l USER ip.addr 
+    >rlogin -l USER ip.addr 
+    
+    注意:>chkconfig --list 
+         >chkconfig sshd on
+
+47.nautilus:
+    nautilus 从菜单中移除之后打开文件是使用gimp打开的，经过多次研究发现从menu中删除的菜单会在.local/share/applications/生成对应的.desktop文件;此时只需要vi .desktop文件将最后一行的Hiddent=true注释即可.
+
+48.shred:
+    >shred -zvu -n 5 FILES 
+    
+    args
+    -----------------
+    -z                                   #用零覆盖以隐藏碎片 
+    -v                                   #显示操作进度 
+    -u                                   #在覆盖后截断并删除文件 
+    -n                                   #指定覆盖文件内容的次数(默认值为3).
+
+49.wipe:
+    >wipe -rfi FILES
+    >wipe -rfi DIR/*
+
+    args 
+    -----------------
+    -r                                   #递归地擦除子目录
+    -f                                   #启用强制删除并禁用确认查询 
+    -i                                   #显示擦除进度 
+
+    注意:wipe仅可以在磁性存储上可以可靠地工作,因此对固态磁盘(内存)请使用其他方法. 
+
+50.srm:
+    >srm -vz FILES 
+    >srm -vz DIR/*
+
+    args 
+    -----------------
+    -v                                   #启用verbose模式
+    -z                                   #用0而不是随机数据来擦除最后的写入
+
+51.FIND-Usage:
+    find /home/hy -maxdepth 1 -path workspace -prune -type d -o -name ".*" -exec ln -sv {} /home/USR \;    #将/home/hy下的所有以.开头的文件夹软连接到/home/USR中并排除workspace.
+
+52.nc: 
+    nc -zv ip.addr 20-80                 #扫描20-80端口.
+
+53.vi:
+    >vimtutor   #学习编辑一个文本时能够帮助认识vi.
+    >gvim       #vi 图形显示
+    保存文件并退出:
+        :x  or :wq  # :x 当文件被修改时两个命令是相同的。但如果未被修改,使用 :x 不会更改文件的修改时间,而使用 :wq 会改变文件的修改时间. 
+    基本计算器:
+        在插入模式下(i),使用CTRL+r 然后输入 = ,再输入简单的算式;按回车,计算结果就会插入到文件中.
+    设置搜索高亮:
+        set hlsearch   #搜索 /内容
+        /\(\<\w\+\>\)\_s*\1   #查找重复的连续的单词 eg. is is 
+    缩写:
+        :ab [缩写] 【要替换的文字】
+        eg. :ab asap as soon as possible  #会把你输入的asap 替换为 as soon as possible 
+    忘记用root方式打开文件时的文件保存:
+        :w !sudo tee %
+    自动补全:
+        在插入模式 CTRL+n 即可. 
+    比较两个文件的不同:
+        >vimdiff [文件1] [文件2]
+        or 
+        eg. vi test.c 
+            cp test.c test-diff.c 
+            :vsp test-diff.c 
+            :diffthis   #在的第一个缓冲区输入. 
+            CTRL+w    #切换到下一个缓冲区. 
+            :diffthis  #在下一个缓冲区. 
+
+            :diffoff  #停止比较.
+        这样两个文件中不同部分就会被高亮了.
+    按时间回退文件:
+        :earlier 1m     #把文件回退到1分钟以前的状态. 
+        :later          #进行相反的转换.
+    把 vim 变为十六进制编辑器:
+        :%!xxd    
+        :%!xxd -r     #恢复原来的状态.
+    跳到上一个/下一个位置:
+        CTRL+o      #跳到另外一处.
+        CTRL+i      #回退上面的跳动.
+    删除标记内部的文字:
+        di[标记]   .
+        eg.di(  or di{    #把光标放在开始的（ or { [圆括号 or 方括号]上,使用 di( 删除() {} 内的文字. 
+    删除指定标记前的内容:
+        dt[标记]    #会删除所有光标和标记之间的内容（保持标记不动）,如果在同一行有这个标记的话.  注意:是同一行. 
+    把当前文件转化为网页:
+        :%TOhtml 
+    一般模式,删除、复制与粘贴:
+        x,X                      x为向后删除一个字符，X为先前删除一个字符
+        nx                       向后删除n个字符
+        dd                       删除当前行
+        D                        删除当前行所有字符，试成为空行
+        ndd                      删除光标所在行的向下n列
+        d1G                      删除光标所在行到第一行的所有数据
+        dG                       删除光标所在行到最后一行的所有数据
+        yy                       复制光标所在行
+        y1G                      复制光标所在行到第一行的所有数据
+        yG                       复制光标所在行到最后一行的所有数据
+        ynj                      复制光标所在行向下n+1行
+        dnj                      删除光标所在行向下n+1行
+        p,P                      p为复制的数据粘贴在光标的下一行，P为复制的数据粘贴在光标的上一行
+        J                        将光标所在行与下一行的数据结合成一行
+        u                        恢复前一个动作(undo) 
+    编辑模式:
+        i,I                      i为在当前光标所在处插入输入的文字，I为在光标所在行第一个非空字符插入输入的文字
+        a,A                      a为在当前光标所在处下一个字符插入输入的文字，A为在光标所在行最后一个字符的下一个字符处插入输入的文字
+        o,O                      o为在光标所在行的下一行行首开始插入字符，O为在光标所在行的上一行行首开始插入字符
+        r,R                      r为替换光标所在那一个字符，R为一直替换光标所指的文字，直到退出
+        Esc                      退出，回到一般模式
+    命令模式,光标移动:
+        h                        光标向左移一个字符
+        j                        光标向下移一个字符
+        k                        光标向上移一个字符
+        l                        光标向右移一个字符
+        Ctrl+f                   屏幕向下翻一页
+        Ctrl+b                   屏幕向上翻一页
+        Ctrl+d                   屏幕向下翻半页
+        Ctrl+u                   屏幕向上翻半页
+        +                        光标移动到下一行的第一个非空字符
+        -                        光标移动到当前行的第一个非空字符
+        n空格                    光标向当前行向右移动n个字符 
+        0                        光标移动到当前行的第一个字符 
+        $                        光标移动到当前行的最后一个字符
+        H                        光标移动到当前屏幕最上方的那一行的第一个非空字符 
+        M                        光标移动到当前屏幕最中间那一行的第一个非空字符 
+        L                        光标移动到当前屏幕最下方的那一行的第一个非空字符 
+        G                        光标移动到该文章最后一行的第一个非空字符 
+        nG                       光标移动到该文章第n行的第一个非空字符 
+        n<Enter>                 光标从当前行向下移动n行的第一个非空字符 
+        /word                    在光标之后查找word字符串 
+        ?word                    在光标之前查找word字符串 
+        :s/word1/word2/g         在光标当前行查找word1，并替换成word2 
+        :n1,n2s/word1/word2/g    在第n1行与第n2行之间查找word1，并替换成word2 
+        :%s/word1/word2/g        整个文章查找word1，并替换成word2 
+        :w                       将编辑的数据保存到硬盘文件中 
+        :w [filename]            将编辑后的数据保存到硬盘的另一个文件中 
+        :r [filename]            在编辑数据时，读入另一个文件中的数据，即将filename文件中的内容加到光标所在行下一行 
+        :wq或:x                  保存并退出 
+        :q                       退出，适用于未修改的文件 
+        :q!                      强制退出，适用于修改文件后不保存退出 
+        :set nu                  显示行号 
+        :set nonu                取消行号 
+        :n1,n2 w [filename]      将n1到n2行的内容保存到名为filename的文件中

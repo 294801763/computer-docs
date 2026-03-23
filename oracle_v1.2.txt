@@ -1,0 +1,214 @@
+oracle默认用户
+-------------------
+用户名 / 密码                      登录身份                              说明
+sys/change_on_install       SYSDBA 或 SYSOPER        不能以 NORMAL 登录，可作为默认的系统管理员
+system/manager              SYSDBA 或 NORMAL         不能以 SYSOPER 登录，可作为默认的系统管理员
+sysman/oem_temp             sysman                   为 oms 的用户名
+scott/tiger                 NORMAL                   普通用户
+aqadm /aqadm                SYSDBA 或 NORMAL         高级队列管理员
+Dbsnmp/dbsnmp               SYSDBA 或 NORMAL         复制管理员
+
+oracle默认用户
+-------------------
+sys                                              #网络管理员  as sysdba
+system                                           #本地管理员
+scott                                            #超级用户
+
+启动oracle
+-------------------
+$>sqlplus / as sydba
+ >startup open                                  #打开数据库
+$>/oracle/app/11.2.0//bin/lsnrctl start         #启动监听服务
+$>/oracle/app/11.2.0//bin/lsnrctl stop          #停止监听服务 
+
+手动修改默认密码
+-------------------
+$>sqlplus / as sydba                                         #首先启动sqlplus.
+SQL> alter user sys account unlock;                          #解除用户锁定.
+SQL> alter user sys identified by manager;                   #修改密码,然后就可以用用户名：sys 密码：manager 登录了.
+
+em使用
+-------------------
+dbca                      #创建数据库
+netca                     #配置监听和em服务
+$>emctl start dbconsole    #开启em服务.
+
+注意:需配环境变量,export PATH=$ORACLE_BASE/bin/:$ORACLE_HOME/bin:$PATH
+
+执行命令
+-------------------
+SQL>!clear                             #清屏
+SQL>!pwd                
+
+基本操作
+-------------------
+$>netca                                #启动em管理
+$>dbca                                 #安装全局数据库rhel
+$>emctl start dbconsole
+$>lsnrctl status
+$>lsnrctl start/stop
+$>emctl status
+$>netstat -tulnp|grep 1158
+$>emctl stop dbconsole
+
+注意:如果没有监听到实例,先stop然后start
+ >sqlplus / as sysdba                   #登录
+ >alter system register;                #执行
+ >sqlplus user/passworld@database       #eg.sqlplus system/123456@rhel
+
+关闭数据库
+-------------------
+$>sqlplus / as sysdba
+ >shutdown immediate;
+
+注意:如果是connected to an idle instance 就需在sql命令行执行 startup.
+
+创建用户,授权和撤消权限
+-------------------
+$>sqlplus / as sysdba                                                              #登录oracle
+$>lsnrctl -startup -sid rhel                                                       #启动监听
+$>startup <nomount|mount|open|force> <pfile=filename>                              #oracle的启动,已经登录了oracle, nomount:只启动实例 ,mount:启动实例,并装载数据库 ,open:启动实例,装载并打开数据库 ,force:终止实例,并重新启动数据库 ,pfile:指定非默认参数文件名
+$>shutdown <normal|transactional|immediate|abort>                                  #oracle的关闭,已经登录了oracle, normal:等待用户断开已存在的链接,系统发出检查点,然后同步数据文件,控制文件和重做日志文件后关闭 ,transactional：等待客户端结束事务之后,自动断开用户链接,然后再执行normal ,immediate:取消当前所有sql语句,回退所有未完成的事务,然后自动断开,在执行normal ,abort:之中所有sql语句,立即终止实例。
+$>select instance_name,status from v$instance;                                     #查看实例
+$>select switchover_status from v$database;                                        #<step.1>数据库切换,查看主库状态
+$>alter database commit to switchover to physical standby;                         #<step.2>数据库切换,切换主库到standby
+or 
+$>alter database commit to switchover to physical standby with session shutdown;   #<step.2>数据库切换,切换主库到standby
+ >shutdown immediate;
+ >startup nomount;
+ >alter database mount standby database;
+$>select switchover_status from v$database;                                        #<step.3>数据库切换,验证要被切换的standby是否接收到switch to通知
+$>select switchover_status from v$database;                                        #<step.4>数据库切换,切换物理standby到主用模式，检查redo log是否创建好
+ >shutdown immediate;
+ >startup;
+$>sqlplus                                                                          #链接到指定oracle数据库的实例 
+ >conn sys/password@rhel as sysdba 
+$>create user username identified by password;                                     #username:用户名,password:密码
+ >create tablespace tablespacename datafile '/home/hy/data.dbf' size xxxm;         #创建表空间,tablespacename:表空间的名字,/home/hy/data.dbf :表空间存储的位置,xxx:表空的大小，m:单位为兆
+ >alter user username default tablespace tablespacename;                           #将空间分配给用户,将名字为 tablespacename 的表空间分配给username
+$>grant create session,create table,unlimited tablespace to username;              #给用户授权
+$>show user;                                                                       #显示当前用户
+$>create user username identified by password;                                     #创建一个用户
+$>grant create session to rhel;                                                    #给rhel用户授予会话权限
+$>grant unlimited tablespace to rhel;                                              #给rhel用户授予表空间的权限
+$>grant create table to rhel;                                                      #给rhel授予创建的权限
+$>create table mytable(id int);                                                    #创建表 
+$>insert into mytable values(1);                                                   #插入数据
+$>select * from mytable;                                                           #查询数据
+$>drop table mytable                                                               #删除表
+$>revoke create table from rhel;                                                   #取消rhel对表的操作的权限
+$>select * from user_sys_privs;                                                    #查询当前用户拥有那些权限
+$>revoke unlimited tablespace from rhel;                                           #插销rhel对表空间的权限
+$>alter user rhel identified by password;                                          #使用sys用户修改其他用户密码,password是你要更改的最终密码 
+$>show user;                                                                       #显示当前用户
+$>create role rolename;                                                            #角色管理,创建一个角色，rolename为角色名
+$>grant create session to rolename;                                                #角色管理,给角色授予session权限
+$>grant create table to rolename;                                                  #角色管理,给角色授予表操作权限
+$>create user rhel identified by password                                          #角色管理,创建一个用户
+$>grant rolename to rhel;                                                          #角色管理,把角色授予给用户
+$>drop role rolename ;                                                             #角色管理,删除角色
+$>grant unlimited tablespace to rolename;                                          #角色管理,这个权限比较大,建议直接授权给用户
+$>grant alter any table to rhel;                                                   #权限传递,直接从sys授权
+$>grant alter any table to zhangsan;                                               #权限传递,登录rhel用户,不能从rhel用户授权给zhangsan用户
+$>grant alter any table to rhel with admin option;                                 #权限传递,直接从sys授权rhel,并赋予权限传递
+$>grant alter any table to zhangsan with admin option;                             #权限传递,登录rhel用户,从rhel授权张三,并赋予了权限传递
+$>create table a(id int);                                                          #权限传递,在sys中创建一个表a
+$>grant select on a to rhel                                                        #权限传递,把表的权限传递给rhel,但是rhel不能继续传递select权限
+$>grant select on a to rhel with grant option;                                     #权限传递,从sys中表操作权限传递给rhel,并且rhel能继续传递表操作权限
+$>grant select on sys.a to zhangsan with grant option;                             #权限传递,登录rhel用户,传递给了shangsan,并且shangsan也能继续传递操作权限
+$>grant select on tablename to rhel;                                               #使用rhel访问zhangsan的表,把查询权限授予rhel
+$>grant insert on tablename to rhel;                                               #使用rhel访问zhangsan的表,把插入权限授予rhel
+$>commit;                                                                          #使用rhel访问zhangsan的表,提交后才能显示数据
+$>grant all on tablename to rhel;                                                  #使用rhel访问zhangsan的表,把表的最大权限授予rhel
+$>revoke all on tablename from rhel;                                               #使用rhel访问zhangsan的表,撤消rhel对表的操作权限
+$>commit;                                                                          #每次对表操作后要提交
+$>alter table tablename add name varchar(50);
+$>commit;
+$>grant update(name) on tablename to rhel;                                         #让rhel只有更新name列的权限
+$>grant insert(id) on tablename to rhel;                                           #让rhel只有插入id列的权限
+$>update zhangsan.tablename set name='xxx' where id=1;
+$>commit;
+$>select * from v$tablespace;                                                      #查询所有表空间
+$>select * from user_tables;                                                       #查询当前数据中所有表名
+$>select sys_context ('USERENV','CON_NAME') from dual;                                                                                                                         #step.1 查看当前环境所属容器,eg.CDB$ROOT即CDB容器
+$>select con_id,dbid,NAME,OPEN_MODE from v$pdbs;                                                                                                                               #step.2 查看pdb容器信息
+$>alter pluggable database ORCLPDB open;                                                                                                                                       #step.3 打开PDBORCL数据库
+or 
+$>alter pluggable database ORCLPDB close;                                                                                                                                      #step.3 关闭PDBORCL数据库
+$>select con_id,dbid,NAME,OPEN_MODE from v$pdbs;                                                                                                                               #step.4 查看pdb容器信息
+$>alter session set container=ORCLPDB;                                                                                                                                         #step.5 切换当前session到ORCLPDB容器
+$>select sys_context ('USERENV','CON_NAME') from dual;                                                                                                                         #step.6 查看当前环境所属容器,eg.CDB$ROOT即CDB容器
+$>create user username identified by password default tablespace tablespacename temporary tablespace tablespacename Quota number[k|m|limited|unlimited] on tablespacename      #step.7 创建用户的完整格式
+ eg.>create user rhel identified by 123456 default tablespace users temporary tablespace temp quota 50m on users;
+$>alter user username account lock;                                                #限制用户,用户加锁
+$>alter user username account unlock;                                              #限制用户,用户解锁
+$>alter user username password expire;                                             #限制用户,用户口令即刻失效
+$>drop user username [cascade] cascade                                             #删除用户,表示删除用户所有对象
+ eg.>drop user abc cascade;
+
+oracle基本操作语句
+-------------------
+创建表
+------------
+create table tablename(
+  col1 type,
+  col2 type
+);
+
+创建表（包括主键及外键设置）
+------------
+create table tablename(
+  col1 type constraint pk_tablename primary key,
+  col2 type not null,
+  col3 type constraint fk_tablename reference tablename(colname),
+  col4 type constraint ck_tablename check(col4 in(''xxxx'',''ssss'',...))
+);
+
+创建表
+------------
+create table tablename(
+  col1 type primary key,
+  col2 type not null,
+  col3 type check(col3 in(''xxxx'',''ssss'',....))),
+  col4 type reference tablename(colname)
+);
+
+$>alter table tablename modify(colname type);                                     #修改列属性
+$>alter table tablename add(colname type);                                        #添加列
+$>alter table tablename add constraint pk_tablename primary key(colname);         #添加主键约束和非空约束
+$>alter table tablename modify(colname not null);
+$>alter table tablename drop primary key;                                         #删除主键约束
+$>alter table tablename drop constraint pk_tablename                              #删除主键约束
+$>alter table tablename disable primary key;                                      #失效约束
+$>alter table tablename disable constraint pk_tablename;                          #失效约束
+$>alter table tablename enable primary key;                                       #有效约束
+$>alter table tablename enable constraint pk_tablename;                           #有效约束
+$>alter table tablename drop column colname                                       #删除列
+$>alter table tablename set unused(colname);                                      #设置某列不可用,然后删除
+$>alter table tablename drop unused columns;                                      #设置某列不可用,然后删除
+$>rename tablename1 to tablename2;                                                #修改表名
+$>alter tablename1 rename to tablename2;                                          #修改表名
+$>truncate table tablename;                                                       #截断表
+$>truncate table tablename resue storage;                                         #截断表保留行空间
+$>desc table tablename;                                                           #查看表结构
+$>drop table tablename;                                                           #删除表
+$>insert into tablename values(....);                                             #插入记录
+$>insert into tablename(....) values(.....);                                      #插入记录
+$>insert into tablename values(&colname1,&colname2,...);                          #带参数对话方式插入行
+$>insert into tablename(col1,col2,...) values(val1,val2,.....);                   #插入某几列记录
+$>insert into tablename values(col1,null,null,...);                               #为列插入空值
+$>select * from tablename;                                                        #查询所有行
+$>select col1,col2 from tablename;                                                #查询某几列
+$>select distict colname from tablename;                                          #重复行消除
+$>select * from tablename where 条件 order by colname;                            #where语句查询
+$>update tablename set(colname=?) where colname=?                                 #修改列的数据
+$>delete from tablename where 条件                                                #删除行
+
+事务处理
+-------------------
+$>update tablename set colname(日期)=''30-5月-91'' where 条件;
+$>savepoint mark1;
+$>delete from tablename where 条件;
+$>savepoint mark2;
+$>rollback to savepoint mark1;
+$>rollback;

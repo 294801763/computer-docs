@@ -1,0 +1,173 @@
+增加时间
+--------------
+$>TZ="Asia/Shanghai" date -s "2024-10-23 05:22"                     #设置当前时间
+$>nano checkv1.0
+--
+#!/bin/sh
+ 
+TARGET="www.baidu.com" 
+interface="wwan0"
+M=1048576
+G=1073741824
+
+touch /root/total
+lcnt=`cat /root/total`
+
+ping -c 3 $TARGET > /dev/null 2>&1
+ 
+if [ $? -ne 0 ]; then
+    echo "ERROR,Reboot..."
+	tim=`TZ="Asia/Shanghai" date +"%Y-%m-%d %H:%M:%S"`
+	rx=$(cat /sys/class/net/$interface/statistics/rx_bytes)
+	tx=$(cat /sys/class/net/$interface/statistics/tx_bytes)
+	total=$(($rx + $tx))
+	
+	let lcnt=$lcnt+$total
+	result1=$((lcnt / M))
+	result2=$((lcnt / G))
+	
+	echo $lcnt > /root/total
+	echo "$tim $lcnt B $result1 M $result2 G" > /root/show
+        
+    /sbin/reboot -f
+else
+	echo "SUCCESS..."
+	rx=$(cat /sys/class/net/$interface/statistics/rx_bytes)
+	tx=$(cat /sys/class/net/$interface/statistics/tx_bytes)
+	total=$(($rx + $tx))
+	echo "TOTAL: $total bytes"
+fi
+
+$>nano cc
+--
+#!/bin/sh
+
+interface="wwan0"
+M=1048576
+G=1073741824
+
+touch /root/total
+lcnt=`cat /root/total`
+
+echo "INFO,Statistical traffic ..."
+tim=`TZ="Asia/Shanghai" date +"%Y-%m-%d %H:%M:%S"`
+rx=$(cat /sys/class/net/$interface/statistics/rx_bytes)
+tx=$(cat /sys/class/net/$interface/statistics/tx_bytes)
+total=$(($rx + $tx))
+
+let lcnt=$lcnt+$total
+result1=$((lcnt / M))
+result2=$((lcnt / G))
+
+echo $lcnt > /root/total
+echo "$tim $lcnt B $result1 M $result2 G" > /root/show
+
+增加双网口判断
+--------------
+$>nano checkv1.1
+--
+#!/bin/sh
+ 
+TARGET="www.baidu.com" 
+interface1="wwan0"
+interface2="eth0.1"
+M=1048576
+G=1073741824
+
+touch /root/total
+lcnt=`cat /root/total`
+
+ping -I $interface1 -c 3 $TARGET > /dev/null 2>&1
+ret1=$?
+
+ping -I $interface2 -c 3 $TARGET > /dev/null 2>&1
+ret2=$?
+
+if [ $ret1 | $ret2 -ne 0 ]; then
+    echo "ERROR,Reboot..."
+	tim=`TZ="Asia/Shanghai" date +"%Y-%m-%d %H:%M:%S"`
+	rx=$(cat /sys/class/net/$interface1/statistics/rx_bytes)
+	tx=$(cat /sys/class/net/$interface1/statistics/tx_bytes)
+	total=$(($rx + $tx))
+	
+	let lcnt=$lcnt+$total
+	result1=$((lcnt / M))
+	result2=$((lcnt / G))
+	
+	echo $lcnt > /root/total
+	echo "$tim $lcnt B $result1 M $result2 G" > /root/show
+        
+    /sbin/reboot -f
+else
+	echo "SUCCESS..."
+	rx=$(cat /sys/class/net/$interface1/statistics/rx_bytes)
+	tx=$(cat /sys/class/net/$interface1/statistics/tx_bytes)
+	total=$(($rx + $tx))
+	echo "TOTAL: $total bytes"
+fi
+
+增加双网口判断并统计流量
+--------------
+$>nano checkv1.2 - 每隔10分钟检测一次
+--
+#!/bin/sh
+ 
+TARGET="www.baidu.com" 
+interface1="wwan0"
+interface2="eth0.1"
+M=1048576
+G=1073741824
+
+touch /root/total1
+lcnt1=`cat /root/total1`
+
+touch /root/total2
+lcnt2=`cat /root/total2`
+
+ping -I $interface1 -c 3 $TARGET > /dev/null 2>&1 || ping -I $interface2 -c 3 $TARGET > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo "ERROR,Reboot..."
+	tim=`TZ="Asia/Shanghai" date +"%Y-%m-%d %H:%M:%S"`
+	rx1=$(cat /sys/class/net/$interface1/statistics/rx_bytes)
+	tx1=$(cat /sys/class/net/$interface1/statistics/tx_bytes)
+	total1=$(($rx1 + $tx1))
+	
+	rx2=$(cat /sys/class/net/$interface2/statistics/rx_bytes)
+	tx2=$(cat /sys/class/net/$interface2/statistics/tx_bytes)
+	total2=$(($rx2 + $tx2))
+	
+	let lcnt1=$lcnt1+$total1
+	result1=$((lcnt1 / M))
+	result2=$((lcnt1 / G))
+	
+	let lcnt2=$lcnt2+$total2
+	result3=$((lcnt2 / M))
+	result4=$((lcnt2 / G))
+	
+	echo $lcnt1 > /root/total1
+	echo $lcnt1 > /root/total2
+	echo "$tim wireless: $lcnt1 B $result1 M $result2 G ehternet: $lcnt2 B $result3 M $result4 G" > /root/show
+        
+    /sbin/reboot -f
+else
+	echo "INFO,SUCCESS..."
+	tim=`TZ="Asia/Shanghai" date +"%Y-%m-%d %H:%M:%S"`
+	rx1=$(cat /sys/class/net/$interface1/statistics/rx_bytes)
+	tx1=$(cat /sys/class/net/$interface1/statistics/tx_bytes)
+	total1=$(($rx1 + $tx1))
+	
+	rx2=$(cat /sys/class/net/$interface2/statistics/rx_bytes)
+	tx2=$(cat /sys/class/net/$interface2/statistics/tx_bytes)
+	total2=$(($rx2 + $tx2))
+	
+	let lcnt1=$lcnt1+$total1
+	result1=$((lcnt1 / M))
+	result2=$((lcnt1 / G))
+	
+	let lcnt2=$lcnt2+$total2
+	result3=$((lcnt2 / M))
+	result4=$((lcnt2 / G))
+	
+	echo "$tim wireless: $lcnt1 B $result1 M $result2 G ehternet: $lcnt2 B $result3 M $result4 G"
+fi

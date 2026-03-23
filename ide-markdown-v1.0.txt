@@ -1,0 +1,326 @@
+# Markdown - CSS 设置
+文件->设置->语言和框架->Markdown->自定义CSS->规则
+<br/>
+`--------------------`
+```css
+/*段落*/
+p
+{
+	font-size: 14px;
+	margin: 0px;
+	padding:0px;
+}
+
+/*标题*/
+h1 , h2 , h3 , h4 , h5 , h6
+{
+	font-size: 14px;
+	margin: 0px;
+	padding:0px;
+}
+
+/*代码段*/
+pre {
+	margin: 0px;
+	padding:0px;
+	font-size: 14px;
+}
+
+/*行内代码*/
+code {
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 14px;
+	color: #000000; 
+	margin: 0px;
+	padding: 0px;
+	border: 0px;
+	border-radius: 3px;
+}
+
+/*分割线*/
+hr {
+	border: 1px dashed #000000;
+	height: 1px;
+	margin: 0px;          
+	padding:0px;
+	background: #333;
+	background-image: linear-gradient(to right, #ccc, #333, #ccc);
+	box-shadow: 0 2px 2px rgba(0, 0, 0, 0.5); /* 阴影效果 */
+}
+```
+
+<br/>
+<!-- 结束 - Markdown - CSS 设置 -->
+
+# 强调
+<!-- 开始 - 强调 -->
+*斜体文本* 
+<br/>
+或
+<br/>
+_斜体文本_
+<br/>
+**粗体文本**
+<br/>
+或
+<br/>
+__粗体文本__
+
+<br/>
+<!-- 结束 - 强调 -->
+
+# 列表
+<!-- 开始 - 列表 -->
+- 无序列表项1
+- 无序列表项2
+- 无序列表项3
+
+1. 有序列表项1
+2. 有序列表项2
+3. 有序列表项3
+
+<br/>
+<!-- 结束 - 列表 -->
+
+# 引用
+<!-- 开始 - 引用 -->
+> 这是一个引用块。
+<br/>
+> 这是同一引用块的下一行。
+
+<br/>
+<!-- 结束 - 引用 -->
+
+# 表格
+<!-- 开始 - 表格 -->
+| 列1 | 列2 | 列3 |
+|-----|-----|-----|
+| 单元格1 | 单元格2 | 单元格3 |
+| 单元格4 | 单元格5 | 单元格6 |
+
+<br/>
+<!-- 结束 - 表格 -->
+
+# 分割线 
+<!-- 开始 - 分割线 -->
+只支持 `---` 
+<br/>
+---
+
+<br/>
+<!-- 结束 - 分割线 -->
+
+# 脚注 
+<!-- 开始 - 脚注 -->
+CLion 2025.2.1 貌似不支持
+
+<br/>
+<!-- 结束 - 脚注 -->
+
+# 删除线 
+<!-- 开始 - 删除线 -->
+~~删除线~~
+
+<br/>
+<!-- 结束 - 删除线 -->
+
+# 任务列表 
+<!-- 开始 - 任务列表 -->
+- [ ] 未完成的任务
+- [x] 已完成的任务
+
+<br/>
+<!-- 结束 - 任务列表 -->
+
+# 保持原始文本
+使用反引号来创建代码块
+<br/>
+例如：
+<br/>
+`--------------------`
+
+<br/>
+<!-- 结束 - 保持原始文本 -->
+
+# 一级标题
+<br/>
+<!-- 结束 - 一级标题 -->
+
+# 插入代码段
+```c
+#include <stdio.h>
+#include <version.h>
+
+int main(int argc,char **argv)
+{
+   // 输出当前程序的版本信息到控制台
+   printf("Version: %s\n", VERSION);
+
+  // 显式标记参数 argc 为未使用，避免编译器警告
+  UNUSED(argc) ;
+
+  // 显式标记参数 argv 为未使用，避免编译器警告
+  UNUSED(argv);
+
+  return 0;
+}
+```
+
+<br/>
+<!-- 结束 - 插入代码段 -->
+
+# 段落
+段落内容
+<br/>
+或者
+<br/>
+<p>
+段落内容
+连续段落内容
+
+换行段落内容
+</p>
+
+<br/>
+<!-- 结束 - 段落 -->
+
+# 折叠内容
+<details>
+  <summary>点击展开内容</summary>
+  这是隐藏的内容，点击标题可以展开查看。
+</details>
+
+<br/>
+<!-- 结束 - 折叠内容 -->
+
+# 插入视频 - 本地
+<video controls>
+  <source src="./videos/example.mp4" type="video/mp4">
+</video>
+
+<!-- 结束 - 插入视频 -->
+
+# 插入视频 - 网络
+<video controls>
+  <source src="https://example.com/video.mp4" type="video/mp4">
+</video>
+
+<!-- 结束 - 插入视频 -->
+
+# 插入音频 - 网络
+<audio controls>
+  <source src="https://example.com/audio.mp3" type="audio/mpeg">
+</audio>
+
+<!-- 结束 - 插入音频 -->
+
+# 插入音频 - 本地
+<audio controls>
+  <source src="./audio/example.mp3" type="audio/mpeg">
+</audio>
+
+<!-- 结束 - 插入音频 -->
+
+# 插入文档 - 网络
+<a href="https://example.com/document.pdf" download>下载文档</a>
+
+<!-- 结束 - 插入文档 -->
+
+# 插入文档 - 本地
+<a href="./documents/example.pdf" download>下载文档</a>
+
+<!-- 结束 - 插入文档 -->
+
+# 插入图片 - 网络
+<img src="https://example.com/image.jpg" alt="示例图片" style="display: block; margin: auto;">
+or
+<br/>
+![示例图片](https://example.com/image.jpg)
+
+<!-- 结束 - 插入图片 -->
+
+# 插入图片 - 本地
+![示例图片](./images/example.jpg)
+
+<!-- 结束 - 插入图片 -->
+
+# ------------------------------------------------隐藏内容------------------------------------------------
+<div style="display: none;">
+  这是隐藏的内容。
+</div>
+<br/>
+
+# ------------------------------------------------隐藏内容------------------------------------------------
+<button onclick="toggleContent()">显示/隐藏内容</button>
+<br/>
+<div id="hidden-content" style="display: none;">
+# 一级标题
+
+#插入代码段
+<br/>
+```c
+#include <stdio.h>
+#include <version.h>
+
+int main(int argc,char **argv)
+{
+   // 输出当前程序的版本信息到控制台
+   printf("Version: %s\n", VERSION);
+
+  // 显式标记参数 argc 为未使用，避免编译器警告
+  UNUSED(argc) ;
+
+  // 显式标记参数 argv 为未使用，避免编译器警告
+  UNUSED(argv);
+
+  return 0;
+}
+```
+
+#插入视频 - 本地
+<br/>
+<video controls>
+  <source src="./videos/example.mp4" type="video/mp4">
+</video>
+
+#插入视频 - 网络
+<br/>
+<video controls>
+  <source src="https://example.com/video.mp4" type="video/mp4">
+</video>
+
+#插入音频 - 网络
+<br/>
+<audio controls>
+  <source src="https://example.com/audio.mp3" type="audio/mpeg">
+</audio>
+
+#插入音频 - 本地
+<br/>
+<audio controls>
+  <source src="./audio/example.mp3" type="audio/mpeg">
+</audio>
+
+#插入文档 - 网络
+<br/>
+<a href="https://example.com/document.pdf" download>下载文档</a>
+
+#插入文档 - 本地
+<br/>
+<a href="./documents/example.pdf" download>下载文档</a>
+
+#插入图片 - 网络
+<br/>
+![示例图片](https://example.com/image.jpg)
+</div>
+
+<script>
+  function toggleContent() {
+    var content = document.getElementById('hidden-content');
+    if (content.style.display === 'none') {
+      content.style.display = 'block';
+    } else {
+      content.style.display = 'none';
+    }
+  }
+</script>

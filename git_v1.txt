@@ -1,0 +1,328 @@
+初始化Git仓库
+-------------------
+$>useradd [repo] -s /bin/bash -m -d [/repo]                            #添加repo用户,并创建[/repo]目录.
+$>passwd [repo]                                                        #设置repo密码.
+$>su - [repo]
+$>git init --bare [repo_name].git                                      #创建Git仓库. 
+$>git clone [repo]@[server ip]:[/repo_name].git                        #克隆仓库.
+
+Git把修改提交到远程仓库
+-------------------
+$>git config --global user.name "HY"
+$>git config --global user.email "huhuoyun@sina.com"
+$>git branch -m [old-branch name] [new-branch name]                    #重命名本地分支.
+$>git remote -v                                                        #查看本地添加了哪些远程分支.
+$>git branch -a                                                        #查看本地和远程的所有分支.
+$>git branch -r                                                        #查看远程所有分支.
+$>git pull                                                             #步骤1,取回更新.
+$>git push                                                             #步骤2,推送仓库修改的内容.
+$>git fetch                                                            #步骤3,从远程主机仓库拉取更新内容到本地仓库.
+或者
+$>git pull origin                                                      #步骤1,取回更新.
+$>git push origin                                                      #步骤2,推送仓库修改的内容.
+$>git fetch origin                                                     #步骤3,从远程主机仓库拉取更新内容到本地仓库.
+或者
+$>git pull origin master                                               #步骤1,取回远程主机某个分支的更新,再与芬迪指定的分支合并;origin为远程主机名称[可通过"git remote -v"查询主机名],master为远程分支名[可通过"git branch -r"查询主机名].
+$>git push origin master                                               #步骤2,把当前提交到Git本地仓库的代码推送到远程主机origin的master分支上.
+$>git fetch origin                                                     #步骤3,从远程主机仓库拉取更新内容到本地仓库.
+
+Git创建远程分支
+-------------------
+$>git checkout -b [new-branch name]
+$>git add .
+$>git commit -am "..."
+$>git push origin [new-branch name]
+
+Git签出远程分支
+-------------------
+$>git checkout -b [branch-name] origin/[master/remote-branch name]
+
+Git删除远程分支
+-------------------
+$>git push origin --delete [master/remote-branch name]                 #删除远程分支.
+
+Git修改远程仓库地址
+-------------------
+方法1
+------
+$>git remote set-url origin [url]                                      #修改命令.
+例如:
+$>git remote set-url [repo]@[server ip]:[/repo_name].git
+
+方法2
+------
+$>git remote rm origin
+$>git remote add origin [url]                                          #先删后加.
+
+Git继承上一次的修改信息
+-------------------
+$>git commit --amend                                                   #更改最近一次提交信息.
+
+Git标签
+-------------------
+$>git checkout [tag-name]                                              #切换到tag-name,只能查看不能修改代码.
+$>git fetch                                                            #取回所有分支的更新.
+$>git checkout -b [branch-name] [tag-name]                             #切换到tag-name,可以在tag-name基础上修改代码.
+$>git branch -a                                                        #查看远程和本地的分支.
+
+Git查询某次历史提交的修改内容
+-------------------
+$>git log 
+$>git log -b [branch name]                                             #查看某个分支日志.
+$>git log -3 --stat                                                    #查看最近的3条更新日志.
+$>git log -p [filename]                                                #查看[filename]的每次提交修改记录.
+$>git log --all -p [filename]                                          #查看[filename]的所有提交修改记录.
+$>git log --all -p [filename] > [/x/y/filename]                        #将[filename]的所有提交修改记录导出到[/x/y/filename].
+$>git show [commit-hashid]
+$>git show [commit-hashid] [filename]
+
+Git模块管理
+-------------------
+添加模块
+------
+$>git submodule add [repo] [path]                            #添加.
+$>git submodule init 
+$>git submodule update 
+或者
+$>git submodule update --init --recursive
+$>while true ;do git submodule update --init --recursive; done; 
+or 
+$>git clone --recursive https://github.com/boostorg/boost.git
+
+注意:仓库地址[repo]是指子模块仓库地址,路径[path]指将子模块放置在当前工程下的路径.路径不能以/结尾,不能是现有工程已有的目录;命令执行完成会在当前工程根路径下生成一个名为"gitmodules"的文件,其中记录了子模块的信息;添加完成以后,再将子模块所在的文件夹添加到工程即可.
+
+删除模块 
+------
+$>rm -rf [module-name]                                       #删除子模块目录以及源码.
+$>vi .gitmodules                                             #删除项目目录下.gitmodules/[module-name].
+$>vi .git/config                                             #删除配置项中子模块相关条目.
+$>rm .git/module/[module-name]                               #删除模块下的子模块目录.
+$>git ls-files --stage                                       #查看待删除的列表.
+$>git rm --cached [module-name]                              #删除;如果提示"fatal: Please, stage your changes to .gitmodules or stash them to proceed",只需将".gitmodules"删除即可.
+$>git rm --cached .gitmodules                                #这只有在删除所有模块的时候,才需要移除".gitmodules".
+
+注意:submodule的删除稍微麻烦点,首先要在".gitmodules"文件中删除相应的配置信息;然后执行"git rm -cached"命令将子模块所在的文件从git中删除.
+
+更新子模块
+------
+$>git submodule update --init --recursive                    #下载的工程带有submodule.
+
+注意:当使用"git clone"的工程中带有submodule时,初始化的时候submodule的内容并不会自动下载下来,此时需执行"git submodule update --init --recursive"命令,即可将子模块的内容下载下来后工程才不会缺少相应的文件.
+
+Git工程管理
+---------------
+Git工程包含一个主要的远程主机[origin,通过"git remote -v"的方式进行查看],其他远程使用submodule的方式进行管理;当前Github上的大型项目都是采用此方式进行管理的. 
+
+Git保存当前工作状态
+-------------------
+$>git stash          #保存当前的工作线程.
+$>git stash list     #查看当前分支保存列表.
+$>git stash pop      #恢复stash保存内容,并把stash内容也删了.
+$>git stash drop     #删除stash保存的内容.
+$>git stash apply <数字,eg.0/1/2/3...等等>                #恢复stash保存内容但并不删除保存内容.
+$>git stash save <消息,例如:"save stash message.">
+$>git stash save <消息,例如:"save stash message."> -u     #包含没有追踪的文件,非常实用.
+$>git stash show <数字,eg.0/1/2/3...等等>                 #查看差异.
+$>git stash show -p <数字,eg.0/1/2/3...等等>              #查看完整差异.
+$>git stash drop  <数字,eg.0/1/2/3...等等>                #删除指定的stash.
+$>git stash clear                                         #删除创库中所有stash.
+
+Git工作中常用保存当前工作状态的命令
+-------------------
+$>git stash
+$>git stash list
+$>git stash pop
+
+注意:频繁地修改代码都可以以上命令临时保存工作状态.
+
+Git目录规划
+-------------------
+$>git init /root/working
+$>cd /root/working
+$>touch README
+$>git add .
+$>git commit -am "add README"
+$>git branch tcp
+$>git branch udp
+$>git branch socket
+$>git branch signal
+$>git branch sqlite
+$>git branch linux
+$>git branch linux-c
+$>git branch datastruct
+$>git checkout -b openssl
+
+$>vi /usr/bin/working 
+------
+#!/bin/bash 
+
+mkdir -p /root/working
+git init /root/working
+cd /root/working
+touch README
+git add .
+git commit -am "add README"
+git branch tcp
+git branch udp
+git branch vpn
+git branch gcc
+git branch gdb
+git branch bash
+git branch linux
+git branch nginx
+git branch socket
+git branch signal
+git branch sqlite
+git branch linux-c
+git branch makefile
+git branch datastruct
+git branch openvswitch
+git checkout -b openssl
+
+注意:以后每次创建新的分支前都需要执行"git checkout master",然后再执行"git checkout -b [name]".
+
+Git创建仓库
+-------------------
+$>git init
+$>git init /[x]/[y]/[z]/...       #在"/[x]/[y]/[z]/..."目录下创建仓库.
+
+提交到Git仓库
+-------------------
+$>git add *.c
+$>git add README
+$>git commit -am 'add README'
+
+注意:以上命令是将目录下的.c结尾以及README文件提交到仓库中.
+
+查看项目的当前状态
+-------------------
+$>git status -s 
+
+注意:如果状态是'AM-这个文件在我们将它添加到缓存之后又有改动',此时我们需再次执行"git add ."将修改的内容添加到缓存中,否则修改的内容将无法提交到仓库.
+
+查看已改动的缓存
+-------------------
+$>git diff --cached
+
+查看已缓存的与未缓存的所有改动
+-------------------
+$>git diff HEAD
+
+Git提交修改
+-------------------
+$>git commit -am "..."
+
+取消已缓存的内容
+-------------------
+$>git status -s 
+------
+M  README
+M  hello
+
+$>git reset HEAD hello  #现在有两个文件发生了修改并且都已经提交到了缓存区,这里是取消hello文件的缓存.
+$>git commit -am "..."  #此时提交只会将README文件的修改提交到仓库.
+
+Git删除文件
+-------------------
+$>git rm -f [FILE]       #删除之前修改过并且已经放到暂存区域,则必须用强制删除"-f"选项.
+$>git rm --cached [FILE]  #从暂存区域移除，但仍然希望保留在当前的工作目录中.
+$>git rm -r *            #递归删除,如果后面跟的是一个目录做为参数,则会递归删除整个目录中所有子目录和文件.
+
+Git重命名
+-------------------
+$>git mv README README.md 
+$>git commit -am "mv ..."
+
+Git创建分支
+-------------------
+$>git branch [name]
+
+Git切换分支
+-------------------
+$>git checkout [name]
+
+Git合并分支
+-------------------
+$>git merge [name]
+
+Git列出分支
+-------------------
+$>git branch 
+
+Git创建新分支并立即切换到该分支下
+-------------------
+$>git checkout -b [name]
+
+Git删除分支
+-------------------
+$>git branch -d [name]
+
+Git标签
+-------------------
+$>git tag -a "v1.0" -m "..."
+$>git tag                                   #查看标签.
+$>git log --oneline --decorate --graph      #查看标签.
+
+查看Git日志
+-------------------
+$>git log --graph
+$>git log --reverse
+$>git log --oneline --author=huhuoyun
+
+查看远程仓库的Git日志
+-------------------
+$>git log origin/master
+
+设置代理
+-------------------
+$>git --config "http.proxy=socks5://<SER_IP>:10808 https.proxy=socks5://<SER_IP>:10808" clone <URL>
+$>git --config "http.proxy=socks5://127.0.0.1:1080" clone <地址>                                             #测试OK.
+$>git config --global http.proxy socks5://127.0.0.1:1080
+
+完全地覆盖本地的代码只保留服务器端代码
+-------------------
+$>git reset --hard
+$>git pull origin master
+
+Download(通用)
+-------------------
+$>git config -l
+$>git config --global http.version HTTP/1.1
+$>git config --global http.sslVerify false
+$>git config --global http.postBuffer 5368709120
+$>git config --global http.lowSpeedLimit 0 
+$>git config --global http.lowSpeedTime 3600
+$>git clone --depth=1 --recurse-submodules https://<...>.git <dir-name>
+or
+$>git clone --no-tags --depth=1 --single-branch --recurse-submodules -b <branch-name> https://<...>.git <dir-name>
+$>git push --depth=1
+$>cd <dir-name>
+$>git ls-remote --heads
+$>git fetch --unshallow                   #恢复全部的历史提交记录
+
+Download(CAD)
+-------------------
+$>apt-get install gnutls-bin
+$>git config -l
+$>git config --global http.version HTTP/1.1
+$>git config --global http.sslVerify false
+$>git config --global http.postBuffer 5368709120
+$>git config --global http.lowSpeedLimit 0 
+$>git config --global http.lowSpeedTime 3600
+$>git clone --depth=1 --recurse-submodules https://github.com/FreeCAD/FreeCAD.git freecad
+or
+$>git clone --no-tags --depth=1 --single-branch --recurse-submodules -b releases/FreeCAD-0-21 https://github.com/FreeCAD/FreeCAD.git freecad
+$>git push --depth=1
+$>cd freecad
+$>git ls-remote --heads
+$>git fetch --unshallow                   #恢复全部的历史提交记录
+
+创建临时分支
+-------------------
+$>git switch --create temp                #创建临时分支
+$>git add --all                           #添加
+$>git commit -m "Temporary commit"        #提交
+$>git push --set-upstream origin temp     #Push分支
+$>git switch <branch-name>                #切换分支
+$>git branch -d temp                      #删除临时分支
+

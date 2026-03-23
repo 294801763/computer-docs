@@ -1,0 +1,103 @@
+#!/bin/bash 
+
+#BOOST 
+mkdir -p ./demo && cd demo 
+mkdir -p ./rec
+ln -sf ../debug . 
+ln -sf ../g .
+
+#Makefile 
+cat>./Makefile<<EOF
+CC=g++
+
+objects = $(wildcard *.cpp)
+files = $(notdir $(objects))
+
+OBJS = $(patsubst %.cpp, %.o, $(files)) 
+TARGETS := xx
+CXXFLAGS=-I. -I../boost/include -L../boost/lib -g3 -O0 -std=c++17 -Wall
+BOOSTLIBS=-lpthread -lrt -lm -lstdc++ -ldl -lz -lboost_atomic -lboost_chrono -lboost_container -lboost_context -lboost_contract -lboost_coroutine -lboost_date_time -lboost_exception -lboost_fiber -lboost_filesystem -lboost_graph -lboost_iostreams -lboost_json -lboost_locale -lboost_log -lboost_log_setup -lboost_math_c99 -lboost_math_c99f -lboost_math_c99l -lboost_nowide -lboost_prg_exec_monitor -lboost_program_options -lboost_random -lboost_regex -lboost_serialization -lboost_stacktrace_addr2line -lboost_stacktrace_backtrace -lboost_stacktrace_basic -lboost_stacktrace_noop -lboost_system -lboost_thread -lboost_timer -lboost_type_erasure -lboost_wave -lboost_wserialization
+
+all:$(OBJS)
+	$(CC) $(CXXFLAGS) -o $(TARGETS) $^ $(BOOSTLIBS)
+	
+%.o:%.cpp
+	$(CC) $(CXXFLAGS) -c $^
+
+.PHONY:clean
+clean:
+	rm $(OBJS) $(TARGETS)
+
+#/vsftpd/cxx/cc-boost/boost.tar.gz - vsersion 1.76
+#./bootstrap.sh --prefix=/mnt/static/boost && ./b2 variant=release link=static threading=multi install 2>&1 | tee build.log
+#编译至少需要2G以上的内存.
+#./bootstrap.sh --prefix=/mnt/cc/boost && ./b2 -j`nproc` address-model=64 architecture=x86 -a -q --toolset=gcc --debug-configuration --debug-generator --layout=system --without-python variant=debug link=static threading=multi runtime-link=static install 2>&1 | tee build.log
+EOF
+
+#demo.cpp
+cat>./demo.cpp<<EOF
+#include <iostream>
+#include <cstring>
+using namespace std;
+class String {
+public:
+	String (const char* str = NULL) {
+		m_str = new char[strlen(str?str:"")+1];
+		strcpy (m_str, str ? str : "");
+	}
+	~String (void) {
+		if (m_str) {
+			delete[] m_str;
+			m_str = NULL;
+		}
+	}
+	String (const String& that) :
+		m_str (strcpy (
+			new char[strlen(that.m_str)+1],
+			that.m_str)) {}
+	/* 菜鸟
+	void operator= (const String& that) {
+		m_str = new char[strlen(that.m_str)+1];
+		strcpy (m_str, that.m_str);
+	}*/
+	String& operator= (const String& that) {
+		if (&that != this) {
+			/* 小鸟
+			delete[] m_str;
+			m_str = new char[strlen(that.m_str)+1];
+			strcpy (m_str, that.m_str);
+			*/
+			/* 大鸟
+			char* str = 
+				new char[strlen(that.m_str)+1];
+			delete[] m_str;
+			m_str = strcpy (str, that.m_str);
+			*/
+			// 老鸟
+			String temp (that);
+			swap (m_str, temp.m_str);
+		}
+		return *this;
+	}
+	const char* c_str (void) const {
+		return m_str;
+	}
+private:
+	char* m_str;
+};
+int main (void) {
+	String s1 ("Hello, World !");
+	cout << s1.c_str () << endl;
+	String s2 = s1;
+	cout << s2.c_str () << endl;
+	String s3 ("Hello, Linux !");
+	try {
+		s1 = s3;
+	}
+	catch (exception& ex) {
+		cout << ex.what () << endl;
+	}
+	cout << s1.c_str () << endl;
+	return 0;
+}
+EOF

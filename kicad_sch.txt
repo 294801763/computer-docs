@@ -1,0 +1,105 @@
+设置备份
+---------------
+Kicad->Preferences->Preferences...->Common->Project Backup
+
+更改热键设置
+----------------
+Kicad->Preferences->Preferences...->Hotkeys->...
+
+设置原理图的标题和日期
+----------------
+Schematic Editor->File->Page Settings...->Issue Data             #时间
+Schematic Editor->File->Page Settings...->Revision               #版本号
+Schematic Editor->File->Page Settings...->Titile                 #标题
+Schematic Editor->File->Page Settings...->Company                #公司名称
+Schematic Editor->File->Page Settings...->Comment1               #注释
+
+默认库表文件的位置
+---------------
+C:\Program Files\KiCad\6.0\share\kicad\template\                  #Windows.
+
+平移原理图
+---------------
+鼠标中键或鼠标右键单击并拖动
+
+放大和缩小原理图
+----------------
+F1  --  放大 
+F2  --  缩小
+
+给注释,符号和封装添加注解
+----------------
+Tools->Annotate Schematic...->Annotate->Close              #添加注解.
+Tools->Annotate Schematic...->Clear Annotate->Close        #清除注解.
+
+为每个组件分配一个封装
+----------------
+Tools->Assign Footprints...->
+
+注意:
+1.选择中间区域的Symbol:Footprint Assignments列表下的组件.
+2.在左边"Footprint Libraries"选择对应的库.
+3.在右边选择合适的Footprints,双击添加到对应的组件下即可.
+4.然后在PCB Editor中Update PCB from Schematic即可看到效果.
+
+电气检查
+----------------
+Inspect->Electrical Rules Checker->Run ERC
+
+更改符号属性
+----------------
+选择对应符号的Label,Properties...->Value:xxx
+快捷键:e
+
+添加符号
+----------------
+快捷键:a 
+
+添加连线
+----------------
+快捷键:w
+
+注意:使用Esc取消拉线.
+
+添加电源符号
+----------------
+快捷键:p
+
+注意:添加的电源标志,在电气检查会出现错误可以在电线使用PWR_FLAG进行标记;目的是为了在原理图明确显示.
+
+生成材料清单(BOM)
+----------------
+Tools->Generate BOM...->bom_csv_grouped_by_value_with_fp->Generate
+
+添加标签
+----------------
+快捷键:l
+
+元件-移动
+-----------------
+快捷键:m
+
+注意:
+1.对于未连接的符号G,M的功能相同;如果有了连接G会移除电气连接,M则会保留电气连接.
+2.M移动电线会丢弃电气连接.
+
+元件-拖拽
+-----------------
+快捷键:g 
+
+注意:
+1.对于未连接的符号G,M的功能相同;如果有了连接G会移除电气连接,M则会保留电气连接.
+2.G移动电线会保留电气连接.
+
+元件-旋转
+-----------------
+快捷键:r
+
+元件-删除
+-----------------
+快捷键:Delete
+
+
+
+
+

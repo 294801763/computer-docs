@@ -1,0 +1,368 @@
+项目模板
+--------------
+Application                               Qt应用程序,包含Qt Quick和普通窗口程序
+Library                                   创建动态库,静态库,Qt Creator自身插件,Qt Quick扩展插件
+其他项目                                  创建单元测试,子目录项目,QT设计师自定义控件
+Non-Qt Project                            可以创建纯C语言或纯C++项目 
+import Project                            从版本控制系统来管理软件项目,导入一些使用过的项目
+
+Application - Qt Widgets Application      普通窗口模板,传统基于剖析的窗体界面程序
+Application - Qt Console Application      控制台应用程序
+
+QMainWindow                               基于主窗口类的应用程序,一般主要用于比较复杂的程序,还可以包括菜单栏,状态栏,工具栏及多个停靠的工具对话框
+QWidget                                   最简单最基本的窗口程序,可以容纳很多个控件实现程序等功能
+QDialog                                   基于对话框,对话框一般主要用于弹窗,也可以用于主界面显示,从QWidget继承过来的.
+
+项目描述文件(.pro)
+--------------
+#          注释起始符号
+TARGET     可执行文件名称
+TEMPLATE   应用程序模板声明
+DEFINES    定义编译宏
+SOURCES    源文件声明
+HEADERS    头文件声明 
+FORMS      界面文件声明  
+
+基础模块
+--------------
+$>nano -w <name>.pro 
+--------
+...
+CONFIG += c++11
+
+QT += core gui svg widgets network 
+
+...
+#if _MSC_VER >= 1600
+    #pragma execution_character_set("UTF-8")
+#endif
+...
+
+UTF-8
+--------------
+$>nano -w <name>.pro 
+--------
+...
+QT += core gui svg widgets network 
+
+...
+#if _MSC_VER >= 1600
+    #pragma execution_character_set("UTF-8")
+#endif
+
+win32-msvc* {
+    QMAKE_CXXFLAGS += /source-charset:utf-8 /execution-charset:utf-8
+}
+...
+
+$>nano -w main.cpp 
+--------
+...
+#include <QTextCodec>
+...
+
+int main(int argc, char *argv[])
+{
+...
+	QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+    QTextCodec::setCodecForLocale(codec);
+...
+}
+
+窗口居中
+--------------
+$>nano -w main.cpp 
+--------
+...
+#include <QScreen>
+#include <QWidget>
+#include <QGuiApplication>
+...
+
+inline void CenterWidgets(QWidget *widget, QWidget *host = Q_NULLPTR) {
+    if (!host)
+        host = widget->parentWidget();
+
+    if (host) {
+        auto hostRect = host->geometry();
+        widget->move(hostRect.center() - widget->rect().center());
+    }
+    else {
+        QRect screenGeometry = QGuiApplication::screens()[0]->geometry();
+        int x = (screenGeometry.width() - widget->width()) / 2;
+        int y = (screenGeometry.height() - widget->height()) / 2;
+        widget->move(x, y);
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    Dialog w;
+	
+	CenterWidgets(&w);
+	w.show();
+	 
+    return a.exec();
+}
+
+Generic Algorithms<QtAlgorithms>
+--------------
+qAbs()
+qMin()
+qMax()
+qDebug()
+qRound()
+
+$>nano -w main.cpp 
+--------
+...
+#include <QDebug>
+...
+int main(int argc, char *argv[])
+{
+    qDebug()<<QObject::tr("strings")<<endl;
+	
+    return 0;
+}
+
+帮助->索引: QtGlobal
+
+按钮/提示框文本国际化
+--------------
+#include <QTranslator>
+
+QPushButton hello(QPushButton::tr("Hello world!"));
+
+{
+    QMessageBox msg(QMessageBox::NoIcon,tr("title"),tr("Tips"),QMessageBox::Yes|QMessageBox::No,NULL);
+	msg.setIconPixmap(QPixmap(":/24px.svg"));
+	
+    int result = msg.exec();
+    switch(result)
+    {
+    case QMessageBox::Yes:
+        QMessageBox::about(this,tr("title"),tr("Yes"));
+        break;
+    case QMessageBox::No:
+        QMessageBox::about(this,tr("title"),tr("No"));
+        break;
+    }
+}
+
+{
+    QMessageBox msg(QMessageBox::NoIcon,QMessageBox::tr("title"),QMessageBox::tr("Tips"),QMessageBox::Yes|QMessageBox::No,NULL);
+	msg.setIconPixmap(QPixmap(":/24px.svg"));
+	
+    int result = msg.exec();
+    switch(result)
+    {
+    case QMessageBox::Yes:
+        QMessageBox::about(this,QMessageBox::tr("title"),QMessageBox::tr("Yes"));
+        break;
+    case QMessageBox::No:
+        QMessageBox::about(this,QMessageBox::tr("title"),QMessageBox::tr("No"));
+        break;
+    }
+}
+
+注意:详细步骤可以参考"多语言".
+
+QMessageBox
+--------------
+文件->新建文件或项目...->Application(Qt)->Qt Widgets Application->...->Details->Base class:QDialog
+
+#include <QMessageBox>
+
+QMessageBox::information(NULL,"info","Tips",QMessageBox::Yes|QMessageBox::No);
+QMessageBox::information(this,"info","Tips",QMessageBox::Yes|QMessageBox::No);
+QMessageBox::information(this,"info","Tips",QMessageBox::Yes|QMessageBox::No|QMessageBox::Abort,QMessageBox::No);
+
+QMessageBox::critical(this,"critical","Tips",QMessageBox::Yes|QMessageBox::No,QMessageBox::No);
+
+QMessageBox::warning(this,"warning","Tips",QMessageBox::Yes|QMessageBox::No,QMessageBox::No);
+
+QMessageBox::question(this,"question","Tips",QMessageBox::Yes|QMessageBox::No,QMessageBox::No);
+
+QMessageBox::about(this,"about","Tips");
+
+{
+    int result = QMessageBox::question(this,"question","Tips",QMessageBox::Yes|QMessageBox::No,QMessageBox::No);
+    switch(result)
+    {
+    case QMessageBox::Yes:
+        QMessageBox::about(this,"Tips","Yes");
+        break;
+    case QMessageBox::No:
+        QMessageBox::about(this,"Tips","No");
+        break;
+    }
+}
+
+{
+	QMessageBox msg(QMessageBox::NoIcon,"title","Tips",QMessageBox::Yes|QMessageBox::No,NULL);
+	msg.setIconPixmap(QPixmap(":/24px.svg"));
+	
+    int result = msg.exec();
+    switch(result)
+    {
+    case QMessageBox::Yes:
+        QMessageBox::about(this,"title","Yes");
+        break;
+    case QMessageBox::No:
+        QMessageBox::about(this,"title","No");
+        break;
+    }
+}
+
+信号与槽机制(signal & slot)
+--------------
+信号(24中设计模式<观察者>):信号本质是事件,信号展现方式就是函数.
+槽(slot):对信号的响应函数,槽就是一个函数;槽函数与普通函数的区别:槽函数可以与一个信号关联,当信号被发射时,关联的槽函数被自动执行处理.
+
+信号函数只需要声明(不需要定义/实现),槽函数需要定义/实现.
+
+帮助->索引: Signals & Slots
+
+// Qt4 方式
+//    connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(closeWindow()));  // 式1
+//    connect(ui->pushButton, SIGNAL(clicked()), SLOT(closeWindow()));  // 式2
+
+// Qt5 方式
+connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::closeWindow);  // 式3
+//    connect(ui->pushButton, &QPushButton::clicked, [=](){  // 式4
+//        close();
+//    });
+//    connect(ui->pushButton, ui->pushButton->metaObject()->method(34), this, this->metaObject()->method(25));  // 式5
+
+$>nano -w mainwindow.h 
+--------
+...
+#include <QLabel>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QGridLayout>
+...
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+...
+private:
+    QLabel *l1,*l2;
+    QLineEdit *le;
+    QPushButton *btn;
+
+private slots:
+    void calcArea();   //计算圆面积
+};
+
+$>nano -w mainwindow.cpp 
+--------
+...
+const static double PI = 3.1415;
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+	this->setCentralWidget(new QWidget(this));
+
+    l1 = new QLabel(tr("请输入圆的半径"),this);
+    le = new QLineEdit(this);
+
+    l2 = new QLabel(this);
+    l2->setText(tr(""));
+
+    btn = new QPushButton(this);
+    btn->setText(tr("计算圆面积"));
+
+    QGridLayout *layout = new QGridLayout(this);
+    layout->addWidget(l1,0,0);
+    layout->addWidget(le,0,1);
+    layout->addWidget(l2,1,0);
+    layout->addWidget(btn,1,1);
+
+    this->centralWidget()->setLayout(layout);
+
+    connect(le,SIGNAL(textChanged(QString)),this,SLOT(calcArea()));
+}
+...
+void MainWindow::calcArea()
+{
+    bool isloop;
+    int value;
+    double area;
+
+    QString tstr;
+    QString vstr = le->text();
+
+    value = vstr.toInt(&isloop);
+    area = value * value * PI;
+    l2->setText(tstr.setNum(area));
+}
+
+设置窗口大小和位置
+--------------
+$>nano -w main.cpp 
+--------
+int main(int argc, char *argv[])
+{
+...
+	w.setGeometry(x,y,w,h);
+	w.setMinimumSize(w,h);
+	w.setMaximumSize(w,h);
+...
+}
+
+关闭应用
+--------------
+connect(<button object>,SIGNAL(clicked()),qApp,SLOT(quit()));
+
+Model/View 
+--------------
+QListView 
+QTreeView 
+QTableView 
+QColumnView 
+QHeaderView
+QStringListModel 
+QAbstractItemMode
+QStandardItemModel
+QAbstractListModel
+QAbstractTableModel
+QAbstractProxyModel
+QIdentityProxyModel
+QSortFilterProxyModel
+
+所有基于项数据/数据模型都是QAbstractItemMode类,定义视图组件和代理存储数据的接口.
+
+$>nano -w mainwindow.h 
+--------
+...
+#include <QFileSystemModel>
+...
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+...
+private:
+    QFileSystemModel *sysmodel;    //定义数据模型变量
+};
+
+$>nano -w mainwindow.pp
+--------
+...
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+...
+    sysmodel = new QFileSystemModel(this);       //QFileSystemModel 提供单独线程
+    sysmodel->setRootPath(QDir::currentPath());  //设置根目录
+
+    ui->treeView->setModel(sysmodel);
+    ui->listView->setModel(sysmodel);
+    ui->tableView->setModel(sysmodel);
+...
+}
+

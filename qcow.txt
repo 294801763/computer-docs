@@ -1,0 +1,46 @@
+修改OpenStack镜像root密码
+-----------------------
+$>apt-get install libguestfs-tools bridge-utils uml-utilities 
+$>openssl passwd -1 123456
+$>guestfish --rw -a /debian-10-generic-amd64-20220815-1108.raw
+><fs> run
+><fs> list-filesystems
+><fs> mount /dev/sdax /
+><fs> cat /etc/shadow
+--------
+root:*:19219:0:99999:7:::
+daemon:*:19219:0:99999:7:::
+bin:*:19219:0:99999:7:::
+sys:*:19219:0:99999:7:::
+sync:*:19219:0:99999:7:::
+games:*:19219:0:99999:7:::
+...
+><fs> vi /etc/shadow
+--------
+root:<openssl passwd -1 123456>:19219:0:99999:7:::
+daemon:*:19219:0:99999:7:::
+bin:*:19219:0:99999:7:::
+sys:*:19219:0:99999:7:::
+sync:*:19219:0:99999:7:::
+games:*:19219:0:99999:7:::
+...
+><fs> quit
+
+注意:以上内容已经过验证了.
+
+启动云镜像
+-----------------------
+$>tunctl -t qemu -u root
+$>ifconfig qemu 192.168.20.254
+$>qemu-system-x86_64 -boot menu=on,strict=off -k en-us -nographic -m 4096M -smp `nproc` -net nic -net tap,ifname=qemu,script=no,downscript=no -drive format=raw,file=/debian-10-generic-amd64-20220815-1108.raw
+ >ifconfig eth0 192.168.20.10                          #配置云主机网络ip.
+ >ping 192.168.20.254                                  #网络测试.
+
+Windows上使用qemu网络
+-----------------------
+step.1 安装tap驱动,openvpn客户端自带tap驱动.
+step.2 设备管理器->操作->添加过时硬件->安装我手动从列表选择的硬件->网络适配器->TAP-Windows Provider V9.
+step.3 控制面板->网络和Internet->网络连接(把新添加的tap网络名称修改成qemu).
+step.4 qemu->属性->Internet协议版本4(TCP/IPv4)->配置IP地址
+step.5 qemu-system-x86_64 -boot menu=on,strict=off -k en-us -nographic -m 4096M -smp 2 -net nic -net tap,ifname=qemu,script=no,downscript=no -drive format=raw,file=./debian-10-generic-amd64-20220815-1108.raw
+

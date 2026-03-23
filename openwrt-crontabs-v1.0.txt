@@ -1,0 +1,65 @@
+统计流量
+--------------
+step.1
+----
+$>nano /etc/crontabs/root
+--
+*/1 * * * * /root/checkvv
+
+step.2
+----
+$>chmod 0644 /etc/crontabs/root
+
+step.3
+----
+$>nano check
+--
+#!/bin/sh
+ 
+TARGET="www.baidu.com" 
+interface="wwan0"
+M=1048576
+G=1073741824
+
+touch /root/total
+lcnt=`cat /root/total`
+
+ping -c 3 $TARGET > /dev/null 2>&1
+ 
+if [ $? -ne 0 ]; then
+    echo "ERROR,Reboot..."
+        rx=$(cat /sys/class/net/$interface/statistics/rx_bytes)
+        tx=$(cat /sys/class/net/$interface/statistics/tx_bytes)
+        total=$(($rx + $tx))
+        
+        let lcnt=$lcnt+$total
+        result1=$((lcnt / M))
+        result2=$((lcnt / G))
+        
+        echo $lcnt > /root/total
+        echo "$lcnt B $result1 M $result2 G" > /root/show
+        
+    /sbin/reboot -f
+else
+        echo "SUCCESS..."
+        rx=$(cat /sys/class/net/$interface/statistics/rx_bytes)
+        tx=$(cat /sys/class/net/$interface/statistics/tx_bytes)
+        total=$(($rx + $tx))
+        echo "TOTAL: $total bytes"
+fi
+
+step.4
+----
+$>nano clean 
+--
+#!/bin/sh
+
+touch /root/total
+lcnt=`cat /root/total`
+
+G=1073741824
+
+result=$((lcnt / G))
+
+echo "$result G" > /root/show
+echo "" > /root/total

@@ -1,0 +1,164 @@
+gcc-4.6.4
+-------------------------------
+$>cd /home/vsftpd/build-essential
+$>mkdir build && cd build 
+$>../gcc-4.6.4/configure --prefix=/home/vsftpd/shared/gcc-4.6.4 --enable-bootstrap --enable-checking=release --enable-languages=c,c++ --enable-threads=posix --disable-multilib --enable-gather-detailed-mem-stats
+$>make -j4
+$>make install 
+
+make
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.6.4
+
+bintils
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.6.4
+
+$>export PATH=/home/vsftpd/shared/gcc-4.6.4/bin:$PATH
+
+gdb
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.6.4
+$>make -j4
+$>make install
+
+terminal
+---------------------------------
+$>export PATH=/home/vsftpd/shared/gcc-4.6.4/bin:$PATH
+
+eclipse
+---------------------------------
+CC-Workings->Properties->C/C++ Build->Envirorment:PATH=/home/vsftpd/shared/gcc-4.6.4/bin
+
+gcc-4.7.4
+-------------------------------
+$>cd /home/vsftpd/build-essential
+$>mkdir build && cd build 
+$>../gcc-4.7.4/configure --prefix=/home/vsftpd/shared/gcc-4.7.4 --enable-bootstrap --enable-checking=release --enable-languages=c,c++ --enable-threads=posix --disable-multilib --enable-gather-detailed-mem-stats
+$>make -j4
+$>make install 
+
+make
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.7.4
+
+bintils
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.7.4
+
+$>export PATH=/home/vsftpd/shared/gcc-4.7.4/bin:$PATH
+
+gdb
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.7.4
+$>make -j4
+$>make install
+
+terminal
+---------------------------------
+$>export PATH=/home/vsftpd/shared/gcc-4.7.4/bin:$PATH
+
+eclipse
+---------------------------------
+CC-Workings->Properties->C/C++ Build->Envirorment:PATH=/home/vsftpd/shared/gcc-4.7.4/bin
+
+gcc-4.8.5
+-------------------------------
+$>cd /home/vsftpd/build-essential
+$>mkdir build && cd build 
+$>../gcc-4.8.5/configure --prefix=/home/vsftpd/shared/gcc-4.8.5 --enable-bootstrap --enable-checking=release --enable-languages=c,c++ --enable-threads=posix --disable-multilib --enable-gather-detailed-mem-stats
+$>make -j4
+$>make install 
+
+make
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.8.5
+
+bintils
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.8.5
+
+$>export PATH=/home/vsftpd/shared/gcc-4.8.5/bin:$PATH
+
+gdb
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.8.5
+$>make -j4
+$>make install
+
+terminal
+---------------------------------
+$>export PATH=/home/vsftpd/shared/gcc-4.8.5/bin:$PATH
+
+eclipse
+---------------------------------
+CC-Workings->Properties->C/C++ Build->Envirorment:PATH=/home/vsftpd/shared/gcc-4.8.5/bin
+
+gcc-4.9.4
+-------------------------------
+$>cd /home/vsftpd/build-essential
+$>mkdir build && cd build 
+$>../gcc-4.9.4/configure --prefix=/home/vsftpd/shared/gcc-4.9.4 --enable-bootstrap --enable-checking=release --enable-languages=c,c++ --enable-threads=posix --disable-multilib --enable-gather-detailed-mem-stats
+$>make -j4
+$>make install 
+
+make
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.9.4
+
+bintils
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.9.4
+
+$>export PATH=/home/vsftpd/shared/gcc-4.9.4/bin:$PATH
+
+gdb
+$>./configure --prefix=/home/vsftpd/shared/gcc-4.9.4
+$>make -j4
+$>make install
+
+terminal
+---------------------------------
+$>export PATH=/home/vsftpd/shared/gcc-4.9.4/bin:$PATH
+
+eclipse
+---------------------------------
+CC-Workings->Properties->C/C++ Build->Envirorment:PATH=/home/vsftpd/shared/gcc-4.9.4/bin
+
+gcc-5.4.0
+-------------------------------
+$>cd /home/vsftpd/build-essential/gcc-5.4.0/isl
+$>autoreconf -ivf                                 #解决aclocal-1.14错误.
+$>cd /home/vsftpd/build-essential
+$>mkdir build && cd build 
+$>../gcc-5.4.0/configure --prefix=/home/vsftpd/shared/gcc-5.4.0 --enable-bootstrap --enable-checking=release --enable-languages=c,c++ --enable-threads=posix --disable-multilib --enable-gather-detailed-mem-stats
+$>make -j4
+$>make install 
+
+make
+$>./configure --prefix=/home/vsftpd/shared/gcc-5.4.0
+
+bintils
+$>./configure --prefix=/home/vsftpd/shared/gcc-5.4.0
+
+$>export PATH=/home/vsftpd/shared/gcc-5.4.0/bin:$PATH
+
+gdb
+$>./configure --prefix=/home/vsftpd/shared/gcc-5.4.0
+$>make -j4
+$>make install
+
+terminal
+---------------------------------
+$>export PATH=/home/vsftpd/shared/gcc-5.4.0/bin:$PATH
+
+eclipse
+---------------------------------
+CC-Workings->Properties->C/C++ Build->Envirorment:PATH=/home/vsftpd/shared/gcc-5.4.0/bin
+
+insight
+-------------------------------
+$>./configure --disable-werror --prefix=/home/vsftpd/insight
+$>make -j4 
+$>make install 
+
+$>vi /home/vsftpd/insight/share/tk8.4/listbox.tcl-181    #如果运行出错，请按照下面进行更改.
+#bind Listbox <MouseWheel> {
+    #    %W yview scroll [expr {- (%D / 120) * 4}] units
+    #
+}
+
+$>vi /home/vsftpd/insight/share/tk8.4/text.tcl-461
+#bind Text <MouseWheel> {
+    #    %W yview scroll [expr {- (%D / 120) * 4}] units
+    #
+}

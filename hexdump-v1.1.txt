@@ -1,0 +1,8 @@
+十六进制打印内存
+-------------
+内核
+----
+void print_hex_dump(const char *level, int prefix_type, void *buf, size_t len)
+eg.
+print_hex_dump(KERN_DEBUG, DUMP_PREFIX_ADDRESS, frame->data, frame->len);
+

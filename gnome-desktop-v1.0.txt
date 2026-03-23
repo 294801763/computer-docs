@@ -1,0 +1,53 @@
+禁用系统休眠
+-------------------
+$>nano /etc/systemd/logind.conf
+--
+...
+HandleLidSwitch=ignore
+HandleLidSwitchDocked=ignore
+HandleSuspendKey=ignore
+HandleHibernateKey=ignore
+HandlePowerKey=poweroff
+
+$>systemctl restart systemd-logind
+
+$>nano /etc/systemd/system/inhibit-suspend.service
+--
+[Unit]
+Description=Inhibit suspend
+
+[Service]
+ExecStart=/usr/bin/systemd-inhibit --why="Prevent suspend" --what=sleep /bin/bash -c "while true; do sleep 1000; done"
+
+[Install]
+WantedBy=multi-user.target
+
+$>systemctl daemon-reload
+$>systemctl enable inhibit-suspend.service
+$>systemctl start inhibit-suspend.service
+
+编写代码最佳分辨率
+----------------
+  主机分辨率: 1920x1080
+虚拟机分辨率: 1600x900(16:9)
+
+平铺窗口 - 快捷键
+----------------
+step.1 选择左边窗口
+step.2 Windows + LEFT
+
+step.3 选择右边窗口
+step.4 Windows + RIGHT
+
+编程辅助命令
+----------------
+tag                  #在当前目录快速生成ctags和cscope文件
+mm                   #synergy
+
+切换应用
+-------------------
+Left-Windows + Tab 
+
+应用平铺
+-------------------
+Left-Windows + CTRL + 左/右箭头

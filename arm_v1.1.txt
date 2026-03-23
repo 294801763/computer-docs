@@ -1,0 +1,346 @@
+设置系统代理
+--------------
+$>cp /home/vsftpd/windows/iso/vray/v2ray.tar.gz <...>
+$>./v2ray --config=<./name-xx.json>
+$>netstat -anltup | grep v2ray
+$>export http_proxy="http://127.0.0.1:10809"
+$>export https_proxy="http://127.0.0.1:10809"
+$>unset http_proxy
+$>unset https_proxy
+
+注意:以上实测有效.
+
+kernel/buildroot删除数值
+--------------
+ctrl+backspace                                        #删除数值
+
+buidroot
+--------------
+Target options  ---> 
+ Target Architecture (ARM (little endian))  --->
+ Target Binary Format (ELF)  ---> 
+ Target Architecture Variant (cortex-A7)  --->
+ Target ABI (EABIhf)  --->
+ Floating point strategy (NEON/VFPv4)  --->
+ ARM instruction set (ARM)  --->
+Build options  --->                                   #默认即可
+Toolchain  --->
+ [*] Enable WCHAR support
+ [*] Enable toolchain locale/i18n support
+ [*] Enable C++ support
+ [*] Build cross gdb for the host
+ [*]   Python support
+ [*] Enable MMU support (NEW)
+System configuration  --->
+ (X) System hostname
+ (Welcome to X) System banner
+  /dev management (Dynamic using devtmpfs + mdev)  ---> 
+ [*] Run a getty (login prompt) after boot  --->  
+  (ttymxc0) TTY port
+ [*] Enable Native Language Support (NLS)
+Kernel  --->                                         #默认即可
+Target packages  --->
+ Audio and video applications  --->
+  [*] alsa-utils  --->
+   [*]   alsactl (NEW)
+   [*]   alsamixer (NEW)
+   [*]   aplay/arecord  
+   [*]   speaker-test
+ Development tools  --->
+  [*] git 
+  [*] libtool
+  [*] make
+  [*] mawk
+  [*] tree 
+ Filesystem and flash utilities  --->
+  [*] ntfs-3g
+  [*] sshfs (FUSE)
+ Fonts, cursors, icons, sounds and themes  --->
+  [*] DejaVu fonts
+  [*] Liberation (Free fonts)
+ Graphic libraries and applications (graphic/text)  --->
+  [*] Qt5  --->
+   SQLite 3 support (Qt SQLite)  --->
+   [*]   qt5charts
+   [*]       GIF support  
+   [*]       JPEG support
+   [*]       PNG support
+   [*]     Enable Tslib support
+   [*]   qt5quickcontrols
+   [*]   qt5quickcontrols2
+   [*]   qt5virtualkeyboard
+ Libraries  --->
+  Graphics  --->
+   [*] libsvg 
+   [*] zbar
+  JSON/XML  ---> 
+   [*] cJSON
+   [*] json-c
+   [*] libjson
+   [*] jsoncpp
+  Multimedia  --->
+   [*] libyuv
+   [*] x264
+   [*] x265
+  Networking  --->
+ Mail  --->
+  [*] mutt 
+  [*]   imap
+  [*]   pop3 
+ Networking applications  --->
+ [*] bind
+ [*]   Install server components
+ [*] ethtool
+ [*] iproute2
+ [*] nginx  --->                   #自动启动
+ -*- openssh                       #自动启动
+ [*] samba4
+ [*] sshpas
+ [*] tcpdump
+ [*] traceroute
+ [*] wireless tools
+ [*] wpa_supplicant  --->
+  [*]   Enable nl80211 support (NEW)
+  [*]   Enable AP mode
+  [*]     Enable Wi-Fi Display
+  [*]     Enable mesh networking
+  [*]   Enable autoscan
+  [*]   Enable EAP
+  [*]   Enable WPS
+  [*]   Enable WPA3 support
+ Shell and utilities  --->
+  [*] zsh
+  [*] screen
+  [*] tmux
+ System tools  --->
+  [*] htop
+  [*] kmod
+ Text editors and viewers  --->
+  [*] nano
+
+--- Applets                              #busybox,make -j`nproc` V=1 O=/mnt/build busybox-menuconfig
+ Linux Module Utilities  --->
+  [*] depmod (27 kb)
+  [*] insmod (22 kb)
+  [*] lsmod (1.9 kb)
+  [*]   Pretty output
+  [*] modinfo (24 kb)
+  [*] modprobe (28 kb)
+  [*] rmmod (3.3 kb) 
+  [*] Accept module options on modprobe command line
+  [*] Support tainted module checking with new kernels
+  [*] Support module.aliases file
+  [*] Support module.symbols file
+ Networking Utilities  --->
+  [*] telnetd (12 kb)            #自动启动
+
+$>cp /opt/shared/download/defconfig configs/x_defconfig                                         #拷贝配置文件到buildroot/configs
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build list-defconfigs
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build x_defconfig 
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build menuconfig
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build busybox-menuconfig            #每次都需要执行检查depmod是否存在.
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build  
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build clean
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build source                        #下载源码
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build savedefconfig ./configs/<name>_defconfig 
+or 
+$>cp /opt/shared/download/defconfig configs/x_defconfig                                         #拷贝配置文件到buildroot/configs
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build list-defconfigs 
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build x_defconfig 
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build menuconfig 
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build busybox-menuconfig            #每次都需要执行检查depmod是否存在.
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build 
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build clean 
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build source                        #下载源码
+$>BR2_DL_DIR=/opt/shared/download make -j`nproc` V=1 O=/mnt/build savedefconfig ./configs/<name>_defconfig
+
+嵌入式QT5环境变量
+--------------
+export QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0:size=1024x600:mmsize=1024x600:offset=0x0:tty=/dev/ttymxc0
+export QT_QPA_FB_TSLIB=1
+export QT_QPA_FONTDIR=/usr/share/fonts
+export TSLIB_FBDEVICE=/dev/fb0
+export TSLIB_RSDEVICE=/dev/input/event<NO.>
+
+开机执行程序
+--------------
+$>vi /etc/init.d/rcS
+-------
+...
+
+#QT5
+export QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0:size=1024x600:mmsize=1024x600:offset=0x0:tty=/dev/ttymxc0
+export QT_QPA_FB_TSLIB=1
+export QT_QPA_FONTDIR=/usr/share/fonts
+export TSLIB_FBDEVICE=/dev/fb0
+export TSLIB_RSDEVICE=/dev/input/event<NO.>
+
+<执行文件的绝对路径,eg./usr/bin/graphic-program> >/dev/null 2>&1 &
+
+网络启动Linux(发布时需关闭屏幕输出) 
+--------------
+$>setenv ipaddr 192.168.10.100
+$>setenv ethaddr 00:00:00:00:00:01
+$>setenv gatewayip 192.168.10.1 
+$>setenv netmask 255.255.255.0 
+$>setenv serverip 192.168.10.8 
+$>setenv bootcmd 'tftp 80800000 zImage; tftp 83000000 imx6ull-14x14-emmc-7-1024x600-c.dtb; bootz 80800000 - 83000000'
+$>setenv bootargs 'console=ttymxc0,115200 noinitrd root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off init=<初始化程序,eg./init or /sbin/init> rootwait splash quiet'
+$>saveenv
+$>boot 
+
+注意:使用NFS,Linux内核网络驱动要工作正常,80800000和83000000多写了或少写了都会导致内核启动不了(不断重启/下载,周而复始).
+
+修改内核logo
+--------------
+格    式:BMP,PNG 
+分 辨 率:不能高于屏幕LCD的分辨率
+路    径:drivers/video/logo
+内核配置:
+Device Drivers  ---> 
+ Graphics support  --->
+  [*] Bootup logo  --->
+   [*]   Standard 224-color Linux logo                          #屏蔽其他项
+
+$>apt-get install netpbm lzop libncurses-dev
+#>cd drivers/video/logo
+$>mv logo_linux_clut224.ppm logo_linux_clut224_v1.0.ppm         #备份原因的logo图片
+$>pngtopnm logo.png > logo-linux.pnm                            #png -> pnm 
+$>pnmquant 224 logo-linux.pnm > logo-linux224.pnm               #将logo-linux.pnm图片中的最大颜色数量改为224
+$>pnmtoplainpnm logo-linux224.pnm > logo_linux_clut224.ppm      #pnm -> ppm 
+
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- imx_v7_mfg_defconfig                           #arch/arm/configs 
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage                               #arch/arm/boot 
+$>make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- dtbs                                           #arch/arm/boot/dts
+or
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- distclean
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- imx_v7_mfg_defconfig         #arch/arm/configs  
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- -j`nproc` zImage             #arch/arm/boot 
+$>make V=1 ARCH=arm LOADADDR=80800000 CROSS_COMPILE=arm-linux-gnueabihf- dtbs                         #arch/arm/boot/dts 
+
+注意:最好是ico图片转bmp或者png,不能屏幕分辨率;<drivers/video/console/fbcon.c,drivers/video/fbdev/core/fbmem.c>出错会导致linuxfb无法使用.
+
+服务(sshd)
+--------------
+$>mkdir -pv var/empty
+$>echo "sshd:x:100:100::/usr/sbin/sshd:/usr/sbin/nologin" >> etc/passwd
+$>vi etc/ssh/sshd_config
+-------
+...
+PermitRootLogin yes
+StrictModes yes
+...
+
+$>passwd root
+$>/usr/bin/sshd                                                           #第一次启动时需执行此条命令,重启之后会自动启动sshd服务.
+
+服务(telnetd)
+--------------
+$>vi /etc/init.d/rcS                                                      #如果telnetd没有自动启动,则用此方法即可.
+-------
+...
+
+telnetd >/dev/null 2>&1 &
+
+拷贝跟文件系统
+--------------
+$>touch /execute.list
+$>rsync -avzHP --exclude-from='/execute.list' /mnt/build/target/* /opt/shared/xx-rootfs
+$>vi /execute.list
+-------
+THIS_IS_NOT_YOUR_ROOT_FILESYSTEM
+etc/passwd
+etc/shadow
+etc/ssh/sshd_config
+etc/init.d/rcS
+
+编译调试器(gdb)
+--------------
+$>export PATH=/mnt/build/host/usr/bin:$PATH
+$>tar -xvf gdb-12.1.tar.gz
+$>cd gdb-12.1
+$>./configure -v --prefix=/opt/shared/xx-rootfs/usr/ --host=arm-linux
+$>make -j`nproc` && make install 
+
+注意:gdb运行已验证,可行.
+
+buildroot新增模块(用作参考)
+--------------
+$>vi Config.in
+-------
+...
+menu "Audio and video applications"
+...
+source "package/mplayer/Config.in"
+...
+endmenu
+...
+
+$>mkdir -pv package/mplayer
+$>cd package/mplayer
+$>vi mplayer.hash
+-------
+# From http://www.mplayerhq.hu/MPlayer/releases/MPlayer-1.5.0.tar.gz.md5
+md5 afed5744e351c15fd1f96076d3338b8e  MPlayer-1.5.tar.gz
+# From http://www.mplayerhq.hu/MPlayer/releases/MPlayer-1.5.tar.gz.sha1
+sha1 55b082c536e5a1afb70bce6bdef372c6c4b0c8aa  MPlayer-1.5.tar.gz
+
+$>vi Config.in
+-------
+config BR2_PACKAGE_MPLAYER
+	bool "mplayer"
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	help
+	  MPlayer is a movie player which runs on many systems and supports many different file formats.
+
+$>vi mplayer.mk
+-------
+MPLAYER_VERSION = 1.5
+MPLAYER_SOURCE = MPlayer-$(MPLAYER_VERSION).tar.gz
+MPLAYER_SITE = http://www.mplayerhq.hu/MPlayer/releases
+MPLAYER_DEPENDENCIES = host-pkgconf
+MPLAYER_LICENSE = GPLv2
+MPLAYER_LICENSE_FILES = LICENSE Copyright
+MPLAYER_CFLAGS = $(TARGET_CFLAGS)
+MPLAYER_LDFLAGS = $(TARGET_LDFLAGS)
+MPLAYER_CFLAGS += -I$(STAGING_DIR)/usr/include
+
+ifeq ($(BR2_PACKAGE_ALSA_LIB)$(BR2_PACKAGE_ALSA_LIB_MIXER)$(BR2_PACKAGE_ALSA_LIB_PCM),yyy)
+MPLAYER_DEPENDENCIES += alsa-lib
+MPLAYER_CONF_OPTS += --enable-alsa
+else
+MPLAYER_CONF_OPTS += --disable-alsa
+endif
+
+define MPLAYER_CONFIGURE_CMDS
+	(cd $(@D); rm -rf config.cache; \
+		$(TARGET_CONFIGURE_OPTS) \
+		$(TARGET_CONFIGURE_ARGS) \
+		./configure \
+		--prefix=/usr \
+		--confdir=/etc \
+		--target=$(GNU_TARGET_NAME) \
+		--host-cc="$(HOSTCC)" \
+		--cc="$(TARGET_CC)" \
+		--as="$(TARGET_AS)" \
+		--charset=UTF-8 \
+		--extra-cflags="$(MPLAYER_CFLAGS)" \
+		--extra-ldflags="$(MPLAYER_LDFLAGS)" \
+		--enable-fbdev \
+		$(MPLAYER_CONF_OPTS) \
+		--disable-ossaudio  \
+		--disable-mencoder   \
+		--enable-cross-compile \
+	)
+endef
+
+define MPLAYER_BUILD_CMDS
+	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D)
+endef
+
+define MPLAYER_INSTALL_TARGET_CMDS
+	$(TARGET_MAKE_ENV) $(MAKE) DESTDIR=$(TARGET_DIR) -C $(@D) install
+endef
+
+$(eval $(generic-package))

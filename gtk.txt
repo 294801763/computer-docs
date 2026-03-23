@@ -1,0 +1,117 @@
+glib-2.37.93
+----------------
+$>./configure --prefix=/opt/glib-2.37.93
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:$LD_LIBRARY_PATH
+
+gobject-introspection-1.38.0
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/gobject-introspection-1.38.0
+
+gdk-pixbuf-2.27.3
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/gdk-pixbuf-2.27.3
+
+atk-2.7.91
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/atk-2.7.91
+
+fontconfig-2.13.1
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/fontconfig-2.13.1
+
+pixman-0.34.0
+----------------
+$>./configure --prefix=/opt/pixman-0.34.0
+
+cairo-1.16.0
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/cairo-1.16.0
+
+harfbuzz-0.9.42
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/harfbuzz-0.9.42
+
+pango-1.32.6
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:/opt/harfbuzz-0.9.42/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-0.9.42/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/pango-1.32.6
+
+atk-2.7.91
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:/opt/harfbuzz-0.9.42/lib/pkgconfig:/opt/pango-1.32.6/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-0.9.42/lib:/opt/pango-1.32.6/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/atk-2.7.91
+
+zlib-1.2.11
+----------------
+$>./configure --prefix=/opt/zlib-1.2.11
+
+gtk+-3.10.9
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:/opt/harfbuzz-0.9.42/lib/pkgconfig:/opt/pango-1.32.6/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-0.9.42/lib:/opt/pango-1.32.6/lib:/opt/atk-2.7.91/lib:/opt/zlib-1.2.11/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/gtk+-3.10.9
+
+GTK+-3.10.9
+-------------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:/opt/harfbuzz-0.9.42/lib/pkgconfig:/opt/pango-1.32.6/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gtk+-3.10.9/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-0.9.42/lib:/opt/pango-1.32.6/lib:/opt/atk-2.7.91/lib:/opt/zlib-1.2.11/lib:/opt/gtk+-3.10.9/lib:$LD_LIBRARY_PATH
+
+运行某个程序
+----------------
+$>/opt/glibc-2.17/lib/ld-2.17.so --library-path /opt/glibc-2.17/lib:/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-0.9.42/lib:/opt/pango-1.32.6/lib:/opt/atk-2.7.91/lib:/opt/zlib-1.2.11/lib:/opt/gtk+-3.10.9/lib:/home/vsftpd/shared/gcc-6.4.0/lib64::/opt/libpng-1.6.35/lib:/usr/local/Qt-5.10.1/lib/:/lib/:/lib32/:/lib64/:/usr/lib/:/usr/lib32/:/usr/lib64/:/lib/x86_64-linux-gnu/:/usr/lib/x86_64-linux-gnu/:/usr/local/lib/:/opt/ffmpeg/lib:$LD_LIBRARY_PATH /path/$prog_name
+
+注意:这里是因为程序的运行依赖于glibc-2.17所以才使用ld-2.17.so加载程序.
+
+harfbuzz-1.0.6
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/harfbuzz-1.0.6
+
+icu-le-hb-1.0.3
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:/opt/harfbuzz-1.0.6/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-1.0.6/lib:$LD_LIBRARY_PATH
+./configure --prefix=/opt/icu-le-hb-1.0.3
+
+pango-1.32.6
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:/opt/harfbuzz-1.0.6/lib/pkgconfig:/opt/icu-le-hb-1.0.3/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:harfbuzz-1.0.6/lib:/opt/icu-le-hb-1.0.3/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/pango-1.32.6
+
+atk-2.7.91
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:/opt/harfbuzz-1.0.6/lib/pkgconfig:/opt/icu-le-hb-1.0.3/lib/pkgconfig:/opt/pango-1.32.6/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-1.0.6/lib:/opt/icu-le-hb-1.0.3/lib:/opt/pango-1.32.6/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/atk-2.7.91
+
+gtk+-3.10.9
+----------------
+$>export PKG_CONFIG_PATH=/opt/glib-2.37.93/lib/pkgconfig:/opt/gdk-pixbuf-2.27.3/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:/opt/gobject-introspection-1.38.0/lib/pkgconfig:/opt/freetype-2.9.1/lib/pkgconfig:/opt/fontconfig-2.13.1/lib/pkgconfig:/opt/pixman-0.34.0/lib/pkgconfig:/opt/cairo-1.16.0/lib/pkgconfig:/opt/harfbuzz-1.0.6/lib/pkgconfig:/opt/icu-le-hb-1.0.3/lib/pkgconfig:/opt/pango-1.32.6/lib/pkgconfig:/opt/atk-2.7.91/lib/pkgconfig:$PKG_CONFIG_PATH
+$>export LD_LIBRARY_PATH=/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-1.0.6/lib:/opt/icu-le-hb-1.0.3/lib:/opt/pango-1.32.6/lib:/opt/atk-2.7.91/lib:$LD_LIBRARY_PATH
+$>./configure --prefix=/opt/gtk+-3.10.9
+
+运行某个程序
+----------------
+$>/opt/glibc-2.17/lib/ld-2.17.so --library-path /opt/glibc-2.17/lib:/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-1.0.6/lib:/opt/icu-le-hb-1.0.3/lib:/opt/pango-1.32.6/lib:/opt/atk-2.7.91/lib:/opt/zlib-1.2.11/lib:/opt/gtk+-3.10.9/lib:/home/vsftpd/shared/gcc-6.4.0/lib64::/opt/libpng-1.6.35/lib:/usr/local/Qt-5.10.1/lib/:/lib/:/lib32/:/lib64/:/usr/lib/:/usr/lib32/:/usr/lib64/:/lib/x86_64-linux-gnu/:/usr/lib/x86_64-linux-gnu/:/usr/local/lib/:/opt/ffmpeg/lib:$LD_LIBRARY_PATH /path/$prog_name
+
+eg.
+$>/opt/glibc-2.17/lib/ld-2.17.so --library-path /opt/glibc-2.17/lib:/opt/glib-2.37.93/lib:/opt/gdk-pixbuf-2.27.3/lib:/opt/atk-2.7.91/lib:/opt/gobject-introspection-1.38.0/lib:/opt/freetype-2.9.1/lib:/opt/fontconfig-2.13.1/lib:/opt/pixman-0.34.0/lib:/opt/cairo-1.16.0/lib:/opt/harfbuzz-1.0.6/lib:/opt/icu-le-hb-1.0.3/lib:/opt/pango-1.32.6/lib:/opt/atk-2.7.91/lib:/opt/zlib-1.2.11/lib:/opt/gtk+-3.10.9/lib:/home/vsftpd/shared/gcc-6.4.0/lib64::/opt/libpng-1.6.35/lib:/usr/local/Qt-5.10.1/lib/:/lib/:/lib32/:/lib64/:/usr/lib/:/usr/lib32/:/usr/lib64/:/lib/x86_64-linux-gnu/:/usr/lib/x86_64-linux-gnu/:/usr/local/lib/:/opt/ffmpeg/lib:$LD_LIBRARY_PATH /usr/bin/gedit
+
+注意:这里是因为程序的运行依赖于glibc-2.17所以才使用ld-2.17.so加载程序.

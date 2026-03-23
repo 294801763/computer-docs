@@ -1,0 +1,126 @@
+配置NAT
+--
+apt-get install iptables iptables-persistent procps wireless-tools net-tools udhcpc
+
+echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf && sysctl -p
+iptables -t nat -A POSTROUTING -s 192.168.10.0/24 -o eth0 -j MASQUERADE                   
+mkdir -pv /etc/iptables/ && touch /etc/iptables/rules.v4  
+iptables-save > /etc/iptables/rules.v4
+iptables-restore < /etc/iptables/rules.v4 
+
+注意:必须使用root用户执行命令(例如:su到root可能无法执行上面的命令),"iptables -t nat -A POSTROUTING -s 192.168.10.0/24 -o eth0 -j MASQUERADE",每运行一次命令就会多一条规则.
+
+查看NAT
+--
+iptables -t nat -n -L
+or
+iptables -t nat -n -L -x
+
+删除NAT
+--
+step.1 查看规则编号
+-
+iptables -t nat -n -L --line-numbers
+
+step.2 通过规则编号进行删除
+-
+iptables -t nat -D POSTROUTING <上面的规则编号即可>
+
+or 
+step.2 通过规则删除
+-
+iptables -t nat -D POSTROUTING -s 192.168.10.0/24 -j MASQUERADE
+
+防火墙
+--
+$>apt-get install iptables-persistent                            #安装
+$>apt-get purge iptables netfilter-persistent+                   #移除
+
+修改 INPUT 和 FORWARD 链默认规则为DROP
+-
+iptables -P INPUT DROP            #INPUT链拒绝所有流量进入
+iptables -P FORWARD DROP          #FORWARD链拒绝所有流量转发
+netfilter-persistent save         #保存进配置文件
+
+修改 INPUT 和 FORWARD 链默认规则为ACCEPT
+-
+iptables -P INPUT ACCEPT 
+iptables -P FORWARD ACCEPT 
+netfilter-persistent save
+netfilter-persistent reload
+
+放开端口
+-
+iptables -F
+iptables -P INPUT DROP
+iptables -P FORWARD DROP 
+iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT 
+iptables -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
+iptables -A INPUT -p tcp --dport 22 --jump ACCEPT
+iptables-save > /etc/iptables/rules.v4  
+netfilter-persistent save 
+
+保存和还原
+-
+iptables-legacy-save > /etc/iptables/rules.v4    
+iptables-legacy-restore -n < /etc/iptables/rules.v4
+
+查看防火墙
+-
+iptables -L --line-numbers          #查看防火墙
+iptables -F                         #清空防火墙
+iptables -t filter -L INPUT -v --line-numbers
+iptables -t filter -L OUTPUT -v --line-numbers
+iptables --table filter --list INPUT --verbose --line-numbers
+
+禁止ICMP
+-
+iptables -F
+iptables -P INPUT ACCEPT 
+iptables -P FORWARD ACCEPT 
+iptables -A INPUT -p icmp --icmp-type echo-request -j DROP 
+iptables -A OUTPUT -p icmp --icmp-type echo-reply -j DROP
+
+放行ICMP
+-
+iptables -F
+iptables -P INPUT ACCEPT 
+iptables -P FORWARD ACCEPT 
+iptables -D INPUT -p icmp --icmp-type echo-request -j DROP
+iptables -D OUTPUT -p icmp --icmp-type echo-reply -j DROP
+netfilter-persistent save                   #将规则保存进配置文件
+
+放行ICMP
+-
+iptables -p icmp -h
+iptables -D INPUT -p icmp -j ACCEPT
+iptables -D INPUT -p icmp -j DROP -v
+iptables -D INPUT -p icmp -j REJECT -v
+
+查看防火墙软件
+-
+iptables --version
+update-alternatives --display iptables
+
+清空防火墙 
+-
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+
+iptables -F
+ 
+iptables -X
+ 
+iptables -Z 
+
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+iptables -t raw -F
+iptables -t raw -X
+
+netfilter-persistent save
+netfilter-persistent reload
+

@@ -1,0 +1,34 @@
+更新openocd
+--------------
+$>apt-get install ttyrec cscope indent astyle dos2unix unzip git texinfo automake autoconf libtool gdbserver gdb-multiarch pkg-config libhidapi-dev libusb-1.0-0-dev libusb-1.0-0 libftdi-dev libgpiod-dev
+$>apt-get purge openocd
+$>git clone git://git.code.sf.net/p/openocd/code openocd
+$>git pull
+$>git submodule init 
+$>git submodule update
+$>cd openocd/src/jtag/drivers/libjaylink
+$>git checkout 0.3.1 -b v0.3.1 -f
+$>autoreconf -fiv
+$>./autogen.sh
+$>./configure --prefix=/opt/ocd
+$>make && make install 
+
+$>cd openocd
+$>git checkout master -f
+$>autoreconf -fiv
+$>./bootstrap
+$>./configure --prefix=/opt/ocd --enable-stlink --enable-jlink --enable-cmsis-dap
+or 
+$>./configure --prefix=/opt/ocd --enable-ft232r --enable-ulink --enable-imx_gpio --enable-openjtag --enable-usb-blaster --enable-usb-blaster-2 --enable-dummy --enable-vdebug --enable-jtag_dpi --enable-stlink --enable-jlink --enable-cmsis-dap --enable-cmsis-dap-v2 --enable-remote-bitbang --enable-jtag_vpi --enable-internal-libjaylink --enable-remote-bitbang
+$>make && make install 
+
+$>nano /etc/profile
+--
+#STM32
+export PATH=/opt/gcc-arm-none-eabi-10.3-2021.10/bin:$PATH
+
+#openocd
+export PATH=/opt/ocd/bin/:$PATH
+
+#openwrt 
+export PATH=/opt/gcc-v14.2.0/bin:$PATH

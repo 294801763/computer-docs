@@ -1,0 +1,907 @@
+构建x86_64-qemu内核环境
+-----------------------
+$>apt install uml-utilities bridge-utils nfs-kernel-server
+$>cd openssl
+$>git checkout OpenSSL_1_1_1g -f
+$>./config -d no-asm -d no-shared --prefix=/usr/ && make -j4 && make install 
+
+$>cd qemu
+$>git checkout v4.1.1 -b dev -f && autoreconf --install --force 
+$>mkdir build_qemu-v4.1.1 && cd build_qemu-v4.1.1
+$>../configure --target-list=x86_64-softmmu --sysconfdir=/etc --enable-debug --prefix=/ && make -j`nproc` && make install 
+
+$>cd linux
+$>git checkout v4.19.181 -f
+$>vi Makefile +680
+----------------
+KBUILD_CFLAGS       := $(filter-out -O2, $(KBUILD_CFLAGS))
+KBUILD_HOSTCFLAGS   := $(filter-out -O2, $(KBUILD_HOSTCFLAGS))
+KBUILD_HOSTCXXFLAGS := $(filter-out -O2, $(KBUILD_HOSTCXXFLAGS))
+
+KBUILD_HOSTCFLAGS := -v -g3 -O0 -Wall -Wmissing-prototypes -Wstrict-prototypes -fomit-frame-pointer -std=gnu89 $(HOST_LFS_CFLAGS) $(HOSTCFLAGS)
+KBUILD_HOSTCXXFLAGS := -v -g3 -O0 $(HOST_LFS_CFLAGS) $(HOSTCXXFLAGS)
+
+$>vi arch/x86/entry/vdso/Makefile +71
+--------
+CFL := $(filter-out -O2, $(CFL))
+
+$>vi arch/x86/boot/compressed/Makefile +43
+--------
+KBUILD_CFLAGS       := $(filter-out -O2, $(KBUILD_CFLAGS))
+KBUILD_HOSTCFLAGS   := $(filter-out -O2, $(KBUILD_HOSTCFLAGS))
+KBUILD_HOSTCXXFLAGS := $(filter-out -O2, $(KBUILD_HOSTCXXFLAGS))
+KBUILD_CFLAGS       += -O1                          #使用-O0编译不过.
+
+$>make O=/torvalds/linux/ x86_64_defconfig
+$>make O=/torvalds/linux/ menuconfig
+$>make O=/torvalds/linux/ V=1 -j`nproc` bzImage 2>&1 | tee build.log
+
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -append "console=ttyS0"
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -append "console=ttyS0 root=/dev/ram0 init=/init rw nokaslr" -S -s 
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -append "console=ttyS0 root=/dev/ram0 init=/init rw nokaslr" -S -gdb tcp::8888
+
+$>cd busybox
+$>git checkout 1_33_1 -f
+$>make O=/torvalds/boot/ defconfig
+$>make O=/torvalds/boot/ menuconfig
+Settings  --->    
+ --- Build Options 
+  [x] Build static binary (no shared libs)
+--- Installation Options ("make install" behavior)   
+  What kind of applet links to install (as hard-links)  ---> 
+    [X] as hard-links 
+
+$>make O=/torvalds/boot/ V=1 -j`nproc` 2>&1 | tee build.log && make O=/torvalds/boot/ install 
+$>ls /torvalds/boot/_install
+$>cd /torvalds/boot/_install && mkdir dev && mkdir proc && mkdir sys && mkdir tmp
+$>ln -sf sbin/init init
+$>cp -rv busybox/examples/bootfloppy/etc /torvalds/boot/_install/
+$>vi etc/fstab 
+--------
+proc            /proc   proc    defaults    0   0
+sysfs           /sys    sysfs   defaults    0   0
+tmpfs           /tmp    tmpfs   defaults    0   0
+
+$>vi etc/inittab 
+--------
+::sysinit:/etc/init.d/rcS
+::respawn:-/bin/sh                                  #每当相应的进程终止执行便会重新启动,这一句必须要有.
+::restart:/sbin/init                                #当init重新启动时执行相应的进程,这一句必须要有.
+
+::ctrlaltdel:/bin/umount -a -r
+::shutdown:/bin/umount -a -r                        #当系统关机时,执行相应的进程.
+::shutdown:/sbin/swapoff -a
+
+$>find . | cpio -o -H newc | gzip > /initrd.img
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /initrd.img -append "console=ttyS0 debug rw"
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /initrd.img -append "console=ttyS0 debug rw nokaslr" -S -gdb tcp::8888
+
+配置qemu网络
+-----------------------
+$>brctl addbr br0 
+$>ifconfig br0 up
+$>tunctl -t tap0 -u root
+$>brctl addif br0 tap0
+$>ifconfig br0 192.168.8.8
+$>mkdir -p /etc/qemu && echo "allow br0" > /etc/qemu/bridge.conf
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /initrd.img -append "console=ttyS0 debug rw" -netdev bridge,id=tap0,br=br0 -device e1000,netdev=tap0
+ >ifconfig eth0 192.168.8.10                        #配置网络ip.
+ >ping 192.168.8.8                                  #网络测试.
+
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /initrd.img -append "console=ttyS0 debug rw nokaslr" -netdev bridge,id=tap0,br=br0 -device e1000,netdev=tap0 -S -gdb tcp::8888
+
+host配置NFS服务
+-----------------------
+$>vi /etc/exports
+--------
+/[填写共享目录] *(rw,sync,insecure,no_root_squash,no_subtree_check,no_hide)
+
+$>/etc/init.d/nfs-kernel-server restart
+$>exportfs -arv
+
+qemu-NFS
+-----------------------
+$>mount -t nfs -o nolock -o tcp -o rsize=32768,wsize=32768 srv_ip:/[共享目录] /[本地目录]
+
+注意:以上内容已经过严格验证.
+
+升级本地gcc编译器
+-----------------------
+$>cd gcc 
+$>git checkout releases/gcc-10.2.0 -b gcc-10.2.0 -f
+$>autoreconf --install --force
+$>mkdir build_gcc-10.2.0 && cd build_gcc-10.2.0 && ../configure --prefix=/usr --target==x86_64-pc-linux-gnu --enable-languages=c,c++ --enable-threads=posix --enable-nls --enable-bootstrap --enable-libstdcxx-debug --enable-libstdcxx-time=yes --enable-gnu-unique-object --disable-vtable-verify --enable-libmpx --enable-plugin --enable-default-pie --with-system-zlib --with-target-system-zlib --disable-werror --disable-multilib && make -j`nproc` && make install 
+
+qemu-v6.0.0用法
+-----------------------
+$>apt-get install ninja-build uml-utilities bridge-utils nfs-kernel-server
+$>cd qemu
+$>git checkout v6.0.0 -b v6.0.0 -f && autoreconf --install --force
+$>mkdir build_qemu-v6.0.0 && cd build_qemu-v6.0.0 && ../configure --target-list=x86_64-softmmu --sysconfdir=/etc --enable-debug --prefix=// && make -j`nproc` && make install 
+$>tunctl -t qemu -u root
+$>ifconfig qemu 192.168.20.254
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /initrd.img -append "console=ttyS0 debug rw" -net nic -net tap,ifname=qemu,script=no,downscript=no
+ >ifconfig eth0 192.168.20.10                          #配置网络ip.
+ >ping 192.168.20.254                                  #网络测试.
+
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /initrd.img -append "console=ttyS0 debug rw nokaslr" -net nic -net tap,ifname=qemu,script=no,downscript=no -S -gdb tcp::8888
+
+注意:需要gcc-v9.3.0,ninja-build>=1.10.0以上的版本.
+
+find辅助命令
+-----------------------
+$>find /torvalds/x86_64-qemu/ -name "*.stamp_configured" -or -name ".*stamp_patched" -or -name "*.stamp_extracted" -or -name "*.stamp_downloaded" -or -name "*.stamp_dotconfig" -exec rm -rf {} \;
+$>find <...>/buildroot/dl/ -name "*.lock" -exec rm -rf {} \;
+
+杀掉所有qemu进程
+-----------------------
+$>vi /usr/bin/kq && chmod 777 /usr/bin/kq
+------------
+#!/bin/bash 
+
+#杀死多个"$other_prog_name"进程
+for i in $(ps -ef | grep -i qemu-system-x86_64 | grep -v grep | awk '{print $2}' | awk BEGIN{RS=EOF}'{gsub(/\n/," ");print}'); 
+do
+ kill -9 $i 2 >/dev/null
+done
+
+使用buildroot构建qemu-rootfs 
+-----------------------
+$>git checkout 2021.02.1 -b qemu -f
+$>make O=/torvalds/x86_64-qemu/ qemu_x86_64_defconfig
+$>make O=/torvalds/x86_64-qemu/ menuconfig
+$>make O=/torvalds/x86_64-qemu/ V=1 -j`nproc` 2>&1 | tee build.log
+
+使用buildroot构建x86_64-rootfs 
+-----------------------
+$>apt-get install graphviz
+$>git checkout 2021.02.1 -b pc-x86_64 -f
+$>make O=/torvalds/x86_64-efi/ pc_x86_64_efi_defconfig
+$>make O=/torvalds/x86_64-efi/ menuconfig
+$>make O=/torvalds/x86_64-efi/ V=1 -j`nproc` 2>&1 | tee build.log
+$>make graph-depends
+
+使用buildroot构建x86_64-rootfs 
+-----------------------
+$>apt-get install graphviz
+$>git checkout 2021.02.1 -b pc-x86_64 -f
+$>make O=/torvalds/x86_64-bios/ pc_x86_64_bios_defconfig
+$>make O=/torvalds/x86_64-bios/ menuconfig
+$>make O=/torvalds/x86_64-bios/ V=1 -j`nproc` 2>&1 | tee build.log
+$>make graph-depends
+
+Buildroot生成qemu-initrd.img
+-----------------------
+$>make O=/torvalds/x86_64-qemu/ qemu_x86_64_defconfig
+$>make O=/torvalds/x86_64-qemu/ menuconfig
+------------
+Filesystem images  --->
+    [*] initial RAM filesystem linked into linux kernel  
+
+ System configuration  ---> 
+    (lx) System hostname 
+
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /torvalds/x86_64-qemu/images/rootfs.cpio -append "console=ttyS0 debug rw"
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /torvalds/x86_64-qemu/images/rootfs.cpio -append "console=ttyS0 debug rw nokaslr" -S -gdb tcp::8888
+or 
+$>mv /torvalds/x86_64-qemu/images/rootfs.cpio /torvalds/x86_64-qemu/images/initrd.img
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /torvalds/x86_64-qemu/images/initrd.img -append "console=ttyS0 debug rw"
+$>qemu-system-x86_64 -m 1024 -smp `nproc` -nographic -kernel /torvalds/linux/arch/x86_64/boot/bzImage -initrd /torvalds/x86_64-qemu/images/initrd.img -append "console=ttyS0 debug rw nokaslr" -S -gdb tcp::8888
+
+Buildroot详细配置
+-----------------------
+$>make O=/torvalds/x86_64-qemu/ qemu_x86_64_defconfig
+$>make O=/torvalds/x86_64-qemu/ menuconfig
+------------
+Toolchain  ---> 
+    C library (glibc)  --->   
+    *** Kernel Header Options ***
+    Kernel Headers (Linux 4.19.x kernel headers)  ---> 
+    *** Glibc Options *** 
+[*] Install glibc utilities
+    *** Binutils Options ***
+    Binutils Version (binutils 2.36.1)  --->  
+    *** GCC Options *** 
+    GCC compiler Version (gcc 10.x)  --->  
+[*] Enable C++ support
+
+Kernel  ---> 
+[*] Linux Kernel
+    Kernel version (Latest CIP SLTS version (4.19.182-cip45))  --->
+    Linux Kernel Extensions  ---> 
+        [ ] Aufs Filesystem Module patch
+            aufs-standalone series (aufs5.x)  --->
+
+ Target packages  ---> 
+    Compressors and decompressors  ---> 
+        [*] brotli                                                                                                                      
+        -*- bzip2                                                                                                                       
+        [*] lrzip                                                                                                                       
+        [*] lzip                                                                                                                        
+        [*] lzop                                                                                                                        
+        [*] p7zip                                                                                                                       
+        [*] pigz                                                                                                                        
+        [*] pixz                                                                                                                        
+        [*] unrar                                                                                                                       
+        -*- xz-utils                                                                                                                    
+        [*] zip                                                                                                                         
+        [*] zstd        
+
+    Development tools  ---> 
+        [*] binutils                                                                                                                      
+        [*]   binutils binaries                                                                                                         
+        [*] bitwise                                                                                                                       
+        [*] bsdiff                                                                                                                        
+        [*] check                                                                                                                         
+        [*] ctest                                                                                                                         
+        [*] cppunit                                                                                                                       
+        [*] cukinia                                                                                                                       
+        [*] cunit                                                                                                                         
+        [*] cvs                                                                                                                           
+        [*]   server support                                                                                                              
+        [*] cxxtest                                                                                                                       
+        [*] flex                                                                                                                          
+        [*] gettext                                                                                                                       
+        -*- git                                                                                                                           
+        [*] git-crypt                                                                                                                     
+        [*] gperf                                                                                                                         
+        [*] jo                                                                                                                            
+        [*] jq                                                                                                                            
+        [*] libtool                                                                                                                       
+        [*] make                                                                                                                          
+        [*] pkgconf                                                                                                                       
+        [ ] ripgrep                                                                                                                       
+        [*] subversion                                                                                                                    
+        [*] tree                                                                                                                          
+        [*] yasm                
+
+    Debugging, profiling and benchmark  --->
+        [ ] babeltrace2                                                                                                                  
+        [ ] blktrace                                                                                                                     
+        [ ] bonnie++                                                                                                                     
+        [ ] cache-calibrator                                                                                                             
+        *** clinfo needs an OpenCL provider ***                                                                                      
+        [ ] coremark                                                                                                                     
+        [ ] coremark-pro                                                                                                                 
+        *** dacapo needs OpenJDK ***                                                                                                 
+        [ ] delve                                                                                                                        
+        [ ] dhrystone                                                                                                                    
+        [ ] dieharder                                                                                                                    
+        [ ] dmalloc                                                                                                                      
+        [ ] dropwatch                                                                                                                    
+        [ ] dstat                                                                                                                        
+        [ ] dt                                                                                                                           
+        [ ] duma                                                                                                                         
+        [ ] fio                                                                                                                          
+        [ ] fwts                                                                                                                         
+        [*] gdb                                                                                                                          
+        [*]   gdbserver                                                                                                                  
+        [*]   full debugger                                                                                                              
+        [*]   TUI support                                                                                                                
+        [ ] google-breakpad                                                                                                              
+        [ ] iozone                                                                                                                       
+        [ ] kexec                                                                                                                        
+        [ ] ktap                                                                                                                         
+        [ ] kvm-unit-tests                                                                                                               
+        [ ] latencytop                                                                                                                   
+        [ ] lmbench                                                                                                                      
+        [ ] ltp-testsuite                                                                                                                
+        [ ] ltrace                                                                                                                       
+        [ ] lttng-babeltrace                                                                                                             
+        [ ] lttng-modules                                                                                                                
+        [ ] lttng-tools                                                                                                                  
+        [ ] mcelog                                                                                                                       
+        [*] memstat                                                                                                                      
+        [ ] netperf                                                                                                                      
+        [ ] netsniff-ng                                                                                                                  
+        [ ] nmon                                                                                                                         
+        [ ] oprofile                                                                                                                     
+        [ ] pax-utils                                                                                                                    
+        [ ] pcm-tools                                                                                                                    
+        [ ] ply                                                                                                                          
+        [ ] pv                                                                                                                           
+        [ ] racehound                                                                                                                    
+        [ ] ramspeed/smp                                                                                                                 
+        [ ] ramspeed                                                                                                                     
+        [ ] rt-tests                                                                                                                     
+        [ ] sentry-native                                                                                                                
+        [ ] spidev_test                                                                                                                  
+        [ ] strace                                                                                                                       
+        [ ] stress                                                                                                                       
+        [ ] stress-ng                                                                                                                    
+        *** sysdig needs a glibc or uclibc toolchain w/ C++, threads, gcc >= 4.8, dynamic library, a Linux kernel, and luajit or lua| |  
+        [ ] sysprof                                                                                                                      
+        [ ] tcf-agent                                                                                                                    
+        [ ] tinymembench                                                                                                                 
+        [ ] trace-cmd                                                                                                                    
+        [ ] trinity                                                                                                                      
+        [ ] uclibc-ng-test                                                                                                               
+        [ ] valgrind                                                                                                                     
+        [ ] vmtouch                                                                                                                      
+        [ ] whetstone                                                                                                              
+
+    Filesystem and flash utilities  --->
+        [*] abootimg                                                                                                                      
+        [ ] aufs-util                                                                                                                     
+        ()    aufs-util version (NEW)                                                                                                     
+        [*] autofs                                                                                                                        
+        [*] btrfs-progs                                                                                                                   
+        [*] cifs-utils                                                                                                                    
+        [*] cpio                                                                                                                          
+        [*] cramfs                                                                                                                        
+        [*] curlftpfs (FUSE)                                                                                                              
+        [*] davfs2                                                                                                                        
+        [*] dosfstools                                                                                                                    
+        [*]   fatlabel                                                                                                                    
+        [*]   fsck.fat                                                                                                                    
+        [*]   mkfs.fat                                                                                                                    
+        -*- e2fsprogs  --->                                                                                                               
+        [*] e2tools                                                                                                                       
+        [*] ecryptfs-utils                                                                                                                
+        [*] erofs-utils                                                                                                                   
+        [*]   lz4 support                                                                                                                 
+        [*]   erofsfuse support                                                                                                           
+        [*] exFAT (FUSE)                                                                                                                  
+        [*] exfat-utils                                                                                                                   
+        [*] exfatprogs                                                                                                                    
+        [*] f2fs-tools                                                                                                                    
+        [*] flashbench                                                                                                                    
+        [*] fscryptctl                                                                                                                    
+        [*] fuse-overlayfs                                                                                                                
+        [*] fwup                                                                                                                          
+        [*] genext2fs                                                                                                                     
+        [*] genpart                                                                                                                       
+        [*] genromfs                                                                                                                      
+        [*] imx-usb-loader                                                                                                                
+        [*] mmc-utils                                                                                                                     
+        [ ] mtd, jffs2 and ubi/ubifs tools                                                                                                
+        [*] mtools                                                                                                                        
+        [*] nfs-utils                                                                                                                     
+        [*]   rpcdebug                                                                                                                    
+        [*]   rpc.lockd                                                                                                                   
+        [*]   rpc.nfsd (NEW)                                                                                                              
+        [*]   rpc.rquotad                                                                                                                 
+        [*] nilfs-utils                                                                                                                   
+        [*] ntfs-3g                                                                                                                       
+        [*]   encrypted volumes                                                                                                           
+        [*]   ntfsprogs                                                                                                                   
+        [*] sp-oops-extract                                                                                                               
+        [*] squashfs                                                                                                                      
+        [*]   gzip support (NEW)                                                                                                          
+        [*]   lz4 support                                                                                                                 
+        [*]   lzma support                                                                                                                
+        [*]   lzo support                                                                                                                 
+        [*]   xz support                                                                                                                  
+        [*]   zstd support                                                                                                                
+        [*] sshfs (FUSE)                                                                                                                  
+        [*] udftools                                                                                                                      
+        [*] unionfs (FUSE)                                                                                                                
+        [*] xfsprogs                                           
+
+    Fonts, cursors, icons, sounds and themes  --->                                                                 
+        *** Cursors ***                                                                                                               
+        [ ] comix-cursors                                                                                                                 
+        [ ] obsidian-cursors                                                                                                              
+            *** Fonts ***                                                                                                                 
+        [ ] Bitstream Vera                                                                                                                
+        [ ] cantarell                                                                                                                     
+        [*] DejaVu fonts                                                                                                                  
+        [*]   mono fonts (NEW)                                                                                                            
+        [*]   sans fonts (NEW)                                                                                                            
+        [*]   serif fonts (NEW)                                                                                                           
+        [*]   sans condensed fonts (NEW)                                                                                                  
+        [*]   serif condensed fonts (NEW)                                                                                                 
+        [*] font-awesome                                                                                                                  
+        [ ] ghostscript-fonts                                                                                                             
+        [ ] inconsolata                                                                                                                   
+        [ ] Liberation (Free fonts)                                                                                                       
+        [ ] wqy-zenhei                                                                                                                    
+            *** Icons ***                                                                                                                 
+        [ ] google-material-design-icons                                                                                                  
+        [ ] hicolor icon theme                                                                                                            
+            *** Sounds ***                                                                                                                
+        [ ] sound-theme-borealis                                                                                                          
+        [ ] sound-theme-freedesktop                                                                                                       
+            *** Themes ***                  
+
+    Libraries  --->  
+        Multimedia  --->
+        [*] bitstream                                                                                                                     
+        [*] dav1d                                                                                                                         
+        [*] kvazaar                                                                                                                       
+        [*] libaacs                                                                                                                       
+        [*] libass                                                                                                                        
+        [*] libbdplus                                                                                                                     
+        [ ] libbluray                                                                                                                     
+        [*] libcamera  --->                                                                                                               
+        [*] libdcadec                                                                                                                     
+        [*] libdvbcsa                                                                                                                     
+        [*] libdvbpsi                                                                                                                     
+        [*] libdvbsi                                                                                                                      
+        -*- libdvdcss                                                                                                                     
+        [*] libdvdnav                                                                                                                     
+        -*- libdvdread                                                                                                                    
+        -*- libebml                                                                                                                       
+        [*] libhdhomerun                                                                                                                  
+        [*] libmatroska                                                                                                                   
+        [*] libmms                                                                                                                        
+        [*] libmpeg2                                                                                                                      
+        [*]   mpeg2 binaries                                                                                                              
+        -*- libogg                                                                                                                        
+        [*] libopenh264                                                                                                                   
+        [*] libopusenc                                                                                                                    
+        [*] libtheora                                                                                                                     
+        [*] libudfread                                                                                                                    
+        [*] libvpx                                                                                                                        
+        [*] libyuv                                                                                                                        
+        [*] live555                                                                                                                       
+        [*] mediastreamer                                                                                                                 
+        [*] x264                                                                                                                          
+        [*]   CLI                                                                                                                         
+        [*] x265                                                                                                                          
+        [*]   CLI 
+
+    JSON/XML  ---> 
+        [ ] benejson                                                                                                                      
+        [ ] cJSON                                                                                                                         
+        -*- expat                                                                                                                         
+        [ ] jansson                                                                                                                       
+        [ ] jose                                                                                                                          
+        [*] jsmn                                                                                                                          
+        [*] json-c                                                                                                                        
+        [ ] json-for-modern-cpp                                                                                                           
+        [ ] json-glib                                                                                                                     
+        -*- jsoncpp                                                                                                                       
+        [ ] libbson                                                                                                                       
+        [ ] libfastjson                                                                                                                   
+        [ ] libjson                                                                                                                       
+        [ ] roxml                                                                                                                         
+        [ ] libucl                                                                                                                        
+        [ ] libxml2                                                                                                                       
+        [ ] libxml++                                                                                                                      
+        [ ] libxmlrpc                                                                                                                     
+        [ ] libxslt                                                                                                                       
+        [ ] libyaml                                                                                                                       
+        [ ] Mini-XML                                                                                                                      
+        [ ] pugixml                                                                                                                       
+        [ ] rapidjson                                                                                                                     
+        [ ] rapidxml                                                                                                                      
+        [ ] raptor                                                                                                                        
+        [ ] tinyxml                                                                                                                       
+        [ ] tinyxml2                                                                                                                      
+        [ ] valijson                                                                                                                      
+        [ ] xerces-c++                                                                                                                    
+        [ ] yajl                                                                                                                          
+        [ ] yaml-cpp        
+
+Javascript  --->
+        [*] angularjs                                                                                                                    
+        External AngularJS plugins  --->                                                                                           
+        [*] bootstrap                                                                                                                    
+        [*] chartjs                                                                                                                      
+        [*] datatables                                                                                                                   
+        [*]   datatables-buttons                                                                                                         
+        [*]   datatables-fixedcolumns                                                                                                    
+        [*]   datatables-responsive                                                                                                      
+        [*] duktape                                                                                                                      
+        [*] explorercanvas                                                                                                               
+        [*] flot                                                                                                                         
+        *** flot plugins ***                                                                                                       
+        [*]   canvas                                                                                                                     
+        [*]   categories                                                                                                                 
+        [*]   crosshair                                                                                                                  
+        [*]   errorbars                                                                                                                  
+        [*]   fillbetween                                                                                                                
+        [*]   image                                                                                                                      
+        [*]   navigate                                                                                                                   
+        [*]   pie                                                                                                                        
+        [*]   resize                                                                                                                     
+        [*]   selection                                                                                                                  
+        [*]   stack                                                                                                                      
+        [*]   symbol                                                                                                                     
+        [*]   threshold                                                                                                                  
+        [*]   time                                                                                                                       
+        -*- jQuery                                                                                                                       
+        External jQuery plugins  --->                                                                                              
+        [*] jsmin                                                                                                                        
+        [*] json-javascript                                                                                                              
+        -*- jszip                                                                                                                        
+        [*] openlayers                                                                                                                   
+        [*] popperjs                                                                                                                     
+        [*] spidermonkey                                                                                                                 
+        [*]   JS shell                                                                                                                   
+        [*] vuejs       
+
+Text and terminal handling  ---> 
+        [ ] augeas                                                                                                                       
+        [ ] enchant                                                                                                                      
+        [*] fmt                                                                                                                          
+        [ ] fstrcmp                                                                                                                      
+        [ ] icu                                                                                                                          
+        -*- inih                                                                                                                         
+        [ ] libcli                                                                                                                       
+        [ ] libedit                                                                                                                      
+        [ ] libenca                                                                                                                      
+        [ ] libestr                                                                                                                      
+        -*- libfribidi                                                                                                                   
+        [ ] libunistring                                                                                                                 
+        [ ] linenoise                                                                                                                    
+        -*- ncurses                                                                                                                      
+        [*]   enable wide char support                                                                                                   
+        [*]   ncurses programs                                                                                                           
+        ()    additional terminfo files to install (NEW)                                                                                 
+        [ ] newt                                                                                                                         
+        [ ] oniguruma                                                                                                                    
+        -*- pcre                                                                                                                         
+        [*]   16-bit pcre                                                                                                                
+        [*]   32-bit pcre                                                                                                                
+        -*-   UTF-8/16/32 support in pcre                                                                                                
+        -*-   Unicode properties support in pcre                                                                                         
+        [*] pcre2                                                                                                                        
+        [*]   16-bit pcre2                                                                                                               
+        [*]   32-bit pcre2                                                                                                               
+        [*]   enable JIT support                                                                                                         
+        [ ] popt                                                                                                                         
+        [ ] re2                                                                                                                          
+        -*- readline                                                                                                                     
+        [*]   Enable bracketed paste                                                                                                     
+        [ ] slang                                                                                                                        
+        [ ] tclap                                                                                                                        
+        -*- utf8proc 
+
+Filesystem  --->
+        [ ] gamin                                                                                                                        
+        [ ] libconfig                                                                                                                    
+        -*- libconfuse                                                                                                                   
+        -*- libfuse                                                                                                                      
+        -*- libfuse3                                                                                                                     
+        [*] liblockfile                                                                                                                  
+        [*] libnfs                                                                                                                       
+        [*] libsysfs                                                                                                                     
+        [*] lockdev                                                                                                                      
+        [*] physfs  
+
+Networking applications  --->
+        [ ] aircrack-ng                                                                                                                  
+        [ ] aoetools                                                                                                                     
+        [ ] apache                                                                                                                       
+        [ ] argus                                                                                                                        
+        [ ] arp-scan                                                                                                                     
+        [ ] arptables-legacy                                                                                                             
+        [ ] asterisk                                                                                                                     
+        [ ] atftp                                                                                                                        
+        [ ] autossh (NEW)                                                                                                                
+        [ ] avahi                                                                                                                        
+        [ ] axel                                                                                                                         
+        [ ] babeld                                                                                                                       
+        [ ] bandwidthd                                                                                                                   
+        [ ] batctl                                                                                                                       
+        [ ] bcusdk                                                                                                                       
+        [*] bind                                                                                                                         
+        [*]   Install server components                                                                                                  
+        [*]   Install tools                                                                                                              
+        [ ] bird                                                                                                                         
+        [ ] bluez-utils 5.x                                                                                                              
+        [ ] bmon                                                                                                                         
+        [ ] boinc                                                                                                                        
+        [ ] brcm-patchram-plus                                                                                                           
+        [*] bridge-utils                                                                                                                 
+        [ ] bwm-ng                                                                                                                       
+        [ ] c-icap                                                                                                                       
+        [ ] can-utils                                                                                                                    
+        [ ] cannelloni                                                                                                                   
+        [ ] casync                                                                                                                       
+        [ ] chrony                                                                                                                       
+        [ ] civetweb                                                                                                                     
+        [ ] connman                                                                                                                      
+        *** connman-gtk needs libgtk3 and a glibc or uClibc toolchain w/ wchar, threads, resolver, dynamic library ***               
+        [ ] conntrack-tools                                                                                                              
+        [ ] corkscrew                                                                                                                    
+        [ ] crda                                                                                                                         
+        [ ] ctorrent                                                                                                                     
+        [ ] cups                                                                                                                         
+        [ ] dante                                                                                                                        
+        [ ] darkhttpd                                                                                                                    
+        [ ] dehydrated                                                                                                                   
+        [*] dhcpcd                                                                                                                       
+        [*] dhcpdump                                                                                                                     
+        [ ] dnsmasq                                                                                                                      
+        [ ] drbd-utils                                                                                                                   
+        [ ] dropbear                                                                                                                     
+        [ ] easyframes                                                                                                                   
+        [ ] ebtables                                                                                                                     
+        *** ejabberd needs erlang, toolchain w/ C++ ***                                                                              
+        [ ] ethtool                                                                                                                      
+        [ ] faifa                                                                                                                        
+        [ ] fastd                                                                                                                        
+        [ ] fcgiwrap                                                                                                                     
+        [ ] flannel                                                                                                                      
+        [ ] fping                                                                                                                        
+        [ ] freeswitch                                                                                                                   
+        [ ] frr                                                                                                                          
+        [ ] gerbera                                                                                                                      
+        [ ] gesftpserver                                                                                                                 
+        [ ] gloox                                                                                                                        
+        [ ] glorytun                                                                                                                     
+        *** gupnp-tools needs libgtk3 ***                                                                                            
+        [ ] hans                                                                                                                         
+        [ ] haproxy                                                                                                                      
+        [ ] hiawatha                                                                                                                     
+        [*] hostapd                        
+        [*]   Enable hostap driver (NEW)                                                                                                 
+        [*]   Enable nl80211 driver (NEW)                                                                                                
+        [*]   Enable wired driver                                                                                                        
+        [*]   Enable ACS (NEW)                                                                                                           
+        [*]   Enable EAP                                                                                                                 
+        [*]   Enable WPS                                                                                                                 
+        [*]   Enable WPA3 support                                                                                                        
+        [*]   Enable VLAN support (NEW)                                                                                                  
+        [*]     Enable dynamic VLAN support (NEW)                                                                                        
+        [*]     Use netlink-based API for VLAN operations (NEW)                                                                          
+        [ ] htpdate                                                                                                                      
+        [ ] httping                                                                                                                      
+        [ ] i2pd                                                                                                                         
+        [ ] ibrdtn-tools                                                                                                                 
+        [ ] ibrdtnd                                                                                                                      
+        [ ] ifmetric                                                                                                                     
+        [ ] iftop                                                                                                                        
+        [*] ifupdown scripts                                                                                                             
+        [ ] igd2-for-linux                                                                                                               
+        [ ] igh-ethercat                                                                                                                 
+        [ ] igmpproxy                                                                                                                    
+        [ ] inadyn                                                                                                                       
+        [ ] iodine                                                                                                                       
+        [ ] iperf                                                                                                                        
+        [ ] iperf3                                                                                                                       
+        [*] iproute2                                                                                                                     
+        [*] ipset                                                                                                                        
+        [ ] iptables                                                                                                                     
+        [ ] iptraf-ng                                                                                                                    
+        [*] iputils                                                                                                                      
+        [*]   arping (NEW)                                                                                                               
+        [*]   clockdiff (NEW)                                                                                                            
+        [*]   ping (NEW)                                                                                                                 
+        [ ]   rarpd (NEW)                                                                                                                
+        [*]   rdisc (NEW)                                                                                                                
+        [*]     rdisc (server code) (NEW)                                                                                                
+        [ ]   tftpd (NEW)                                                                                                                
+        [*]   tracepath (NEW)                                                                                                            
+        [*]   traceroute6 (NEW)                                                                                                          
+        [*]   ninfod (NEW)                                                                                                               
+        [ ] irssi                                                                                                                        
+        [*] iw                                                                                                                           
+        [ ] iwd                                                                                                                          
+        [ ] janus-gateway  ----                                                                                                          
+        [ ] keepalived                                                                                                                   
+        [ ] kismet                                                                                                                       
+        [ ] knock                                                                                                                        
+        [ ] leafnode2                                                                                                                    
+        [ ] lft                                                                                                                          
+        [ ] lftp                                                                                                                         
+        [ ] lighttpd                                                                                                                     
+        [ ] linknx                                                                                                                       
+        [ ] links                                                                                                                        
+        [ ] linphone                                                                                                                     
+        [ ] linux-zigbee                                                                                                                 
+        [ ] linuxptp                                                                                                                     
+        [ ] lldpd                                                                                                                        
+        [ ] lrzsz                                                                                                                        
+        [ ] lynx                                                                                                                         
+        [ ] macchanger                                                                                                                   
+        [ ] memcached                                                                                                                    
+        [ ] mii-diag                                                                                                                     
+        [ ] mini-snmpd                                                                                                                   
+        [ ] minidlna                                                                                                                     
+        [ ] minissdpd                           
+        [ ] mjpg-streamer                                                                                                                
+        [ ] modem-manager                                                                                                                
+        [ ] mongrel2                                                                                                                     
+        [ ] monkey                                                                                                                       
+        [ ] mosh                                                                                                                         
+        [ ] mosquitto                                                                                                                    
+        [ ] mrouted                                                                                                                      
+        *** mrp needs a toolchain w/ threads, kernel headers >= 5.0 ***                                                              
+        [ ] mtr                                                                                                                          
+        [ ] nbd                                                                                                                          
+        [ ] ncftp                                                                                                                        
+        [ ] ndisc6 tools                                                                                                                 
+        [ ] netatalk                                                                                                                     
+        [ ] netcalc                                                                                                                      
+        [ ] netplug                                                                                                                      
+        [ ] netsnmp                                                                                                                      
+        [ ] netstat-nat                                                                                                                  
+        *** NetworkManager needs udev /dev management and a glibc toolchain w/ headers >= 3.2, dynamic library, wchar, threads ***   
+        [ ] nfacct                                                                                                                       
+        [ ] nftables                                                                                                                     
+        [ ] nginx  ----                                                                                                                  
+        [ ] ngircd                                                                                                                       
+        [ ] ngrep                                                                                                                        
+        [ ] nload                                                                                                                        
+        [ ] nmap                                                                                                                         
+        [ ] noip                                                                                                                         
+        [ ] ntp                                                                                                                          
+        [ ] nuttcp                                                                                                                       
+        [ ] odhcp6c                                                                                                                      
+        [ ] odhcploc                                                                                                                     
+        [ ] olsr                                                                                                                         
+        [ ] open-lldp                                                                                                                    
+        [ ] open-plc-utils                                                                                                               
+        [ ] openntpd                                                                                                                     
+        [ ] openobex                                                                                                                     
+        [ ] openresolv                                                                                                                   
+        -*- openssh                                                                                                                      
+        [*]   client (NEW)                                                                                                               
+        [*]   server (NEW)                                                                                                               
+        [*]   key utilities (NEW)                                                                                                        
+        [ ] openswan                                                                                                                     
+        [ ] openvpn                                                                                                                      
+        [ ] p910nd                                                                                                                       
+        [ ] parprouted                                                                                                                   
+        [ ] phidgetwebservice                                                                                                            
+        [ ] phytool                                                                                                                      
+        [ ] pimd                                                                                                                         
+        [ ] pixiewps                                                                                                                     
+        [ ] pound                                                                                                                        
+        [ ] pppd                                                                                                                         
+        [ ] pptp-linux                                                                                                                   
+        [ ] privoxy                                                                                                                      
+        [ ] proftpd                                                                                                                      
+        *** prosody needs the lua interpreter, dynamic library ***                                                                   
+        [ ] proxychains-ng                                                                                                               
+        [ ] ptpd                                                                                                                         
+        [ ] ptpd2                                                                                                                        
+        [ ] pure-ftpd                                                                                                                    
+        [ ] putty                                                                                                                        
+        [ ] quagga                                                                                                                       
+        *** rabbitmq-server needs erlang ***                                                                                         
+        [ ] radvd                                                                                                                        
+        [ ] reaver                                                                                                                       
+        [ ] redir                                                                                                                        
+        [ ] rp-pppoe                
+        -*- rpcbind                                                                                                                      
+        [ ] rsh-redone                                                                                                                   
+        [*] rsync                                                                                                                        
+        [ ] rtorrent                                                                                                                     
+        [ ] rtptools                                                                                                                     
+        [ ] rygel                                                                                                                        
+        [ ] s6-dns                                                                                                                       
+        [ ] s6-networking                                                                                                                
+        [ ] samba4                                                                                                                       
+        [ ] sconeserver  ----                                                                                                            
+        [ ] ser2net                                                                                                                      
+        [ ] shadowsocks-libev                                                                                                            
+        [ ] shairport-sync                                                                                                               
+        [ ] shellinabox                                                                                                                  
+        [ ] smcroute                                                                                                                     
+        [ ] sngrep                                                                                                                       
+        [ ] snort                                                                                                                        
+        [ ] socat                                                                                                                        
+        [ ] socketcand                                                                                                                   
+        [ ] softether                                                                                                                    
+        [ ] spawn-fcgi                                                                                                                   
+        [ ] spice server                                                                                                                 
+        [ ] spice protocol                                                                                                               
+        [ ] squid                                                                                                                        
+        [ ] ssdp-responder                                                                                                               
+        [ ] sshguard                                                                                                                     
+        [ ] sshpass                                                                                                                      
+        [ ] sslh                                                                                                                         
+        [ ] strongswan  ----                                                                                                             
+        [ ] stunnel                                                                                                                      
+        [ ] suricata                                                                                                                     
+        [*] tcpdump                                                                                                                      
+        [*]   smb dump support                                                                                                           
+        [ ] tcping                                                                                                                       
+        [ ] tcpreplay                                                                                                                    
+        [ ] thttpd                                                                                                                       
+        [ ] tinc                                                                                                                         
+        [ ] tinyproxy                                                                                                                    
+        [ ] tinyssh                                                                                                                      
+        [ ] tor                                                                                                                          
+        [ ] traceroute                                                                                                                   
+        [ ] transmission                                                                                                                 
+        [ ] tunctl                                                                                                                       
+        [ ] tvheadend                                                                                                                    
+        [ ] uacme                                                                                                                        
+        [ ] udpcast                                                                                                                      
+        [ ] uftp                                                                                                                         
+        [ ] uhttpd                                                                                                                       
+        [ ] ulogd                                                                                                                        
+        [ ] unbound                                                                                                                      
+        [ ] uredir                                                                                                                       
+        [ ] ushare                                                                                                                       
+        [ ] ussp-push                                                                                                                    
+        [ ] vde2                                                                                                                         
+        [ ] vdr                                                                                                                          
+        [ ] vnstat                                                                                                                       
+        [ ] vpnc                                                                                                                         
+        [ ] vsftpd                                                                                                                       
+        [ ] vtun                                                                                                                         
+        [ ] wavemon                                                                                                                      
+        [ ] wireguard linux-compat                                                                                                       
+        [ ] wireguard tools                                                                                                              
+        [ ] wireless-regdb                                                                                                               
+        [*] wireless tools                                                                                                               
+        [*]   Install shared library                                                                                                     
+        [*] wireshark                                                                                                                    
+        *** Qt5 GUI needs a udev /dev management and a toolchain w/ C++, NPTL, host gcc >= 5.0, gcc >= 5.0 ***                     
+        [*] wpa_supplicant                                                                                                               
+        [*]   Enable nl80211 support (NEW)                                                                                               
+        [*]   Enable AP mode                                                                                                             
+        [*]     Enable Wi-Fi Display                                                                                                     
+        [*]     Enable mesh networking                                                                                                   
+        [*]   Enable autoscan                                                                                                            
+        [*]   Enable EAP                                                                                                                 
+        [*]   Enable HS20                                                                                                                
+        [*]   Enable syslog support                                                                                                      
+        [*]   Enable WPS                                                                                                                 
+        [ ]   Enable WPA3 support (NEW)                                                                                                  
+        [*]   Install wpa_cli binary                                                                                                     
+        [*]   Install wpa_client shared library                                                                                          
+        [*]   Install wpa_passphrase binary                                                                                              
+        [*]   Enable support for the DBus control interface                                                                              
+        [*]   Introspection support                                                                                                      
+        [ ] wpan-tools                                                                                                                   
+        [ ] xinetd                          
+
+编程实践技巧
+-----------------------
+$>nm vmlinux |grep __log_buf   #__log_buf虚拟地址.
+--------
+ffffffff826fc574 b __log_buf
+
+$>nm vmlinux |grep "_text"     #_text虚拟地址.
+--------
+ffffffff81000000 T _text
+
+$>nm vmlinux |grep "start_kernel"     #每次启动地址都不一样.
+--------
+ffffffff825a2aba T start_kernel
+
+$>nm vmlinux |grep "setup_log_buf"
+--------
+ffffffff825c1e88 T setup_log_buf
+
+gdb 
+--------
+$>p (char *)0xffffffff826fc574
+$>ptype 0xffffffff81000000
+--------
+type = unsigned long
+
+$>ptype 0xffffffff825a2aba
+--------
+type = unsigned long
+
+$>p /x &setup_log_buf     #与vmlinux虚拟地址一致.
+$>p /x &__log_buf         #与vmlinux虚拟地址一致.
+
+内核日志相关线索
+--------
+p (char *)&__log_buf[1<<18]   #18来源于"cat .config | grep CONFIG_LOG_BUF_SHIFT"或者LOG_BUF_LEN_MAX (u32)(1 << 31)。
+1<<18 = 0x40000
+1<<32 = 0x0                   #溢出.
+$>p (char *)&__log_buf[0x40000]
+$>dmesg __log_buf 0 0x40000
+
+$>vi debug/debug.cfg 
+--------
+define dmesg
+        set $__log_buf = $arg0
+        set $log_start = $arg1
+        set $log_end = $arg2
+        set $x = $log_start
+        echo "
+        while ($x < $log_end)
+                set $c = (char)(($__log_buf)[$x++])
+                printf "%c" , $c
+        end
+        echo "\n
+end
+document dmesg
+dmesg __log_buf log_start log_end
+Print the content of the kernel message buffer
+eg.
+dmesg __log_buf 0 0x40000
+end
+

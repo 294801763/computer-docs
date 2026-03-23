@@ -1,0 +1,140 @@
+原理图设计
+---------------
+Capture CIS 17.4 -> Allegro Design Entry CIS 
+Capture CIS 17.4 -> OrCAD Capture CIS
+
+快捷键
+---------------
+F4         重复上一步操作
+I/O        放大/缩小 
+C          以光标所指为新的窗口显示中心
+W          画线ON/OFF 
+J          放置节点ON/OFF 
+P          放置元器件 
+N          放置网络标号
+U          放置网络组 
+F          放置电源
+G          放置地
+B          放置总线
+E          放置总线端口
+T          放置TEXT
+X          放置无连接符号
+Y          放置图形连线
+R          元件旋转90度 
+H          元件标号左右翻转
+V          元件标号上下翻转 
+CTRL + F   查找元件 
+CTRL + E   编辑元件属性
+CTRL + T   开启/关闭对齐网格线
+
+默认原理图库的位置
+---------------
+...\Cadence\SPB_17.4\tools\capture\library
+
+1.1 关闭起始页
+----------
+step.1 View->勾选Command Window
+step.2 Command Window
+-----
+capture>SetOptionBool EnableStartPage 0
+
+注意:命令必须手写.
+
+1.2 创建工程
+----------
+step.1 File->Project...->Name:<工程名字>,Location:D:\schematic\<工程保存的位置>
+
+1.3 工程管理
+----------
+step.1 .\<工程名字>->SCHEMATIC1->右键->Rename:<填写新的原理图名称即可>
+step.2 .\<工程名字>->右键->New ScheMatic...->Name:<填写新的原理图名称即可>
+step.3 .\<工程名字>-><原理图名字>-><页名>->右键->ScheMatic Page Properties->Page Size->Units:Millimeters,New Page Size:A0
+step.4 .\<工程名字>-><原理图名字>->右键->New Page 
+step.5 .\<工程名字>-><原理图名字>->右键->Make Root                                          #只有在多原理图的时候才有用且"非Make Root"/"非第一个"的时候才会有Make Root选项.
+step.6 File->New->Library->[Library-><库名>.olb->Save-><D:\schematic\slib\<name>.olb]       #创建原理图库
+
+注意:工程核心文件为"<Name>.DSN",其他文件可以删除;DSN工程可以使用"D:\allegro\Cadence\SPB_17.4\tools\bin\Capture.exe"打开.
+
+1.4 颜色设置
+----------
+step.1 Options->PreFerences...->Colors/Print->Application Theme(Requires Restart):Light,Schematic Theme:Dark
+
+注意:需要重新启动软件.
+
+1.5 格点设置
+----------
+step.1 Options->PreFerences...->Schematic Page Grid->Grid Display->Grid Style:Lines
+step.2 Options->PreFerences...->Part and Symbol Grid->Grid Display->Grid Style:Lines
+
+1.6 设计模板
+----------
+step.1 Options->Design Template...->Title Block->                                        #设计原理图标题块
+step.2 Options->Design Template...->Page Size->Units:Millimeters,New Page Size:A0        #设置原理图页
+step.3 Options->Design Template...->Grid Reference->                                     #格点设置 
+
+1.7 新建原理图库
+----------
+IC   - U 
+电阻 - R 
+电容 - C 
+
+step.1 File->New->Library->[Library-><库名>.olb->Save-><D:\schematic\slib\<name>.olb] 
+
+1.7.1 简单分裂元器件
+----
+step.1 Library-><name>.olb->右键->New Part->Name:TPS545 ,Part Reference:U ,Parts per:1 ,Package Type:Homogeneous ,Part Numbering:Numeric(以1,2,3的方式递增)
+step.2 放置焊盘(Place Pin),快捷键:SHIFT + G 
+step.3 先放置好焊盘,Name:1 ,Number:1 ,Shape:Line ,Type:Passive 
+step.4 更改焊盘名字
+step.5 绘制外框的线(Place rectangle) ,快捷键:SHIFT + R 
+
+1.7.2 Homogeneous分裂元器件
+----
+step.1 Library-><name>.olb->右键->New Part->Name:LM358_HOMO ,Part Reference:U ,Parts per:2 ,Package Type:Homogeneous ,Part Numbering:Alphabetic(以a,b,c的方式递增)
+step.2 画线 ,快捷键:SHIFT + L 
+step.3 放置焊盘(Place Pin) ,快捷键:SHIFT + G 
+step.4 先放置好焊盘,Name:1 ,Number:1 ,Shape:Line ,Type:Passive 
+step.5 编辑焊盘 ,快捷键:SHIFT + H 
+step.6 在Part Properties->Pin Name Visible(隐藏焊盘名称)
+step.7 取消对齐网格 ,快捷键:CTRL + T
+step.8 放置文本, 快捷键:T
+
+注意:上一个Part-快捷键:CTRL + N ,下一个Part-快捷键:CTRL + B
+
+1.7.3 Homogeneous分裂元器件
+----
+step.1 Library-><name>.olb->右键->New Part->Name:LM358_HETER ,Part Reference:U ,Parts per:2 ,Package Type:Homogeneous ,Part Numbering:Alphabetic(以a,b,c的方式递增)
+step.2 画线 ,快捷键:SHIFT + L 
+step.3 放置焊盘(Place Pin) ,快捷键:SHIFT + G 
+step.4 先放置好焊盘,Name:1 ,Number:1 ,Shape:Line ,Type:Passive 
+step.5 编辑焊盘 ,快捷键:SHIFT + H 
+step.6 在Part Properties->Pin Name Visible(隐藏焊盘名称)
+step.7 取消对齐网格 ,快捷键:CTRL + T
+step.8 放置文本, 快捷键:T
+step.9 切换到下一个Part, 快捷键:CTRL + B 
+step.10 画线 ,快捷键:SHIFT + L 
+step.11 放置焊盘(Place Pin) ,快捷键:SHIFT + G 
+step.12 先放置好焊盘,Name:1 ,Number:1 ,Shape:Line ,Type:Passive 
+step.13 编辑焊盘 ,快捷键:SHIFT + H 
+step.14 在Part Properties->Pin Name Visible(隐藏焊盘名称)
+step.15 取消对齐网格 ,快捷键:CTRL + T
+step.16 放置文本, 快捷键:T
+
+注意:上一个Part-快捷键:CTRL + N ,下一个Part-快捷键:CTRL + B
+
+1.8 使用元器件
+----------
+step.1 切换到原理图页
+step.2 添加Part,快捷键:p 
+step.3 Place Part->Par:TP545 ,Part:双击"TP545/<name>"
+step.4 放大/缩小快捷键:I/O 
+
+1.9 使用网络标号
+----------
+为了使原理图更加直观,本页中可使用网络标号进行连接
+
+1.10 跨页连接
+----------
+step.1 Place->Off-Page Connector... 
+step.2 添加网络标号 
+step.3 复制Off-Page Connector 到另一页即可

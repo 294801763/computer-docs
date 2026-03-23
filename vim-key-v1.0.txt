@@ -1,0 +1,17 @@
+快捷键 - 格式
+-------------------
+{mode} {attribute}map {key} {command}
+
+{attribute} - 值有n,v,i分别表示普通,可视,插入
+
+查看快捷键
+-------------------
+:map 
+
+CTAGS导航快捷键
+-------------------
+nmap s :w<CR>
+nmap n :tnext<CR>
+nmap m :tprev<CR>
+nnoremap c :!ctags --exclude=*.o --exclude=*.a --fields=+l --c-kinds=+p --c++-kinds=+p -R<CR>
+nnoremap e :!/opt/slickedit/bin/vs %> /dev/null 2>&1&<CR> 

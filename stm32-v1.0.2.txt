@@ -1,0 +1,51 @@
+GCC关闭警告(unknown-pragmas)
+---------------
+-Wno-unknown-pragmas
+
+eg.
+ >CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -Wno-unknown-pragmas
+
+OPENOCD - JLINK - GDB
+--
+>target remote :3333
+-
+...
+cpsr: 0x000001d3 pc: 0x00008000
+
+>mon halt
+>mon reg pc 
+-
+pc (/32): 0x00008000
+
+>mon resume
+
+OPENOCD - JLINK - GDB - DOWNLOAD
+--
+>mon halt 
+>mon load_image /<dir>/u-boot.bin 0x8000 bin
+>mon verify_image /<dir>/u-boot.bin 0x8000
+>mon resume 0x8000
+
+OPENOCD - DOWNLOAD
+--
+halt load_image /<dir>/u-boot.bin 0x8000 bin
+or 
+flash write_image erase unlock Build/STM32F429IGT6.hex
+
+面包板 - 间距
+--
+2.54mm
+
+JTAG - 引脚定义 - 20PIN
+--
+1  VTREF                                   - 目标板参考电压,接电源
+2  VCC                                     - 接电源
+3  TRST                                    - 测试系统复位信号
+5  TDI                                     - 测试数据串行输入
+7  TMS                                     - 测试模式选择
+9  TCK                                     - 测试时钟
+11 RTCK                                    - 测试时钟返回信号
+13 TDO                                     - 测试数据串行输出
+15 NRST                                    - 目标系统复位信号
+4,6,8,10,12,14,16,18,20 GND                - 接地
+17,19                   NC                 - 未连接

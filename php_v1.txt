@@ -1,0 +1,399 @@
+PHP
+-------------------
+1.变量
+------
+<?php 
+ $x = 1;
+ $y = 2;
+ 
+ /**
+  * 多行注释
+  **/
+
+  echo $x + $y;
+  echo '<br/>';
+  echo "$x";          /*双引号解释变量或转义字符*/
+  echo '<br/>';
+  echo "\n";
+  echo '<br/>';
+  echo "\\";
+  echo '<br/>';
+  echo '$x';          /*单引号不解释变量*/
+  echo '<br/>';
+  echo $x.'--变量x';  /*字符串连接*/
+  echo '<br/>';
+  
+  $x = "张三";
+  echo "{$x}--变量x"; /*变量和字符串拼接*/
+  echo '<br/>';
+  
+  echo "'$x'";        /*变量和字符串拼接*/
+  echo '<br/>';
+  unset($x,$y);       /*销毁变量x,y*/
+?>
+
+注意:php严格区分大小写;命名不能数字开头,不能包含特殊字符(eg.%,#,@).
+
+2.数据类型
+------
+<?php 
+/**
+ * 标准类型:整型,浮点型,布尔类型(boolean,true,false),字符串
+ * 复合类型:数组(array),对象(object)
+ * 特殊类型:空(null),资源(resource)
+ **/
+ 
+ $arr = ["张三","李四"];    /*数组*/
+?>
+
+3.数据类型转换
+------
+<?php 
+  $name = "张三";
+  echo gettype($name);
+  echo '<br/>';
+  
+  $name = 1;
+  echo gettype($name);
+  echo '<br/>';
+  
+  $name = 1.0;
+  echo gettype($name);
+  echo '<br/>';
+  
+  $str = "祝你永远18岁!";
+  echo intval($str);           //将字符串转换成整型.
+  echo '<br/>';
+  echo gettype(intval($str));
+  echo '<br/>';
+  
+  $str = "18.随机字符串...!";
+  echo intval($str);            //将字符串转换成整型.
+  echo '<br/>';
+  echo gettype(intval($str));
+  echo '<br/>';
+  
+  $str = "18.随机字符串...!";
+  echo floatval($str);          //浮点.
+  echo '<br/>';
+  echo gettype(floatval($str));
+  echo '<br/>';
+  
+  $str = "18.随机字符串...!";
+  echo strval($str);            //字符串.
+  echo '<br/>';
+  echo gettype(strval($str));
+  echo '<br/>';
+  
+  $str = null;
+  echo intval($str);            //空.
+  echo '<br/>';
+  echo gettype(intval($str));
+  echo '<br/>';
+  
+  $str = null;
+  echo strval($str);            //字符串.
+  echo '<br/>';
+  echo gettype(strval($str));
+  echo '<br/>';
+  var_dump(strval($str));       //变量调试函数
+  echo '<br/>';
+  
+  $bool = true;
+  echo boolval($bool);          //布尔.
+  echo '<br/>';
+  echo gettype(boolval($str));
+  echo '<br/>';
+  
+  /**
+   * 常用函数 -- 判断数据类型
+   * is_array(),is_string(),is_bool(),is_float(),is_object(),is_int(),is_numberic(),is_resource(),is_null(),is_scalar(),gettype(),var_dump()
+   **/
+?>
+
+4.系统常量
+------
+<?php 
+  define('NAME','value');    //常量定义,不能重复.
+  echo NAME;
+  echo '<br/>';
+  
+  defined(NAME);             //判断常量是否定义.
+  
+  echo __FILE__;
+  echo '<br/>';
+  
+  echo __LINE__;
+  echo '<br/>';
+  
+  echo PHP_VERSION;
+  echo '<br/>';
+  
+  echo PHP_OS;
+  echo '<br/>';
+  
+  echo M_PI;
+  echo '<br/>';
+  
+  echo __METHOD__;
+  echo '<br/>';
+  
+  echo __NAMESPACE__;
+  echo '<br/>';
+  
+  echo __TRAIT__;
+  echo '<br/>';
+  
+  echo __CLASS__;
+  echo '<br/>';
+  
+  echo __DIR__;
+  echo '<br/>';
+  
+  /**
+   * 定义函数check
+   **/
+  function check()
+  {
+    echo __FUNCTION__;
+	echo '<br/>';
+  }
+  
+  check();
+
+?>
+
+5.运算符
+------
+算术运算符:+,-*,/,%
+自增/自减 :++,--
+比较运算符:>,<,>=,<=,==,===,!==    //===判断值和类型
+移位运算符:<<,>>
+逻辑运算符:&&,||,!,&,|
+
+6.流程控制
+------
+<?php 
+ if(var)
+ {
+  //... 
+ }
+ else
+ {
+  //...
+ }
+ 
+ if(var)
+ {
+  //... 
+ }
+ else if(var)
+ {
+  //...
+ }
+ else
+ {
+  //...
+ }
+ 
+ switch($i)
+ {
+   case 0:
+     echo "equals 0";
+     break;
+   case 1:
+     echo "equals 1";
+	 break;
+ }
+?>
+
+注意:参考php手册 -- 语言参考.
+
+7.循环
+------
+<?php 
+ for(expr1; expr2; expr3)
+ {
+  //...
+ }
+ 
+ while(expr)
+ {
+  //...
+ }
+ 
+ do
+ {
+  //...
+ }while(expr);
+?>
+
+8.函数
+------
+<?php 
+ function check()
+ {
+  //...
+ }
+ 
+ function check():string      //限定返回类型为string.
+ {
+  //...
+  return ...;
+ }
+ 
+ function check(...$x):string      //可变参数.
+ {
+  //...
+  var_dump($x);
+  return ...;
+ }
+ 
+ check();//调用check函数.
+ 
+ function check($name='张三',$sex='男')
+ {
+  echo '姓名:'.$name.',性别:'.$sex;
+ }
+ 
+ function check($name='张三',$sex='男')
+ {
+  echo '姓名:'.$name.',性别:'.$sex;
+  return 0;
+ }
+ 
+ function check()
+ {
+  var_dump($_GET);
+  echo '<br/>';
+  
+  var_dump($_POST);
+  echo '<br/>';
+  
+  var_dump($_FILES);
+  echo '<br/>';
+  
+  var_dump($_COOKIE);
+  echo '<br/>';
+  
+  var_dump($_SESSION );
+  echo '<br/>';
+  
+  var_dump($GLOBALS);
+  echo '<br/>';
+ }
+ 
+ check();//调用check函数.
+ 
+ function checkx($x,$y,$z)      //新特性
+ {
+  var_dump($x,$y,$z);
+ }
+ 
+ $val = ['a','b',1];
+ checkx(...$val);
+?>
+
+9.常用函数-字符串(大小写)
+------
+strtolower       #转换为小写
+strtoupper       #转换为大写
+lcfirst          #首字母小写
+ucfirst          #首字母大写
+ucwords          #每个单词首字母大写
+
+10.常用函数-字符串(空白处理)
+------
+trim             #去掉首尾的空白字符
+ltrim            #去掉开头的空白字符
+rtrim/chop       #去掉结尾的空白字符
+
+11.常用函数-字符串(查找定位)
+------
+strstr/strchr    #返回首次出现到结尾的内容
+strrchr          #返回最后一次出现到结尾的内容
+stristr          #忽略大小写的版本
+strpos           #返回首次出现的位置
+stripos          #忽略大小写
+strrpos          #返回最后一次出现的位置
+strripos         #忽略大小写
+
+12.常用函数-数学函数
+------
+rand             
+mt_rand          #建议
+floor            #取整
+ceil
+round            #四舍五入
+max              #求最大值
+
+13.文件包含
+------
+<?php 
+ include('x.php');
+ //or
+ require('x.php');
+ //or 
+ require_once('x.php');
+ //or 
+ include_once('x.php');
+?>
+
+14.数组
+------
+元素删除:unset(array[x])
+数组函数:list,each
+
+参考:语言参考->类型->Array 数组
+
+15.全局数组 -- 与表单有关的全局数组
+------
+$_GET 
+$_POST 
+$_REQUEST 
+$_SERVER 
+
+16.错误处理
+------
+
+注意:参考"语言参考->错误".
+
+17.日期函数
+------
+time()
+date_default_timezone_set('PRC')                #设置时区
+date_default_timezone_set('Asia/Shanghai')      #设置时区
+date('Y-m-d H:i:s',time())
+
+18.会话控制
+------
+<?php 
+ setcookie('KEY','VALUE',time()+60*60,'/');     //设置,一小时
+ setcookie('KEY','',time()-1,'/');              //销毁
+ session_start();                               //step.1
+ $_SESSION['KEY'] = 'VALUE';                    //step.2
+ session_destory();                             //step.3
+?>
+
+19.图形库(GD)
+------
+//step.1 创建画布
+//step.2 创建颜色
+//step.3 用GD库画图
+//step.4 设置浏览器MIME类型
+//step.5 输出到浏览器或本地
+//step.6 销毁
+
+注意:使用"imagecreatetruecolor"函数检索例子.
+
+20.正则
+------
+
+注意:使用"preg_match"函数检索例子.
+
+21.oracle
+------
+函数参考->数据库扩展->针对各数据库系统对应的扩展->OCI8->安装/配置
+
+注意:使用"oci_new_connect"函数检索例子.
+

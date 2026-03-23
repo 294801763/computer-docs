@@ -1,0 +1,109 @@
+SourceTree
+-------------------
+1.提交的记录不能及时反馈,使用F5刷新即可.
+
+SSH - SourceTree
+-------------------
+step.1 - 在客户端生成公钥和私钥对
+--
+$>ssh-keygen -t rsa
+
+step.2 - 将客户端的公钥内容复制到服务器上
+--
+$>ssh-copy-id root@<SRV-IP>
+
+step.3 - 权限检查
+--
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+
+step.4 - SourceTree设置
+--
+工具->选项->一般->SSH客户端配置->SSH秘钥:.ssh\id_rsa
+                               ->SSH客户端:OpenSSH
+
+Windows与Linux上混合使用Git
+-------------------
+前提条件
+--
+1.假设Windows当前使用用户为<HY>,实际上用什么用户名不影响Git提交与使用
+2.Windows上安装SourceTree和Git
+
+step.1
+--
+$>git config --global --add safe.directory "*"
+$>git config --system --add safe.directory "*"
+
+注意:这条命令需在windows上执行.
+
+step.2
+--
+$>git config --system --add safe.directory "*"
+$>git config --global credential.helper store
+$>git config --global core.filemode false
+$>git config --global core.autocrlf true
+
+注意:这条命令需在Linux上执行.
+
+step.3 - 创建局域网仓库
+--
+$>cd <Git-DIR>
+$>git init --bare
+
+step.4
+--
+$>cd <Git-DIR>
+$>git init
+$>git config core.filemode false
+$>git config --global core.autocrlf true
+$>git config credential.helper store
+$>git config --add safe.directory "*"
+$>chown -R root:root .
+$>git remote add origin ssh://root@<SRV_IP>:/<Git-DIR>
+$>git pull --rebase origin master 
+$>touch Readme.txt Update.txt && git add Readme.txt Update.txt
+$>git mm
+$>git push --set-upstream origin master                                #提交到上游master分支
+$>git push --set-upstream origin develop                               #提交到上游develop分支
+or
+$>git branch --set-upstream-to=origin/master master                               #提交到上游master分支
+$>git branch --set-upstream-to=origin/develop develop                               #提交到上游master分支
+
+注意:已修改好的配置为"git-v1.1.tar.gz".
+
+step.5 - 从远程仓库下载
+--
+$>cd <Git-DIR>
+$>git init
+$>git remote set-url origin ssh://root@<SRV_IP>:/<Git-DIR>
+$>git pull --rebase origin master
+
+Git下载
+-------------------
+$>cd <Git-DIR>
+$>git init
+$>git remote set-url origin ssh://root@<SRV_IP>:/<Git-DIR>
+$>git pull --rebase origin master 
+
+Git查看暂存区
+-------------------
+$>git ls-files --stage
+
+Git查看当前修改的文件
+-------------------
+$>git status
+$>git diff
+
+Git查看所有分支
+-------------------
+$>git show-branch --all
+
+Git查看文件历史记录
+-------------------
+$>git log -p
+$>git log -p <File name>
+
+分支合并
+-------------------
+step.1 签出当前分支<需要将功能合并到当前的分支>
+step.2 选择一个提交记录

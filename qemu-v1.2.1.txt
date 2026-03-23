@@ -1,0 +1,177 @@
+移植ARM-DEBIAN文件系统(buster)
+--------------
+debootstrap --arch=armhf --include=vim,openssh-server,telnet,locales,build-essential,udev,mmc-utils --foreign --no-check-gpg buster . http://192.168.10.22
+cp /usr/bin/qemu-arm-static usr/bin/
+LC_ALL=C LANG=C chroot . /debootstrap/debootstrap --second-stage
+LC_ALL=C LANG=C chroot . dpkg --configure -a
+LC_ALL=C LANG=C chroot . apt-get install locales
+LC_ALL=C LANG=C chroot . passwd
+echo "buster" > etc/hostname
+rm -rf usr/bin/qemu-arm-static 
+
+移植x86_64-DEBIAN文件系统(buster)
+--------------
+debootstrap --arch=amd64 --include=linux-image-amd64,systemd,systemd-coredump,grub-efi,grub-pc-bin,makedev,locales,psmisc,vim,openssh-server,sudo,bash-completion,telnet,squashfs-tools,tree,net-tools,build-essential,udev,make,libaio-dev,libpcsclite-dev,xserver-xorg-core,xserver-xorg,samba,debootstrap,dosfstools,parted,pkg-config,autoconf,libtool,bison,flex,bc,cscope,iperf,libelf-dev,sshfs,unzip,ethtool,growisofs,libjpeg-dev,libncurses-dev,libncurses5-dev buster . http://192.168.10.88:81/v1.4
+LC_ALL=C LANG=C chroot . dpkg --configure -a
+LC_ALL=C LANG=C chroot . apt-get install locales tree
+LC_ALL=C LANG=C chroot . passwd
+echo "buster" > etc/hostname
+
+自定义x86_64精简根文件系统
+--------------
+step.1 KERNEL
+--
+*** Compiler: gcc (Debian 8.3.0-6) 8.3.0 ***
+[*] Networking support  --->
+ --- Networking support
+ Networking options  --->
+  --- TCP/IP networking
+  [*]   IP: kernel level autoconfiguration
+File systems  --->
+ [*] Network File Systems  --->
+  --- Network File Systems
+  <*>   NFS client support
+  < >     NFS client support for NFS version 2
+  <*>     NFS client support for NFS version 3
+  [*]       NFS client support for the NFSv3 ACL protocol extension
+  <*>     NFS client support for NFS version 4
+  [ ]     Provide swap over NFS support
+  [*]   Root file system on NFS                                                               #这一项极其重要,关乎NFS-rootfs能否成功运行;依赖于NETWORK_FILESYSTEMS,NFS_FS,IP_PNP.
+  [ ]   Use the legacy NFS DNS resolver
+  < >   NFS server support
+
+$>cd /home/vsftpd/linux/Linux
+$>./b
+
+注意:/home/vsftpd/linux/Linux.tar.gz默认并没有开启"CONFIG_ROOT_NFS","CONFIG_IP_PNP"并参考"/home/vsftpd/linux/qemu/qemu.md".
+or 
+step.1 KERNEL - 任意内核版本
+--
+make -C /opt/shared/linux-4.19.325 V=1 mrproper
+make -C /opt/shared/linux-4.19.325 O=/mnt/x86_64/vbuild V=1 mrproper
+make -C /opt/shared/linux-4.19.325 O=/mnt/x86_64/vbuild V=1 x86_64_defconfig
+make -C /opt/shared/linux-4.19.325 O=/mnt/x86_64/vbuild V=1 -j`nproc` 2>&1 | tee `date +%Y%m%d-%H.%M.%S`_build.log
+cp -afv /mnt/x86_64/vbuild/arch/x86/boot/bzImage .
+
+step.2 编译静态工具箱
+--
+cd /github/unix/tools/busybox
+git checkout 1_27_2 -fb v1.27.2
+mkdir tmp
+make V=1 O=./tmp -j`nproc` defconfig
+make V=1 O=./tmp -j`nproc` menuconfig
+----
+Settings  --->    
+ --- Build Options 
+  [x] Build static binary (no shared libs)
+--- Applets
+ Shells  ---> 
+  [ ]   Job control                                                                         #去掉勾选,为了解决'sh: can't access tty; job control turned off'
+
+make V=1 O=./tmp -j`nproc` install 
+
+注意:要想NFS能成功运行rootfs,编译busybox和内核gcc编译器版本要一致;否则rootfs无法成功运行成功.
+
+step.3 拷贝静态目标文件
+--
+cd /github/unix/tools/busybox
+cp -avf ./tmp/_install/* /opt/shared/rootfs/v3/
+cd /opt/shared/rootfs/v3/
+mkdir -pv proc/ sys/ etc/ mnt/ usr/sbin/ usr/bin/ usr/lib/ lib/ dev/ root/ tmp/ media/ usr/share/alsa etc/init.d/ var/run/wpa/ var/empty/ 
+touch init etc/fstab etc/passwd etc/group etc/pointercal
+chmod a+x init
+
+step.4 INIT
+--
+#!/bin/sh
+
+mount -t proc none /proc
+mount -t sysfs none /sys
+
+cat <<!
+
+busybox cat <<!
+Boot took $(busybox cut -d' ' -f1 /proc/uptime) seconds
+  _    _  __     __     ____     _____     _   _   _ 
+ | |  | | \ \   / /    / __ \   / ____|   | | | | | |
+ | |__| |  \ \_/ /    | |  | | | (___     | | | | | |
+ |  __  |   \   /     | |  | |  \___ \    | | | | | |
+ | |  | |    | |      | |__| |  ____) |   |_| |_| |_|
+ |_|  |_|    |_|       \____/  |_____/    (_) (_) (_)
+
+Welcome to HY OS Linux !!!
+
+!                                           #这里的符号切记不可省略,相当于!/bin/sh ,运行时需删除掉这里的注释.
+exec /bin/sh
+
+or 
+#!/bin/busybox sh
+
+export PATH=/sbin:/bin:/usr/sbin:usr/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib
+
+export TERM=vt100
+export TERMINFO=/usr/share/terminfo
+
+busybox mount -t proc none /proc
+busybox mount -t sysfs none /sys
+busybox mount -t tmpfs none /dev
+
+busybox mkdir /dev/pts
+busybox mount -t devpts none /dev/pts
+busybox mount -a 
+
+busybox mknod /dev/console c 5 1
+busybox mknod /dev/null c 1 3
+
+busybox echo "busybox mdev" > /proc/sys/kernel/hotplug
+busybox echo "4 4 1 7" > /proc/sys/kernel/printk
+busybox mdev -s -d
+
+busybox mkdir -p /lib/modules/`uname -r` >/dev/null 2>&1&
+
+busybox adduser -u 0 -s /bin/sh -h /root root >/dev/null 2>&1&
+busybox echo "root:123456" | busybox chpasswd >/dev/null 2>&1&
+
+busybox telnetd >/dev/null 2>&1&
+
+busybox cat <<!
+Boot took $(busybox cut -d' ' -f1 /proc/uptime) seconds
+  _    _  __     __     ____     _____     _   _   _ 
+ | |  | | \ \   / /    / __ \   / ____|   | | | | | |
+ | |__| |  \ \_/ /    | |  | | | (___     | | | | | |
+ |  __  |   \   /     | |  | |  \___ \    | | | | | |
+ | |  | |    | |      | |__| |  ____) |   |_| |_| |_|
+ |_|  |_|    |_|       \____/  |_____/    (_) (_) (_)
+
+Welcome to HY OS Linux !!!
+
+!
+exec /bin/busybox sh
+
+注意:参考"/home/vsftpd/linux/qemu/qemu.md"
+
+测试根文件系统
+--------------
+cd /opt/shared/rootfs/v3 
+chroot . /bin/busybox sh
+
+RUN 
+--------------
+qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap0,script=/usr/bin/tap,downscript=no -kernel ./bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs/v3,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off rootwait text' -boot c 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+注意:此条命令不可以用CTRL + C的方式中断运行.
+or
+qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial stdio -display none -net nic -net tap,ifname=tap0,script=/usr/bin/tap,downscript=no -kernel ./bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs/v3,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off rootwait text' -boot c 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+注意:此条命令可以用CTRL + C的方式中断运行.
+
+DEBUG
+--------------
+qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial mon:stdio -display none -net nic -net tap,ifname=tap0,script=/usr/bin/tap,downscript=no -kernel ./bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs/v3,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off rootwait text' -boot c -S -gdb tcp::1234 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+注意:此条命令不可以用CTRL + C的方式中断运行.
+or
+qemu-system-x86_64 -boot menu=on,strict=off -k en-us -m 256M -smp `nproc` -serial stdio -display none -net nic -net tap,ifname=tap0,script=/usr/bin/tap,downscript=no -kernel ./bzImage -append 'init=/init console=tty0 console=ttyS0 noinitrd net.ifnames=0 biosdevname=0 root=/dev/nfs nfsroot=192.168.10.8:/opt/shared/rootfs/v3,proto=tcp,v3,nolock rw ip=192.168.10.100:192.168.10.8:192.168.10.1:255.255.255.0::eth0:off rootwait text' -boot c -S -gdb tcp::1234 2>&1 | tee /var/log/run-`date +%Y%m%d-%H.%M.%S`.log
+
+注意:此条命令可以用CTRL + C的方式中断运行.
